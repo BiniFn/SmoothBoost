@@ -304,11 +304,23 @@ if (chrome.alarms?.onAlarm) {
   });
 }
 
+async function syncBundledSiteRules() {
+  try {
+    const url = chrome.runtime.getURL("data/site-rules.json");
+    const res = await fetch(url);
+    if (res.ok) {
+      const rules = await res.json();
+      await chrome.storage.local.set({ smoothBoostSiteRules: rules });
+    }
+  } catch (_e) {}
+}
+
 // Initialize settings and ensure dynamic registrations follow the saved site
 // state after installs, upgrades, service-worker restarts, and settings edits.
 chrome.runtime.onInstalled.addListener(async ({ reason } = {}) => {
   try {
     setupAlarms();
+    syncBundledSiteRules().catch(() => {});
     checkBackgroundUpdates().catch(() => {});
     const existing = await chrome.storage.local.get("smoothBoostConfig");
     const current = existing?.smoothBoostConfig;
@@ -348,6 +360,7 @@ chrome.runtime.onInstalled.addListener(async ({ reason } = {}) => {
 
 chrome.runtime.onStartup?.addListener(() => {
   setupAlarms();
+  syncBundledSiteRules().catch(() => {});
   checkBackgroundUpdates().catch(() => {});
   queueScriptSync().catch(() => {});
 });

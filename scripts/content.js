@@ -851,19 +851,14 @@
     }
   }
 
-  async function loadSiteRules() {
-    try {
-      const url = chrome.runtime.getURL('data/site-rules.json');
-      const response = await fetch(url);
-      if (!response.ok) return DEFAULT_RULES;
-      const rules = await response.json();
+  function loadSiteRules(storedRules) {
+    if (storedRules && Array.isArray(storedRules.siteRules)) {
       return {
-        genericCarouselSelectors: Array.isArray(rules.genericCarouselSelectors) ? rules.genericCarouselSelectors : DEFAULT_RULES.genericCarouselSelectors,
-        siteRules: Array.isArray(rules.siteRules) ? rules.siteRules : DEFAULT_RULES.siteRules
+        genericCarouselSelectors: Array.isArray(storedRules.genericCarouselSelectors) ? storedRules.genericCarouselSelectors : DEFAULT_RULES.genericCarouselSelectors,
+        siteRules: storedRules.siteRules
       };
-    } catch (_error) {
-      return DEFAULT_RULES;
     }
+    return DEFAULT_RULES;
   }
 
   async function init() {
@@ -873,8 +868,8 @@
     }
     const hostname = window.location.hostname.toLowerCase();
     const startingStorageChangeCount = storageChangeCount;
-    const rulesPromise = loadSiteRules();
-    const stored = await chrome.storage.local.get(['smoothBoostConfig', ARCHETYPE_CACHE_KEY]);
+    const stored = await chrome.storage.local.get(['smoothBoostConfig', 'smoothBoostSiteRules', ARCHETYPE_CACHE_KEY]);
+    siteRules = loadSiteRules(stored?.smoothBoostSiteRules);
     startLongFrameObserver();
 
     // Check cached archetype
@@ -889,11 +884,6 @@
     }
     observePageHookChannel();
     initialized = true;
-
-    rulesPromise.then((rules) => {
-      siteRules = rules;
-      if (currentSettings.enabled) updatePageObservers();
-    });
 
     scheduleClassification();
 
