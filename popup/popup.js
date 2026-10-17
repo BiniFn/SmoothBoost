@@ -41,6 +41,11 @@ const btnCustom = document.getElementById('btn-custom');
 const autoPromoBanner = document.getElementById('auto-promo-banner');
 const btnAcceptAuto = document.getElementById('btn-accept-auto');
 const btnDismissAuto = document.getElementById('btn-dismiss-auto');
+const updateNotificationBanner = document.getElementById('update-notification-banner');
+const updateNotificationText = document.getElementById('update-notification-text');
+const updateNotificationAction = document.getElementById('update-notification-action');
+const updateNotificationDismiss = document.getElementById('update-notification-dismiss');
+const updateTabDot = document.getElementById('update-tab-dot');
 const resetBtn = document.getElementById('reset-defaults');
 const controlsTab = document.getElementById('tab-controls');
 const helpTab = document.getElementById('tab-help');
@@ -148,34 +153,67 @@ async function init() {
 }
 
 function renderUpdateResult(result, checkedAt, note = '') {
-  if (!downloadUpdateLink || !releaseUpdateLink || !updateStatus) return;
-  downloadUpdateLink.hidden = true;
-  releaseUpdateLink.hidden = true;
+  if (downloadUpdateLink) downloadUpdateLink.hidden = true;
+  if (releaseUpdateLink) releaseUpdateLink.hidden = true;
 
   if (!result) {
-    updateStatus.textContent = note || 'Could not read the latest GitHub release. Try again.';
+    if (updateStatus) updateStatus.textContent = note || 'Could not read the latest GitHub release. Try again.';
+    if (updateNotificationBanner) {
+      updateNotificationBanner.hidden = true;
+      if (updateNotificationBanner.style) updateNotificationBanner.style.display = 'none';
+    }
+    if (updateTabDot) {
+      updateTabDot.hidden = true;
+      if (updateTabDot.style) updateTabDot.style.display = 'none';
+    }
     return;
+  }
+
+  const isUpdate = result.status === 'update' || result.status === 'update-without-zip';
+  if (updateNotificationBanner && updateNotificationAction && updateNotificationText) {
+    if (isUpdate) {
+      updateNotificationText.textContent = `Update available: v${result.latestVersion}`;
+      updateNotificationAction.href = result.downloadUrl || result.releaseUrl;
+      updateNotificationAction.textContent = result.hasZip ? 'Download' : 'View';
+      updateNotificationBanner.hidden = false;
+      if (updateNotificationBanner.style) updateNotificationBanner.style.display = 'flex';
+      if (updateTabDot) {
+        updateTabDot.hidden = false;
+        if (updateTabDot.style) updateTabDot.style.display = 'inline-block';
+      }
+    } else {
+      updateNotificationBanner.hidden = true;
+      if (updateNotificationBanner.style) updateNotificationBanner.style.display = 'none';
+      if (updateTabDot) {
+        updateTabDot.hidden = true;
+        if (updateTabDot.style) updateTabDot.style.display = 'none';
+      }
+    }
   }
 
   const freshness = note || (checkedAt ? ` Checked ${new Date(checkedAt).toLocaleString()}.` : '');
   if (result.status === 'update') {
-    updateStatus.textContent = `Update available: ${result.latestVersion}.${freshness}`;
-    downloadUpdateLink.href = result.downloadUrl;
-    downloadUpdateLink.textContent = `Download SmoothBoost ${result.latestVersion}`;
-    downloadUpdateLink.hidden = false;
+    if (updateStatus) updateStatus.textContent = `Update available: ${result.latestVersion}.${freshness}`;
+    if (downloadUpdateLink) {
+      downloadUpdateLink.href = result.downloadUrl;
+      downloadUpdateLink.textContent = `Download SmoothBoost ${result.latestVersion}`;
+      downloadUpdateLink.hidden = false;
+    }
     return;
   }
   if (result.status === 'update-without-zip') {
-    updateStatus.textContent = `Version ${result.latestVersion} is available, but its ZIP is not attached yet.${freshness}`;
-    releaseUpdateLink.href = result.releaseUrl;
-    releaseUpdateLink.hidden = false;
+    if (updateStatus) updateStatus.textContent = `Version ${result.latestVersion} is available, but its ZIP is not attached yet.${freshness}`;
+    if (releaseUpdateLink) {
+      releaseUpdateLink.href = result.releaseUrl;
+      releaseUpdateLink.hidden = false;
+    }
     return;
   }
   if (result.status === 'ahead') {
-    updateStatus.textContent = `This installed version is newer than the latest GitHub release (${result.latestVersion}).${freshness}`;
+    if (updateStatus) updateStatus.textContent = `This installed version is newer than the latest GitHub release (${result.latestVersion}).${freshness}`;
     return;
   }
-  updateStatus.textContent = `You're up to date (${result.currentVersion}).${freshness}`;
+  if (updateStatus) updateStatus.textContent = `You're up to date (${result.currentVersion}).${freshness}`;
 }
 
 async function checkForUpdates(force = false) {
@@ -279,7 +317,9 @@ function renderUI() {
   }
 
   if (autoPromoBanner) {
-    autoPromoBanner.hidden = !(config.showAutoPromo && mode !== 'auto' && enabled);
+    const showPromo = Boolean(config.showAutoPromo && mode !== 'auto' && enabled);
+    autoPromoBanner.hidden = !showPromo;
+    if (autoPromoBanner.style) autoPromoBanner.style.display = showPromo ? 'flex' : 'none';
   }
 
   const custom = getCustomSettings();
@@ -350,7 +390,10 @@ function renderReloadStatus() {
   statusPage.textContent = 'Reload tab to activate';
   statusDetail.textContent = 'Reload this tab after installing or updating SmoothBoost.';
   statusProfile.textContent = '—';
-  if (siteRuleRow) siteRuleRow.hidden = true;
+  if (siteRuleRow) {
+    siteRuleRow.hidden = true;
+    if (siteRuleRow.style) siteRuleRow.style.display = 'none';
+  }
   if (metricsContainer) metricsContainer.innerHTML = '';
 }
 
@@ -359,7 +402,10 @@ function renderUnsupportedStatus() {
   statusPage.textContent = 'Unsupported page';
   statusDetail.textContent = 'The browser does not allow extensions to run on this page.';
   statusProfile.textContent = '—';
-  if (siteRuleRow) siteRuleRow.hidden = true;
+  if (siteRuleRow) {
+    siteRuleRow.hidden = true;
+    if (siteRuleRow.style) siteRuleRow.style.display = 'none';
+  }
   if (metricsContainer) metricsContainer.innerHTML = '';
 }
 
@@ -368,7 +414,10 @@ function renderSiteOffStatus() {
   statusPage.textContent = 'Off for this site';
   statusDetail.textContent = 'SmoothBoost is not injected here. Turn it on and reload this tab to apply it.';
   statusProfile.textContent = 'Off';
-  if (siteRuleRow) siteRuleRow.hidden = true;
+  if (siteRuleRow) {
+    siteRuleRow.hidden = true;
+    if (siteRuleRow.style) siteRuleRow.style.display = 'none';
+  }
   if (metricsContainer) metricsContainer.innerHTML = '';
 }
 
@@ -457,9 +506,10 @@ function requestPageStatus(attempt = 0) {
     const modeLabels = { auto: 'Smart Auto', ultra: 'Maximum', balanced: 'Balanced', custom: 'Custom' };
     statusProfile.textContent = response.enabled ? (modeLabels[response.mode] || 'Custom') : 'Off';
 
-    const onReanime = response.siteRule && response.siteRule !== 'not-applicable';
+    const onReanime = Boolean(response.siteRule && response.siteRule !== 'not-applicable');
     if (siteRuleRow) {
       siteRuleRow.hidden = !onReanime;
+      if (siteRuleRow.style) siteRuleRow.style.display = onReanime ? 'flex' : 'none';
       if (onReanime) renderRuleStatus(response.siteRule);
     }
 
@@ -526,6 +576,10 @@ function bindEvents() {
   if (btnAcceptAuto) {
     btnAcceptAuto.addEventListener('click', () => {
       config.showAutoPromo = false;
+      if (autoPromoBanner) {
+        autoPromoBanner.hidden = true;
+        if (autoPromoBanner.style) autoPromoBanner.style.display = 'none';
+      }
       setMode('auto');
     });
   }
@@ -533,8 +587,18 @@ function bindEvents() {
   if (btnDismissAuto) {
     btnDismissAuto.addEventListener('click', () => {
       config.showAutoPromo = false;
-      if (autoPromoBanner) autoPromoBanner.hidden = true;
+      if (autoPromoBanner) {
+        autoPromoBanner.hidden = true;
+        if (autoPromoBanner.style) autoPromoBanner.style.display = 'none';
+      }
       chrome.storage.local.set({ smoothBoostConfig: config });
+    });
+  }
+
+  if (updateNotificationDismiss && updateNotificationBanner) {
+    updateNotificationDismiss.addEventListener('click', () => {
+      updateNotificationBanner.hidden = true;
+      if (updateNotificationBanner.style) updateNotificationBanner.style.display = 'none';
     });
   }
 

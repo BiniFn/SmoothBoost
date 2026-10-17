@@ -38,7 +38,7 @@ class FakeElement {
   }
 }
 
-async function renderPopup({ url, response, hasReceiver = true, storedConfig = null }) {
+async function renderPopup({ url, response, hasReceiver = true, storedConfig = null, mockRelease = null }) {
   const elements = new Map();
   const documentListeners = new Map();
   const body = new FakeElement();
@@ -100,7 +100,7 @@ async function renderPopup({ url, response, hasReceiver = true, storedConfig = n
     fetch: async () => ({
       ok: true,
       async json() {
-        return { tag_name: 'v1.0.8', draft: false, prerelease: false, assets: [{ name: 'SmoothBoost-1.0.8.zip' }] };
+        return mockRelease || { tag_name: 'v1.0.8', draft: false, prerelease: false, assets: [{ name: 'SmoothBoost-1.0.8.zip' }] };
       }
     }),
     URL
@@ -170,3 +170,57 @@ test('popup switches between Controls and Help & Bugs tabs', async () => {
   assert.equal(elements.get('help-panel').hidden, true);
   assert.equal(elements.get('controls-panel').hidden, false);
 });
+
+test('site-rule-row is hidden on non-Re:Anime sites (e.g. roblox.com)', async () => {
+  const { elements } = await renderPopup({
+    url: 'https://www.roblox.com/home',
+    response: { status: 'active', enabled: true, mode: 'auto', siteRule: 'not-applicable' }
+  });
+
+  assert.equal(elements.get('site-rule-row').hidden, true, 'Re:Anime row must be hidden on roblox.com');
+  assert.equal(elements.get('status-page').textContent, 'Active');
+  assert.equal(elements.get('status-profile').textContent, 'Smart Auto');
+});
+
+test('promo banner dismisses and stays hidden', async () => {
+  const { elements } = await renderPopup({
+    url: 'https://www.roblox.com/home',
+    response: { status: 'active', enabled: true, mode: 'ultra' },
+    storedConfig: { globalEnabled: true, mode: 'ultra', showAutoPromo: true }
+  });
+
+  const banner = elements.get('auto-promo-banner');
+  assert.equal(banner.hidden, false, 'Banner shown when mode is not auto and showAutoPromo is true');
+
+  // Click dismiss
+  elements.get('btn-dismiss-auto').listeners.get('click')();
+  assert.equal(banner.hidden, true, 'Banner is hidden after clicking dismiss');
+});
+
+test('update notification pops up on the main screen when an update is available', async () => {
+  const { elements } = await renderPopup({
+    url: 'https://www.roblox.com/home',
+    response: { status: 'active', enabled: true, mode: 'auto' },
+    mockRelease: { tag_name: 'v2.1.0', draft: false, prerelease: false, assets: [{ name: 'SmoothBoost-2.1.0.zip' }] }
+  });
+
+  // Simulate update check returning a newer version (e.g. v2.0.1)
+  const updateBanner = elements.get('update-notification-banner');
+  const updateText = elements.get('update-notification-text');
+  const updateAction = elements.get('update-notification-action');
+  const updateTabDot = elements.get('update-tab-dot');
+
+  // Trigger update check callback in popup
+  // In renderPopup, update checker returns release { tag_name: 'v2.1.0' }
+  // Wait for fetch update check to settle
+  await new Promise((resolve) => setTimeout(resolve, 50));
+
+  assert.equal(updateBanner.hidden, false, 'Update notification banner pops up');
+  assert.match(updateText.textContent, /Update available/);
+  assert.equal(updateTabDot.hidden, false, 'Tab dot is shown');
+
+  // Dismiss update banner
+  elements.get('update-notification-dismiss').listeners.get('click')();
+  assert.equal(updateBanner.hidden, true, 'Update banner is hidden after dismissal');
+});
+

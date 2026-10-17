@@ -173,11 +173,36 @@ function queueScriptSync() {
   return registrationQueue;
 }
 
-function setupTabDiscardAlarm() {
+const UPDATE_CHECK_ALARM = "smoothboost-check-updates";
+
+function setupAlarms() {
   if (!chrome.alarms?.create) return;
   try {
     chrome.alarms.create(TAB_DISCARD_ALARM, { periodInMinutes: 15 });
+    chrome.alarms.create(UPDATE_CHECK_ALARM, { periodInMinutes: 240 });
   } catch (_error) {}
+}
+
+async function checkBackgroundUpdates() {
+  try {
+    const currentVersion = chrome.runtime.getManifest?.()?.version;
+    if (!currentVersion) return;
+    const response = await fetch("https://api.github.com/repos/BiniFn/SmoothBoost/releases/latest", {
+      headers: { Accept: "application/vnd.github+json" }
+    });
+    if (!response.ok) return;
+    const release = await response.json();
+    const tag = release?.tag_name?.replace(/^v/, "");
+    if (!tag) return;
+    const hasZip = Array.isArray(release.assets) && release.assets.some((a) => a.name === `SmoothBoost-${tag}.zip`);
+    await chrome.storage.local.set({
+      smoothBoostLatestReleaseCheck: {
+        checkedAt: Date.now(),
+        latestVersion: tag,
+        hasZip
+      }
+    });
+  } catch (_e) {}
 }
 
 async function checkAndDiscardIdleTabs() {
@@ -214,6 +239,9 @@ if (chrome.alarms?.onAlarm) {
     if (alarm.name === TAB_DISCARD_ALARM) {
       return checkAndDiscardIdleTabs().catch(() => {});
     }
+    if (alarm.name === UPDATE_CHECK_ALARM) {
+      return checkBackgroundUpdates().catch(() => {});
+    }
   });
 }
 
@@ -221,7 +249,8 @@ if (chrome.alarms?.onAlarm) {
 // state after installs, upgrades, service-worker restarts, and settings edits.
 chrome.runtime.onInstalled.addListener(async ({ reason } = {}) => {
   try {
-    setupTabDiscardAlarm();
+    setupAlarms();
+    checkBackgroundUpdates().catch(() => {});
     const existing = await chrome.storage.local.get("smoothBoostConfig");
     const current = existing?.smoothBoostConfig;
 
@@ -259,7 +288,8 @@ chrome.runtime.onInstalled.addListener(async ({ reason } = {}) => {
 });
 
 chrome.runtime.onStartup?.addListener(() => {
-  setupTabDiscardAlarm();
+  setupAlarms();
+  checkBackgroundUpdates().catch(() => {});
   queueScriptSync().catch(() => {});
 });
 
