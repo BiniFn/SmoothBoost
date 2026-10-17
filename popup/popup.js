@@ -37,7 +37,13 @@ const siteToggle = document.getElementById('site-toggle');
 const btnAuto = document.getElementById('btn-auto');
 const btnUltra = document.getElementById('btn-ultra');
 const btnBalanced = document.getElementById('btn-balanced');
+const btnBattery = document.getElementById('btn-battery');
 const btnCustom = document.getElementById('btn-custom');
+const btnExportSettings = document.getElementById('btn-export-settings');
+const btnImportSettings = document.getElementById('btn-import-settings');
+const inputImportSettings = document.getElementById('input-import-settings');
+const settingsStatus = document.getElementById('settings-status');
+const shortcutTip = document.getElementById('shortcut-tip');
 const autoPromoBanner = document.getElementById('auto-promo-banner');
 const btnAcceptAuto = document.getElementById('btn-accept-auto');
 const btnDismissAuto = document.getElementById('btn-dismiss-auto');
@@ -119,6 +125,20 @@ const PRESET_CONFIGS = {
     passiveScroll: false,
     asyncImageDecoding: false,
     fontDisplaySwap: false
+  },
+  battery: {
+    killAnimations: false,
+    killTransitions: false,
+    killBlurFilters: true,
+    killScrollHijack: false,
+    pauseBackgroundMedia: true,
+    throttleCanvasFps: true,
+    pauseOffscreenAnimations: true,
+    contentVisibility: true,
+    pauseOffscreenCanvas: true,
+    passiveScroll: true,
+    asyncImageDecoding: true,
+    fontDisplaySwap: true
   }
 };
 
@@ -298,6 +318,7 @@ function getEffectiveSettings() {
   if (mode === 'auto') return { enabled: true, mode, ...PRESET_CONFIGS.auto };
   if (mode === 'ultra') return { enabled: true, mode, ...PRESET_CONFIGS.ultra };
   if (mode === 'balanced') return { enabled: true, mode, ...PRESET_CONFIGS.balanced };
+  if (mode === 'battery') return { enabled: true, mode, ...PRESET_CONFIGS.battery };
   return { enabled: true, mode: 'custom', ...getCustomSettings() };
 }
 
@@ -309,6 +330,7 @@ function renderUI() {
   if (btnAuto) btnAuto.classList.toggle('active', mode === 'auto');
   if (btnUltra) btnUltra.classList.toggle('active', mode === 'ultra');
   if (btnBalanced) btnBalanced.classList.toggle('active', mode === 'balanced');
+  if (btnBattery) btnBattery.classList.toggle('active', mode === 'battery');
   if (btnCustom) btnCustom.classList.toggle('active', mode === 'custom');
 
   if (togglesWrapper) {
@@ -502,7 +524,7 @@ function requestPageStatus(attempt = 0) {
           : 'SmoothBoost is running in this tab.')
       : 'SmoothBoost is loaded, but paused for this site.';
 
-    const modeLabels = { auto: 'Smart Auto', ultra: 'Maximum', balanced: 'Balanced', custom: 'Custom' };
+    const modeLabels = { auto: 'Smart Auto', ultra: 'Maximum', balanced: 'Balanced', battery: 'Battery Saver', custom: 'Custom' };
     statusProfile.textContent = response.enabled ? (modeLabels[response.mode] || 'Custom') : 'Off';
 
     const onReanime = Boolean(response.siteRule && response.siteRule !== 'not-applicable');
@@ -570,7 +592,33 @@ function bindEvents() {
   if (btnAuto) btnAuto.addEventListener('click', () => setMode('auto'));
   if (btnUltra) btnUltra.addEventListener('click', () => setMode('ultra'));
   if (btnBalanced) btnBalanced.addEventListener('click', () => setMode('balanced'));
+  if (btnBattery) btnBattery.addEventListener('click', () => setMode('battery'));
   if (btnCustom) btnCustom.addEventListener('click', () => setMode('custom'));
+
+  if (btnExportSettings) {
+    btnExportSettings.addEventListener('click', exportSettings);
+  }
+
+  if (btnImportSettings && inputImportSettings) {
+    btnImportSettings.addEventListener('click', () => {
+      inputImportSettings.value = '';
+      inputImportSettings.click();
+    });
+    inputImportSettings.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (file) void importSettingsFile(file);
+    });
+  }
+
+  if (shortcutTip) {
+    const isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const isMobile = (typeof SmoothBoostCompat !== 'undefined' && SmoothBoostCompat.isMobile)
+      || (typeof navigator !== 'undefined' && /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || ''));
+    if (isTouch || isMobile || !chrome?.commands) {
+      shortcutTip.hidden = true;
+      if (shortcutTip.style) shortcutTip.style.display = 'none';
+    }
+  }
 
   if (btnAcceptAuto) {
     btnAcceptAuto.addEventListener('click', () => {
@@ -669,4 +717,116 @@ function selectTab(tabName) {
   if (helpPanel) helpPanel.hidden = showControls;
 }
 
+function exportSettings() {
+  const exportPayload = {
+    app: 'SmoothBoost',
+    version: chrome?.runtime?.getManifest ? (chrome.runtime.getManifest()?.version || '2.1.0') : '2.1.0',
+    exportedAt: new Date().toISOString(),
+    config: {
+      settingsVersion: config?.settingsVersion || 4,
+      globalEnabled: config?.globalEnabled !== false,
+      mode: config?.mode || 'auto',
+      customSettings: { ...DEFAULT_SETTINGS.customSettings, ...(config?.customSettings || {}) },
+      siteOverrides: config?.siteOverrides || {}
+    }
+  };
+  const jsonStr = JSON.stringify(exportPayload, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `smoothboost-settings-${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 100);
+}
+
+function validateImportedSettings(parsed) {
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('Invalid JSON: expected a root object.');
+  }
+  const rawConfig = parsed.config && typeof parsed.config === 'object' ? parsed.config : parsed;
+  const validModes = ['auto', 'ultra', 'balanced', 'battery', 'custom'];
+
+  const validated = {
+    settingsVersion: 4,
+    globalEnabled: rawConfig.globalEnabled !== false,
+    mode: validModes.includes(rawConfig.mode) ? rawConfig.mode : 'auto',
+    showAutoPromo: false,
+    customSettings: { ...DEFAULT_SETTINGS.customSettings },
+    siteOverrides: {}
+  };
+
+  if (rawConfig.customSettings && typeof rawConfig.customSettings === 'object') {
+    for (const [key, defVal] of Object.entries(DEFAULT_SETTINGS.customSettings)) {
+      if (typeof defVal === 'boolean' && typeof rawConfig.customSettings[key] === 'boolean') {
+        validated.customSettings[key] = rawConfig.customSettings[key];
+      } else if (typeof defVal === 'number' && typeof rawConfig.customSettings[key] === 'number') {
+        validated.customSettings[key] = Math.max(10, Math.min(120, rawConfig.customSettings[key]));
+      }
+    }
+  }
+
+  if (rawConfig.siteOverrides && typeof rawConfig.siteOverrides === 'object') {
+    for (const [hostname, site] of Object.entries(rawConfig.siteOverrides)) {
+      if (typeof hostname === 'string' && hostname.trim() && site && typeof site === 'object') {
+        const cleanHost = hostname.trim().toLowerCase();
+        const cleanSite = {};
+        if (typeof site.enabled === 'boolean') cleanSite.enabled = site.enabled;
+        if (validModes.includes(site.mode)) cleanSite.mode = site.mode;
+        if (site.customSettings && typeof site.customSettings === 'object') {
+          cleanSite.customSettings = {};
+          for (const [key, defVal] of Object.entries(DEFAULT_SETTINGS.customSettings)) {
+            if (typeof defVal === 'boolean' && typeof site.customSettings[key] === 'boolean') {
+              cleanSite.customSettings[key] = site.customSettings[key];
+            } else if (typeof defVal === 'number' && typeof site.customSettings[key] === 'number') {
+              cleanSite.customSettings[key] = Math.max(10, Math.min(120, site.customSettings[key]));
+            }
+          }
+        }
+        validated.siteOverrides[cleanHost] = cleanSite;
+      }
+    }
+  }
+
+  return validated;
+}
+
+async function importSettingsFile(file) {
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    const validConfig = validateImportedSettings(parsed);
+    config = validConfig;
+    renderUI();
+    await saveAndBroadcast();
+    showSettingsStatus('Settings imported successfully!', 'success');
+  } catch (err) {
+    showSettingsStatus('Failed to import: ' + (err.message || 'invalid file format'), 'error');
+  }
+}
+
+function showSettingsStatus(msg, type = 'info') {
+  if (!settingsStatus) return;
+  settingsStatus.textContent = msg;
+  settingsStatus.className = 'settings-status is-' + type;
+  settingsStatus.hidden = false;
+  setTimeout(() => {
+    if (settingsStatus) settingsStatus.hidden = true;
+  }, 4000);
+}
+
 document.addEventListener('DOMContentLoaded', init);
+
+if (typeof module === 'object' && module.exports) {
+  module.exports = {
+    DEFAULT_SETTINGS,
+    PRESET_CONFIGS,
+    validateImportedSettings
+  };
+}

@@ -17,9 +17,9 @@
           </svg>
         </div>
         <div>
-          <div class="title-row">
+            <div class="title-row">
             <h1 class="title">SmoothBoost</h1>
-            <span class="version-badge">v2.0.0</span>
+            <span class="version-badge">v2.1.0</span>
           </div>
           <p class="subtitle" id="domain-label">Scanning site...</p>
         </div>
@@ -102,6 +102,18 @@
               </span>
               <span class="preset-title">Balanced</span>
               <span class="preset-desc">Subtle</span>
+            </button>
+            <button class="preset-btn" data-mode="battery" id="btn-battery">
+              <span class="preset-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="7" width="16" height="10" rx="2" ry="2"/>
+                  <line x1="22" y1="11" x2="22" y2="13"/>
+                  <line x1="6" y1="11" x2="6" y2="13"/>
+                  <line x1="10" y1="11" x2="10" y2="13"/>
+                </svg>
+              </span>
+              <span class="preset-title">Battery</span>
+              <span class="preset-desc">Saver</span>
             </button>
             <button class="preset-btn" data-mode="custom" id="btn-custom">
               <span class="preset-icon">
@@ -297,25 +309,41 @@
           <a class="action-link secondary-action" id="release-update-link" href="#" target="_blank" rel="noopener noreferrer" hidden>View release</a>
         </section>
 
+        <!-- Backup & Restore Section -->
+        <section class="update-card" aria-labelledby="backup-title">
+          <div class="update-heading">
+            <div>
+              <h2 id="backup-title">Backup &amp; Restore</h2>
+              <p id="settings-status">Export or import your SmoothBoost settings.</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 8px;">
+            <button class="diagnose-button" id="btn-export-settings" type="button" style="flex: 1;">Export JSON</button>
+            <button class="diagnose-button" id="btn-import-settings" type="button" style="flex: 1;">Import JSON</button>
+            <input type="file" id="input-import-settings" accept=".json,application/json" style="display: none;" hidden>
+          </div>
+        </section>
+
         <a class="action-link secondary-action" id="bug-report-link" href="https://github.com/BiniFn/SmoothBoost/issues/new" target="_blank" rel="noopener noreferrer">Submit a bug report on GitHub</a>
         <a class="action-link secondary-action" href="https://github.com/BiniFn/SmoothBoost/issues" target="_blank" rel="noopener noreferrer">View GitHub issues</a>
 
         <div class="credit-card">
-          <span class="credit-label">SMOOTHBOOST v2.0.0</span>
-          <span>Engineered for responsive, hardware-accelerated, and unbloated web browsing.</span>
+          <span class="credit-label">SMOOTHBOOST v2.1.0</span>
+          <span>Engineered for responsive, hardware-accelerated, and unbloated web browsing across Chrome, Titanium Browser, and Firefox.</span>
         </div>
       </section>
     </main>
 
     <!-- Bottom Actions -->
     <footer class="footer">
-      <div class="shortcut-tip">
+      <div class="shortcut-tip" id="shortcut-tip">
         <span>Shortcut:</span> <kbd>⌥ Option</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd>
       </div>
       <button class="reset-link" id="reset-defaults">Reset</button>
     </footer>
   </div>
 
+  <script src="../scripts/compat.js"></script>
   <script src="update-check.js"></script>
   <script src="popup.js"></script>
 </body>

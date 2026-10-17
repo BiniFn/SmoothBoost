@@ -32,7 +32,9 @@
 }
 
 body {
-  width: 360px;
+  width: 100%;
+  max-width: 420px;
+  min-width: 320px;
   min-height: 480px;
   font-family: var(--font-family);
   background: var(--bg-primary);
@@ -359,11 +361,11 @@ input:checked + .slider:before {
   text-transform: uppercase;
 }
 
-/* Presets - 4 Columns */
+/* Presets - 5 Columns */
 .preset-group {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
   background: var(--bg-secondary);
   padding: 4px;
   border-radius: var(--radius-lg);
@@ -374,7 +376,7 @@ input:checked + .slider:before {
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
-  padding: 8px 2px;
+  padding: 8px 1px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -400,6 +402,14 @@ input:checked + .slider:before {
 
 .preset-btn[data-mode="auto"].active .preset-desc {
   color: var(--accent-cyan);
+}
+
+.preset-btn[data-mode="battery"].active {
+  border-color: #f59e0b;
+}
+
+.preset-btn[data-mode="battery"].active .preset-desc {
+  color: #f59e0b;
 }
 
 .preset-icon {
@@ -772,4 +782,22 @@ body.site-disabled .status-card,
 body.site-disabled .toggles-section {
   opacity: 0.5;
   pointer-events: none;
+}
+
+/* Touch & Mobile View Responsive Adaptations */
+@media (pointer: coarse), (max-width: 380px) {
+  .container {
+    padding: 12px;
+    gap: 10px;
+  }
+  .preset-btn {
+    min-height: 48px;
+    padding: 6px 1px;
+  }
+  .toggle-row {
+    min-height: 44px;
+  }
+  .action-btn-danger, .diagnose-button, .update-notification-btn {
+    min-height: 44px;
+  }
 }

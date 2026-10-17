@@ -98,7 +98,7 @@
     };
 
     if (mode === 'auto') {
-      const isInteractiveCanvas = currentArchetype === 'interactive-canvas';
+      const isInteractiveCanvas = currentArchetype === 'interactive-canvas' || currentArchetype === 'game-canvas';
       return {
         enabled: true,
         mode: 'auto',
@@ -119,6 +119,7 @@
     }
 
     if (mode === 'ultra') {
+      const isInteractiveCanvas = currentArchetype === 'interactive-canvas' || currentArchetype === 'game-canvas';
       return {
         enabled: true,
         mode: 'ultra',
@@ -128,7 +129,7 @@
         killScrollHijack: false,
         pauseBackgroundMedia: true,
         pauseOffscreenAnimations: true,
-        pauseOffscreenCanvas: true,
+        pauseOffscreenCanvas: !isInteractiveCanvas,
         passiveScroll: true,
         asyncImageDecoding: true,
         fontDisplaySwap: true,
@@ -154,6 +155,27 @@
         fontDisplaySwap: false,
         contentVisibility: false,
         throttleCanvasFps: false,
+        fpsLimit: 30
+      };
+    }
+
+    if (mode === 'battery') {
+      const isInteractiveCanvas = currentArchetype === 'interactive-canvas' || currentArchetype === 'game-canvas';
+      return {
+        enabled: true,
+        mode: 'battery',
+        killAnimations: false,
+        killTransitions: false,
+        killBlurFilters: true,
+        killScrollHijack: false,
+        pauseBackgroundMedia: true,
+        pauseOffscreenAnimations: true,
+        pauseOffscreenCanvas: !isInteractiveCanvas,
+        passiveScroll: true,
+        asyncImageDecoding: true,
+        fontDisplaySwap: true,
+        contentVisibility: true,
+        throttleCanvasFps: !isInteractiveCanvas,
         fpsLimit: 30
       };
     }
@@ -672,7 +694,7 @@
   function classifyPageArchetype() {
     const hostname = window.location.hostname.toLowerCase();
 
-    // Check known interactive editors
+    // 1. Interactive Editors & Design Tools (Docs, Figma, Canva, Photopea, Monaco, Ace)
     if (/(figma|docs\.google|canva|sketch|photopea|webflow|desmos)\.com/i.test(hostname)) {
       return 'interactive-canvas';
     }
@@ -682,25 +704,39 @@
       return 'interactive-canvas';
     }
 
+    if (document.querySelector('.monaco-editor, .ace_editor, .cm-editor, [data-mode-id]')) {
+      return 'interactive-canvas';
+    }
+
+    // 2. Games & WebGL applications
+    if (/(crazygames|poki|kongregate|itch\.io|newgrounds|shadertoy|playcanvas)\.com/i.test(hostname) ||
+        document.querySelector('#unity-canvas, .game-canvas, canvas[data-engine]')) {
+      return 'game-canvas';
+    }
+
     const canvases = document.querySelectorAll('canvas');
     if (canvases.length > 0) {
       for (let i = 0; i < Math.min(canvases.length, 5); i++) {
         const c = canvases[i];
-        if (c.width >= (window.innerWidth || 800) * 0.8 && c.height >= (window.innerHeight || 600) * 0.8) {
+        if (c.width >= (window.innerWidth || 800) * 0.75 && c.height >= (window.innerHeight || 600) * 0.75) {
           return 'interactive-canvas';
         }
       }
     }
 
+    // 3. Media Stream / Streaming platforms
     const videos = document.querySelectorAll('video');
-    if (videos.length >= 2 || /(youtube|twitch|vimeo|netflix|hulu)\.com/i.test(hostname)) {
+    if (videos.length >= 2 || /(youtube|twitch|vimeo|netflix|hulu|disneyplus|spotify)\.com/i.test(hostname)) {
       return 'media-stream';
     }
 
-    if (document.querySelector('[role="feed"], [data-testid="primaryColumn"], .feed-item, article.post')) {
+    // 4. Infinite Feeds
+    if (/(twitter\.com|x\.com|reddit\.com|instagram\.com|bsky\.app|pinterest\.com)/i.test(hostname) ||
+        document.querySelector('[role="feed"], [data-testid="primaryColumn"], .feed-item, article.post, [data-infinite-scroll]')) {
       return 'infinite-feed';
     }
 
+    // 5. Standard Content
     return 'standard';
   }
 
@@ -758,8 +794,28 @@
     }
   }
 
+  function tryInjectPageHook() {
+    if (pageHookChannel || document.documentElement?.getAttribute?.(CHANNEL_ATTRIBUTE) || document.getElementById('smoothboost-page-hook-script')) return;
+    try {
+      if (typeof chrome.runtime?.getURL !== 'function') return;
+      const script = document.createElement('script');
+      script.id = 'smoothboost-page-hook-script';
+      script.src = chrome.runtime.getURL('scripts/page-hook.js');
+      script.async = false;
+      const target = document.head || document.documentElement;
+      if (target) {
+        target.appendChild(script);
+        script.onload = () => script.remove();
+      }
+    } catch (_e) {
+      // If page Content Security Policy (CSP) restricts external script tags,
+      // fail gracefully. Isolated content-script optimizations continue safely.
+    }
+  }
+
   function observePageHookChannel() {
     connectPageHook();
+    if (!pageHookChannel) tryInjectPageHook();
     if (pageHookChannel || typeof MutationObserver !== 'function' || !document.documentElement) return;
     const observer = new MutationObserver(() => {
       connectPageHook();

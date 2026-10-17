@@ -1,4 +1,15 @@
-// SmoothBoost - Background Service Worker (Manifest V3)
+// SmoothBoost - Background Service Worker / Event Script (Manifest V3)
+// Supports Chrome, Chromium, Titanium Browser (Android), Firefox Desktop, and Firefox Android.
+
+try {
+  if (typeof SmoothBoostCompat === "undefined" && typeof importScripts === "function") {
+    importScripts("compat.js");
+  }
+} catch (_e) {}
+
+const isMobilePlatform = typeof SmoothBoostCompat !== "undefined"
+  ? SmoothBoostCompat.isMobile
+  : (typeof navigator !== "undefined" && /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || ""));
 
 const DEFAULT_SETTINGS = {
   settingsVersion: 4,
@@ -161,7 +172,11 @@ async function syncRegisteredScripts() {
       await chrome.scripting.unregisterContentScripts({ ids: REGISTERED_SCRIPT_IDS });
       await chrome.scripting.registerContentScripts(scripts);
     } catch (_retryError) {
-      // Prevent uncaught rejection in service worker
+      // In environments where world: "MAIN" is unsupported (e.g. Firefox < 128),
+      // register the isolated script alone. The content script handles fallback injection.
+      try {
+        await chrome.scripting.registerContentScripts([scripts[0]]);
+      } catch (_fallbackError) {}
     }
   }
 
@@ -249,6 +264,7 @@ async function checkBackgroundUpdates() {
 }
 
 async function checkAndDiscardIdleTabs() {
+  if (isMobilePlatform) return; // Android OS Low Memory Killer manages memory; extensions should not call tabs.discard
   if (!chrome.tabs?.query || !chrome.tabs?.discard) return;
   try {
     const { smoothBoostConfig } = await chrome.storage.local.get("smoothBoostConfig");
@@ -344,9 +360,11 @@ chrome.storage.onChanged?.addListener((changes, areaName) => {
 
 // Update the toolbar badge for the active site.
 async function updateBadge(tabId, url) {
+  const actionApi = chrome.action || chrome.browserAction;
+  if (!actionApi?.setBadgeText) return;
   if (!url || !url.startsWith("http")) {
     try {
-      await chrome.action.setBadgeText({ tabId, text: "" });
+      await actionApi.setBadgeText({ tabId, text: "" });
     } catch (_error) {}
     return;
   }
@@ -369,14 +387,19 @@ async function updateBadge(tabId, url) {
       } else if (mode === "balanced") {
         badgeText = "BAL";
         badgeColor = "#3b82f6";
+      } else if (mode === "battery") {
+        badgeText = "BATT";
+        badgeColor = "#f59e0b";
       } else {
         badgeText = "ON";
         badgeColor = "#10b981";
       }
     }
 
-    await chrome.action.setBadgeText({ tabId, text: badgeText });
-    await chrome.action.setBadgeBackgroundColor({ tabId, color: badgeColor });
+    await actionApi.setBadgeText({ tabId, text: badgeText });
+    if (actionApi.setBadgeBackgroundColor) {
+      await actionApi.setBadgeBackgroundColor({ tabId, color: badgeColor });
+    }
   } catch (_error) {
     // Ignore invalid or browser-owned URLs or closed tabs.
   }
@@ -428,25 +451,27 @@ chrome.runtime.onMessage?.addListener((message, _sender, sendResponse) => {
   return false;
 });
 
-// Handle keyboard shortcut (Alt+Shift+S / Option+Shift+S).
-chrome.commands.onCommand.addListener(async (command) => {
-  if (command !== "toggle-speed-boost") return;
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.url || !/^https?:\/\//i.test(tab.url)) return;
+// Handle keyboard shortcut (Alt+Shift+S / Option+Shift+S) on desktop platforms.
+if (chrome.commands?.onCommand?.addListener) {
+  chrome.commands.onCommand.addListener(async (command) => {
+    if (command !== "toggle-speed-boost") return;
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.url || !/^https?:\/\//i.test(tab.url)) return;
 
-    const domain = new URL(tab.url).hostname;
-    const { smoothBoostConfig } = await chrome.storage.local.get("smoothBoostConfig");
-    const config = { ...DEFAULT_SETTINGS, ...(smoothBoostConfig || {}) };
-    const current = getEffectiveSiteSettings(config, domain).enabled;
-    config.siteOverrides = {
-      ...(config.siteOverrides || {}),
-      [domain]: { ...(config.siteOverrides?.[domain] || {}), enabled: !current }
-    };
+      const domain = new URL(tab.url).hostname;
+      const { smoothBoostConfig } = await chrome.storage.local.get("smoothBoostConfig");
+      const config = { ...DEFAULT_SETTINGS, ...(smoothBoostConfig || {}) };
+      const current = getEffectiveSiteSettings(config, domain).enabled;
+      config.siteOverrides = {
+        ...(config.siteOverrides || {}),
+        [domain]: { ...(config.siteOverrides?.[domain] || {}), enabled: !current }
+      };
 
-    await chrome.storage.local.set({ smoothBoostConfig: config });
-    await queueScriptSync();
-    await updateBadge(tab.id, tab.url);
-    sendTabMessage(tab.id, { type: "CONFIG_UPDATED", config });
-  } catch (_error) {}
-});
+      await chrome.storage.local.set({ smoothBoostConfig: config });
+      await queueScriptSync();
+      await updateBadge(tab.id, tab.url);
+      sendTabMessage(tab.id, { type: "CONFIG_UPDATED", config });
+    } catch (_error) {}
+  });
+}

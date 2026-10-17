@@ -328,7 +328,7 @@
     if (isInput) return true;
     if (typeof target.closest === 'function') {
       return !!target.closest(
-        '.leaflet-container, .mapboxgl-map, [aria-roledescription="map"], canvas, [data-smoothboost-allow-prevent-default]'
+        '.leaflet-container, .mapboxgl-map, [aria-roledescription="map"], canvas, [data-smoothboost-allow-prevent-default], [role="slider"], input[type="range"], .monaco-editor, .ace_editor, .cm-editor, #canvas, #unity-canvas, .game-canvas'
       );
     }
     return false;
