@@ -187,19 +187,62 @@ async function checkBackgroundUpdates() {
   try {
     const currentVersion = chrome.runtime.getManifest?.()?.version;
     if (!currentVersion) return;
-    const response = await fetch("https://api.github.com/repos/BiniFn/SmoothBoost/releases/latest", {
-      headers: { Accept: "application/vnd.github+json" }
-    });
-    if (!response.ok) return;
-    const release = await response.json();
-    const tag = release?.tag_name?.replace(/^v/, "");
+
+    let tag = null;
+    let hasZip = false;
+    let zipName = null;
+
+    try {
+      const response = await fetch("https://api.github.com/repos/BiniFn/SmoothBoost/releases/latest", {
+        headers: { Accept: "application/vnd.github+json" }
+      });
+      if (response && response.ok) {
+        const release = await response.json();
+        tag = release?.tag_name;
+        if (Array.isArray(release?.assets)) {
+          const matched = release.assets.find((a) => a?.name?.endsWith(".zip") && a.name.toLowerCase().includes("smoothboost"));
+          if (matched) {
+            hasZip = true;
+            zipName = matched.name;
+          }
+        }
+      }
+    } catch (_apiErr) {}
+
+    if (!tag) {
+      try {
+        const pageRes = await fetch("https://github.com/BiniFn/SmoothBoost/releases/latest", { redirect: "follow" });
+        const tagMatch = /\/releases\/tag\/([^/?#]+)/.exec(pageRes?.url || "");
+        if (tagMatch) {
+          tag = decodeURIComponent(tagMatch[1]);
+          const assetsRes = await fetch(`https://github.com/BiniFn/SmoothBoost/releases/expanded_assets/${encodeURIComponent(tag)}`);
+          if (assetsRes && assetsRes.ok) {
+            const html = await assetsRes.text();
+            const zipMatch = /href="\/[^"]*\/releases\/download\/([^"']+)\/(SmoothBoost-[^"']+\.zip)"/i.exec(html);
+            if (zipMatch) {
+              hasZip = true;
+              zipName = zipMatch[2];
+            }
+          }
+        }
+      } catch (_fbErr) {}
+    }
+
     if (!tag) return;
-    const hasZip = Array.isArray(release.assets) && release.assets.some((a) => a.name === `SmoothBoost-${tag}.zip`);
+    const vMatch = /^v?(\d{1,3}(?:\.\d{1,3}){0,2})/.exec(tag);
+    let parsedTag = vMatch ? vMatch[1] : tag.replace(/^v/, "");
+    // Ensure at least 3 parts for consistency
+    const parts = parsedTag.split(".");
+    while (parts.length < 3) parts.push("0");
+    parsedTag = parts.join(".");
+
     await chrome.storage.local.set({
       smoothBoostLatestReleaseCheck: {
         checkedAt: Date.now(),
-        latestVersion: tag,
-        hasZip
+        latestVersion: parsedTag,
+        hasZip,
+        tag,
+        zipFileName: zipName
       }
     });
   } catch (_e) {}

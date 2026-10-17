@@ -241,15 +241,12 @@ async function checkForUpdates(force = false) {
   const timeoutId = window.setTimeout(() => controller.abort(), 8000);
 
   try {
-    const response = await fetch(SmoothBoostUpdates.RELEASES_API_URL, {
-      headers: { Accept: 'application/vnd.github+json' },
-      cache: 'no-store',
-      signal: controller.signal
+    const fetchImpl = typeof fetch === 'function' ? fetch : undefined;
+    const result = await SmoothBoostUpdates.fetchLatestReleaseInfo(currentVersion, {
+      signal: controller.signal,
+      fetchImpl
     });
-    if (!response.ok) throw new Error(`GitHub returned ${response.status}`);
-    const release = await response.json();
-    const result = SmoothBoostUpdates.fromRelease(currentVersion, release);
-    if (!result) throw new Error('GitHub release metadata was not valid');
+    if (!result) throw new Error('Could not check GitHub');
 
     const checkedAt = Date.now();
     try {
@@ -257,7 +254,9 @@ async function checkForUpdates(force = false) {
         [UPDATE_CACHE_KEY]: {
           checkedAt,
           latestVersion: result.latestVersion,
-          hasZip: result.hasZip
+          hasZip: result.hasZip,
+          tag: result.releaseUrl ? result.releaseUrl.split('/').pop() : undefined,
+          zipFileName: result.downloadUrl ? result.downloadUrl.split('/').pop() : undefined
         }
       });
     } catch (_error) {}
