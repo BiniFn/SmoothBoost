@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Font Fixture</title>
+  <style id="font-style">
+    @font-face {
+      font-family: 'TestFont';
+      src: local('Arial');
+    }
+    body {
+      font-family: 'TestFont', sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <h1>Font Display Swap Test</h1>
+  <p>Testing CSSOM font descriptor patching.</p>
+
+  <script>
+    window.testFontDescriptor = function () {
+      const hasSmoothBoost = !!document.getElementById('smoothboost-injected-styles') || !!document.documentElement.getAttribute('data-smoothboost-channel');
+      const sheet = document.getElementById('font-style').sheet;
+      for (let i = 0; i < sheet.cssRules.length; i++) {
+        const rule = sheet.cssRules[i];
+        if (rule instanceof CSSFontFaceRule || rule.type === 5) {
+          const fontDisplay = rule.style.getPropertyValue('font-display');
+          return {
+            hasSmoothBoost,
+            fontDisplay,
+            pass: fontDisplay === 'swap'
+          };
+        }
+      }
+      return { hasSmoothBoost, pass: false, error: 'no font-face rule found' };
+    };
+  </script>
+</body>
+</html>

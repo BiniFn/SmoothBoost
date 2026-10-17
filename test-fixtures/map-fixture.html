@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Map Fixture</title>
+  <style>
+    .leaflet-container {
+      width: 400px;
+      height: 300px;
+      background: #e2e8f0;
+      position: relative;
+    }
+  </style>
+</head>
+<body>
+  <h1>Map Zoom Test</h1>
+  <div class="leaflet-container" id="map">
+    <p>Map Content</p>
+  </div>
+  <div id="output"></div>
+
+  <script>
+    const map = document.getElementById('map');
+    let preventDefaultSucceeded = false;
+
+    map.addEventListener('wheel', (e) => {
+      try {
+        e.preventDefault();
+        preventDefaultSucceeded = e.defaultPrevented;
+      } catch (err) {
+        preventDefaultSucceeded = false;
+      }
+      document.getElementById('output').textContent = preventDefaultSucceeded ? 'PASS: preventDefault succeeded' : 'FAIL: passive prevented preventDefault';
+    }, { passive: false });
+
+    // Function to run test
+    window.testMapZoom = function () {
+      const event = new WheelEvent('wheel', { bubbles: true, cancelable: true });
+      map.dispatchEvent(event);
+      return {
+        preventDefaultSucceeded,
+        defaultPrevented: event.defaultPrevented
+      };
+    };
+  </script>
+</body>
+</html>

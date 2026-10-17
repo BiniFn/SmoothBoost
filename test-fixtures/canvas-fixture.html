@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Canvas Fixture</title>
+</head>
+<body>
+  <h1>Canvas Buffer & Interactive Test</h1>
+  <canvas id="onscreenCanvas" width="200" height="200"></canvas>
+  <div id="status"></div>
+
+  <script>
+    window.testDetachedBuffer = function () {
+      // Create detached offscreen buffer canvas (common in game engines and editors)
+      const buffer = document.createElement('canvas');
+      buffer.width = 100;
+      buffer.height = 100;
+      buffer.setAttribute('data-smoothboost-offscreen-canvas', 'true');
+
+      const ctx = buffer.getContext('2d');
+      ctx.fillStyle = '#ff0000';
+      ctx.fillRect(0, 0, 50, 50);
+
+      const pixel = ctx.getImageData(10, 10, 1, 1).data;
+      const isRed = pixel[0] === 255 && pixel[3] === 255;
+      return {
+        bufferConnected: buffer.isConnected,
+        isRed,
+        pass: isRed
+      };
+    };
+  </script>
+</body>
+</html>

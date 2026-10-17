@@ -315,7 +315,112 @@
     }
   }
 
+  const isMapHost = /^(maps|earth)\.google\.com$|\.openstreetmap\.org$/i.test(window.location?.hostname || '');
+  const isProductivityHost = /(figma|docs\.google|canva|sketch|photopea|webflow|desmos)\.com/i.test(window.location?.hostname || '');
+  let canvasGuardArmed = !isProductivityHost;
+  let passiveListenersIntercepted = 0;
+  let canvasDrawCallsSkipped = 0;
+
+  function isInteractiveTarget(target) {
+    if (isMapHost) return true;
+    if (!target) return false;
+    const isInput = target.tagName && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+    if (isInput) return true;
+    if (typeof target.closest === 'function') {
+      return !!target.closest(
+        '.leaflet-container, .mapboxgl-map, [aria-roledescription="map"], canvas, [data-smoothboost-allow-prevent-default]'
+      );
+    }
+    return false;
+  }
+
+  function installPassiveScrollGuard() {
+    const TargetProto = typeof EventTarget !== 'undefined' ? EventTarget.prototype : null;
+    if (!TargetProto || typeof TargetProto.addEventListener !== 'function') return;
+    const nativeAddEventListener = TargetProto.addEventListener;
+    TargetProto.addEventListener = function (type, listener, options) {
+      if (optimizationsEnabled && typeof listener === 'function' &&
+          (type === 'wheel' || type === 'mousewheel' || type === 'touchstart' || type === 'touchmove')) {
+        if (!isInteractiveTarget(this)) {
+          passiveListenersIntercepted += 1;
+          let opts;
+          if (typeof options === 'boolean') {
+            opts = { capture: options, passive: true };
+          } else if (options && typeof options === 'object') {
+            opts = { ...options, passive: true };
+          } else {
+            opts = { passive: true };
+          }
+          return nativeAddEventListener.call(this, type, listener, opts);
+        }
+      }
+      return nativeAddEventListener.call(this, type, listener, options);
+    };
+  }
+
+  function shouldSkipCanvasDraw(ctx) {
+    if (!canvasGuardArmed || !optimizationsEnabled) return false;
+    const canvas = ctx?.canvas;
+    // Never skip draws on explicitly detached buffer canvases
+    if (!canvas || canvas.isConnected === false) return false;
+    return canvas.getAttribute?.('data-smoothboost-offscreen-canvas') === 'true';
+  }
+
+  function installCanvasGuard() {
+    if (typeof CanvasRenderingContext2D !== 'undefined' && CanvasRenderingContext2D.prototype) {
+      const origClearRect = CanvasRenderingContext2D.prototype.clearRect;
+      const origDrawImage = CanvasRenderingContext2D.prototype.drawImage;
+      if (typeof origClearRect === 'function') {
+        CanvasRenderingContext2D.prototype.clearRect = function (...args) {
+          if (shouldSkipCanvasDraw(this)) {
+            canvasDrawCallsSkipped += 1;
+            return;
+          }
+          return origClearRect.apply(this, args);
+        };
+      }
+      if (typeof origDrawImage === 'function') {
+        CanvasRenderingContext2D.prototype.drawImage = function (...args) {
+          if (shouldSkipCanvasDraw(this)) {
+            canvasDrawCallsSkipped += 1;
+            return;
+          }
+          return origDrawImage.apply(this, args);
+        };
+      }
+    }
+
+    const hookWebGL = (Context) => {
+      if (typeof Context !== 'undefined' && Context?.prototype) {
+        const origDrawArrays = Context.prototype.drawArrays;
+        const origDrawElements = Context.prototype.drawElements;
+        if (typeof origDrawArrays === 'function') {
+          Context.prototype.drawArrays = function (...args) {
+            if (shouldSkipCanvasDraw(this)) {
+              canvasDrawCallsSkipped += 1;
+              return;
+            }
+            return origDrawArrays.apply(this, args);
+          };
+        }
+        if (typeof origDrawElements === 'function') {
+          Context.prototype.drawElements = function (...args) {
+            if (shouldSkipCanvasDraw(this)) {
+              canvasDrawCallsSkipped += 1;
+              return;
+            }
+            return origDrawElements.apply(this, args);
+          };
+        }
+      }
+    };
+    hookWebGL(typeof WebGLRenderingContext !== 'undefined' ? WebGLRenderingContext : undefined);
+    hookWebGL(typeof WebGL2RenderingContext !== 'undefined' ? WebGL2RenderingContext : undefined);
+  }
+
   installReanimeTimerGuard();
+  installPassiveScrollGuard();
+  installCanvasGuard();
   if (isReanime) publishCarouselStatus('waiting');
   startOffscreenCarousels();
 
@@ -325,6 +430,17 @@
     else if (action === 'optimizations-off') setOptimizations(false);
     else if (action === 'adaptive-limit-on') startAdaptiveThrottle();
     else if (action === 'adaptive-limit-off') stopAdaptiveThrottle();
+    else if (action === 'enable-canvas-guard') canvasGuardArmed = true;
+    else if (action === 'disable-canvas-guard') canvasGuardArmed = false;
+    else if (action === 'get-hook-metrics') {
+      window.dispatchEvent(new CustomEvent(channelName, {
+        detail: {
+          action: 'hook-metrics',
+          passiveListenersIntercepted,
+          canvasDrawCallsSkipped
+        }
+      }));
+    }
   });
 
   // This event only signals that the per-document channel is ready. The random

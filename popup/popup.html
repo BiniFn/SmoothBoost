@@ -17,7 +17,10 @@
           </svg>
         </div>
         <div>
-          <h1 class="title">SmoothBoost</h1>
+          <div class="title-row">
+            <h1 class="title">SmoothBoost</h1>
+            <span class="version-badge">v2.0.0</span>
+          </div>
           <p class="subtitle" id="domain-label">Scanning site...</p>
         </div>
       </div>
@@ -27,206 +30,268 @@
       </label>
     </header>
 
+    <!-- Upgraded User Prompt -->
+    <div class="promo-banner" id="auto-promo-banner" hidden>
+      <div class="promo-content">
+        <svg class="promo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+        </svg>
+        <span>Smart Auto is available for this site.</span>
+      </div>
+      <div class="promo-actions">
+        <button class="promo-btn primary" id="btn-accept-auto" type="button">Try Auto</button>
+        <button class="promo-btn text" id="btn-dismiss-auto" type="button">Dismiss</button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
     <nav class="tab-list" role="tablist" aria-label="SmoothBoost sections">
       <button class="tab-button is-selected" id="tab-controls" type="button" role="tab" aria-selected="true" aria-controls="controls-panel" tabindex="0">Controls</button>
-      <button class="tab-button" id="tab-help" type="button" role="tab" aria-selected="false" aria-controls="help-panel" tabindex="-1">Help &amp; Bugs</button>
+      <button class="tab-button" id="tab-help" type="button" role="tab" aria-selected="false" aria-controls="help-panel" tabindex="-1">Help &amp; Updates</button>
     </nav>
 
     <main>
-    <section class="tab-panel" id="controls-panel" role="tabpanel" aria-labelledby="tab-controls">
-    <!-- Preset Selector -->
-    <section class="section preset-section">
-      <div class="section-label">SPEED PROFILE</div>
-      <div class="preset-group">
-        <button class="preset-btn" data-mode="ultra" id="btn-ultra">
-          <span class="preset-icon">🚀</span>
-          <span class="preset-title">Maximum</span>
-          <span class="preset-desc">Responsive</span>
-        </button>
-        <button class="preset-btn" data-mode="balanced" id="btn-balanced">
-          <span class="preset-icon">⚖️</span>
-          <span class="preset-title">Balanced</span>
-          <span class="preset-desc">Smooth UI</span>
-        </button>
-        <button class="preset-btn" data-mode="custom" id="btn-custom">
-          <span class="preset-icon">⚙️</span>
-          <span class="preset-title">Custom</span>
-          <span class="preset-desc">Tweak</span>
-        </button>
-      </div>
-    </section>
-
-    <!-- Applied state, queried from the active tab's top frame. -->
-    <section class="status-card" aria-live="polite">
-      <div class="status-heading">
-        <span class="status-dot" id="status-dot"></span>
-        <span class="status-value" id="status-page">Checking…</span>
-      </div>
-      <p class="status-detail" id="status-detail">Checking whether SmoothBoost is running in this tab.</p>
-      <div class="status-meta">
-        <div class="status-meta-item">
-          <span class="status-meta-label">PROFILE</span>
-          <span class="status-meta-value" id="status-profile">—</span>
-        </div>
-        <div class="status-meta-item" id="site-rule-row" hidden>
-          <span class="status-meta-label">RE:ANIME HERO</span>
-          <span class="status-meta-value" id="status-site-rule">—</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- Granular Features / Custom Controls -->
-    <section class="section toggles-section" id="toggles-wrapper">
-      <div class="section-label">LAG KILLER CONTROLS</div>
-
-      <div class="toggle-row">
-        <div class="toggle-info">
-          <span class="toggle-name">Disable CSS animations</span>
-          <span class="toggle-sub">Custom only: can hide content or interfere with site controls</span>
-        </div>
-        <label class="switch-sm">
-          <input type="checkbox" id="toggle-animations">
-          <span class="slider-sm"></span>
-        </label>
-      </div>
-
-      <div class="toggle-row">
-        <div class="toggle-info">
-          <span class="toggle-name">Disable CSS transitions</span>
-          <span class="toggle-sub">Custom only: may affect responsive site controls</span>
-        </div>
-        <label class="switch-sm">
-          <input type="checkbox" id="toggle-transitions">
-          <span class="slider-sm"></span>
-        </label>
-      </div>
-
-      <div class="toggle-row">
-        <div class="toggle-info">
-          <span class="toggle-name">Reduce backdrop blur</span>
-          <span class="toggle-sub">Removes backdrop blur while keeping shadows and other filters</span>
-        </div>
-        <label class="switch-sm">
-          <input type="checkbox" id="toggle-blur">
-          <span class="slider-sm"></span>
-        </label>
-      </div>
-
-      <div class="toggle-row">
-        <div class="toggle-info">
-          <span class="toggle-name">Disable CSS smooth scrolling</span>
-          <span class="toggle-sub">Leaves site wheel handlers and native scroll behavior alone</span>
-        </div>
-        <label class="switch-sm">
-          <input type="checkbox" id="toggle-scroll">
-          <span class="slider-sm"></span>
-        </label>
-      </div>
-
-      <div class="toggle-row">
-        <div class="toggle-info">
-          <span class="toggle-name">Pause Autoplay Background Media</span>
-          <span class="toggle-sub">Pauses muted looping previews; video players stay untouched</span>
-        </div>
-        <label class="switch-sm">
-          <input type="checkbox" id="toggle-media">
-          <span class="slider-sm"></span>
-        </label>
-      </div>
-
-      <div class="toggle-row">
-        <div class="toggle-info">
-          <span class="toggle-name">Adaptive frame limit</span>
-          <span class="toggle-sub">Optional: uses 30 FPS only while long frames continue; requires browser support</span>
-        </div>
-        <label class="switch-sm">
-          <input type="checkbox" id="toggle-fps">
-          <span class="slider-sm"></span>
-        </label>
-      </div>
-
-      <div class="toggle-row">
-        <div class="toggle-info">
-          <span class="toggle-name">Pause offscreen animations</span>
-          <span class="toggle-sub">Pauses CSS motion outside the viewport, then resumes it as you scroll</span>
-        </div>
-        <label class="switch-sm">
-          <input type="checkbox" id="toggle-offscreen-animations">
-          <span class="slider-sm"></span>
-        </label>
-      </div>
-
-      <div class="toggle-row">
-        <div class="toggle-info">
-          <span class="toggle-name">Skip rendering large feeds</span>
-          <span class="toggle-sub">Custom only; may change scrollbar position on long pages</span>
-        </div>
-        <label class="switch-sm">
-          <input type="checkbox" id="toggle-content-visibility">
-          <span class="slider-sm"></span>
-        </label>
-      </div>
-    </section>
-
-    <section class="diagnostics-card" aria-labelledby="diagnostics-title">
-      <div class="diagnostics-heading">
-        <div>
-          <h2 id="diagnostics-title">Why is this page slow?</h2>
-          <p id="diagnostics-summary">Check recent page activity and get a suggested setting.</p>
-        </div>
-        <button class="diagnose-button" id="diagnose-page" type="button">Check</button>
-      </div>
-      <div class="diagnostics-grid" id="diagnostics-results" hidden>
-        <div><strong id="count-autoplay">—</strong><span>autoplay videos</span></div>
-        <div><strong id="count-blur">—</strong><span>blur panels</span></div>
-        <div><strong id="count-animations">—</strong><span>looping animations</span></div>
-        <div><strong id="count-frames">—</strong><span>long frames / 30 sec</span></div>
-      </div>
-      <div class="suggestions" id="diagnostics-suggestions" hidden></div>
-    </section>
-
-    </section>
-
-    <section class="tab-panel help-panel" id="help-panel" role="tabpanel" aria-labelledby="tab-help" hidden>
-      <div class="section-label">HELP &amp; FEEDBACK</div>
-      <p class="help-intro">Found a problem? Open a GitHub issue. Include your browser, site, selected profile, what happened, and steps to reproduce it.</p>
-      <section class="update-card" aria-labelledby="update-title" aria-live="polite">
-        <div class="update-heading">
-          <div>
-            <h2 id="update-title">Updates</h2>
-            <p id="update-status">Checking GitHub for a newer version…</p>
+      <section class="tab-panel" id="controls-panel" role="tabpanel" aria-labelledby="tab-controls">
+        <!-- Preset Selector with 100% SVG Icons -->
+        <section class="section preset-section">
+          <div class="section-label">PERFORMANCE PROFILE</div>
+          <div class="preset-group">
+            <button class="preset-btn" data-mode="auto" id="btn-auto">
+              <span class="preset-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+                </svg>
+              </span>
+              <span class="preset-title">Auto</span>
+              <span class="preset-desc">Smart</span>
+            </button>
+            <button class="preset-btn" data-mode="ultra" id="btn-ultra">
+              <span class="preset-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+              </span>
+              <span class="preset-title">Turbo</span>
+              <span class="preset-desc">Maximum</span>
+            </button>
+            <button class="preset-btn" data-mode="balanced" id="btn-balanced">
+              <span class="preset-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
+                  <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
+                  <path d="M7 21h10"/>
+                  <path d="M12 3v18"/>
+                  <path d="M3 7h18"/>
+                </svg>
+              </span>
+              <span class="preset-title">Balanced</span>
+              <span class="preset-desc">Subtle</span>
+            </button>
+            <button class="preset-btn" data-mode="custom" id="btn-custom">
+              <span class="preset-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="4" x2="4" y1="21" y2="14"/>
+                  <line x1="4" x2="4" y1="10" y2="3"/>
+                  <line x1="12" x2="12" y1="21" y2="12"/>
+                  <line x1="12" x2="12" y1="8" y2="3"/>
+                  <line x1="20" x2="20" y1="21" y2="16"/>
+                  <line x1="20" x2="20" y1="12" y2="3"/>
+                  <line x1="1" x2="7" y1="14" y2="14"/>
+                  <line x1="9" x2="15" y1="8" y2="8"/>
+                  <line x1="17" x2="23" y1="16" y2="16"/>
+                </svg>
+              </span>
+              <span class="preset-title">Custom</span>
+              <span class="preset-desc">Tweak</span>
+            </button>
           </div>
-          <button class="diagnose-button" id="check-updates" type="button">Check now</button>
-        </div>
-        <a class="action-link primary-action" id="download-update" href="#" target="_blank" rel="noopener noreferrer" hidden>Download update</a>
-        <a class="action-link secondary-action" id="release-update-link" href="#" target="_blank" rel="noopener noreferrer" hidden>View release</a>
-        <p class="update-note">Unpacked Developer mode installs cannot install themselves. After downloading, replace the files in the folder Chrome or Helium loaded, then click Reload on the extensions page.</p>
+        </section>
+
+        <!-- Status Card -->
+        <section class="status-card" aria-live="polite">
+          <div class="status-heading">
+            <span class="status-dot" id="status-dot"></span>
+            <span class="status-value" id="status-page">Checking…</span>
+          </div>
+          <p class="status-detail" id="status-detail">Checking page activity and running optimizations.</p>
+          <div class="status-meta">
+            <div class="status-meta-item">
+              <span class="status-meta-label">PROFILE</span>
+              <span class="status-meta-value" id="status-profile">—</span>
+            </div>
+            <div class="status-meta-item" id="site-rule-row" hidden>
+              <span class="status-meta-label">RE:ANIME HERO</span>
+              <span class="status-meta-value" id="status-site-rule">—</span>
+            </div>
+          </div>
+
+          <!-- Verified Real-Time Metrics -->
+          <div class="metrics-container" id="metrics-container">
+            <!-- Dynamically populated with real measured counter pills -->
+          </div>
+        </section>
+
+        <!-- Collapsible Custom Tuning Drawer -->
+        <section class="section toggles-section" id="toggles-wrapper" hidden>
+          <div class="section-label">CUSTOM CONTROLS</div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">Compositor-threaded passive scrolling</span>
+              <span class="toggle-sub">Unblocks browser hardware compositor thread for 60/120 FPS scrolling</span>
+            </div>
+            <label class="switch-sm">
+              <input type="checkbox" id="toggle-passive-scroll">
+              <span class="slider-sm"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">Pause offscreen canvas rendering</span>
+              <span class="toggle-sub">Skips draw calls on offscreen 2D &amp; WebGL canvases</span>
+            </div>
+            <label class="switch-sm">
+              <input type="checkbox" id="toggle-offscreen-canvas">
+              <span class="slider-sm"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">Pause background autoplay media</span>
+              <span class="toggle-sub">Pauses muted looping previews; video players stay untouched</span>
+            </div>
+            <label class="switch-sm">
+              <input type="checkbox" id="toggle-media">
+              <span class="slider-sm"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">Reduce backdrop blur filters</span>
+              <span class="toggle-sub">Removes GPU-heavy backdrop blur while keeping panel opacity</span>
+            </div>
+            <label class="switch-sm">
+              <input type="checkbox" id="toggle-blur">
+              <span class="slider-sm"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">Pause offscreen CSS animations</span>
+              <span class="toggle-sub">Pauses looping CSS animations outside the viewport</span>
+            </div>
+            <label class="switch-sm">
+              <input type="checkbox" id="toggle-offscreen-animations">
+              <span class="slider-sm"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">Async image decoding &amp; lazy loading</span>
+              <span class="toggle-sub">Decompresses images off main thread and defers offscreen media</span>
+            </div>
+            <label class="switch-sm">
+              <input type="checkbox" id="toggle-async-images">
+              <span class="slider-sm"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">Disable CSS animations</span>
+              <span class="toggle-sub">Can interfere with site controls; use when page is heavily lagging</span>
+            </div>
+            <label class="switch-sm">
+              <input type="checkbox" id="toggle-animations">
+              <span class="slider-sm"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">Disable CSS transitions</span>
+              <span class="toggle-sub">Disables CSS transition durations</span>
+            </div>
+            <label class="switch-sm">
+              <input type="checkbox" id="toggle-transitions">
+              <span class="slider-sm"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">Disable CSS smooth scroll hijacking</span>
+              <span class="toggle-sub">Forces scroll-behavior: auto</span>
+            </div>
+            <label class="switch-sm">
+              <input type="checkbox" id="toggle-scroll">
+              <span class="slider-sm"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">Skip rendering offscreen feeds</span>
+              <span class="toggle-sub">Uses content-visibility: auto on large feed containers</span>
+            </div>
+            <label class="switch-sm">
+              <input type="checkbox" id="toggle-content-visibility">
+              <span class="slider-sm"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">Adaptive frame limiter (30 FPS)</span>
+              <span class="toggle-sub">Temporarily caps animation frame rate during sustained long frames</span>
+            </div>
+            <label class="switch-sm">
+              <input type="checkbox" id="toggle-fps">
+              <span class="slider-sm"></span>
+            </label>
+          </div>
+        </section>
+
+        <!-- One-Click Broken Site Fix -->
+        <button class="action-btn-danger" id="site-broken" type="button">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="4.93" x2="19.07" y1="4.93" y2="19.07"/>
+          </svg>
+          Site looks broken? Turn off for this site
+        </button>
       </section>
-      <button class="action-link primary-action" id="site-broken" type="button">Site looks broken? Turn SmoothBoost off and report it</button>
-      <a class="action-link secondary-action" id="bug-report-link" href="https://github.com/BiniFn/SmoothBoost/issues/new" target="_blank" rel="noopener noreferrer">Submit a bug report on GitHub</a>
-      <a class="action-link secondary-action" href="https://github.com/BiniFn/SmoothBoost/issues" target="_blank" rel="noopener noreferrer">View GitHub issues</a>
 
-      <div class="credit-card">
-        <span class="credit-label">ORIGINAL PROJECT</span>
-        <span>Created by <a href="https://github.com/BiniFn" target="_blank" rel="noopener noreferrer">BiniFn</a>. SmoothBoost continues that project with Chrome and Helium packaging and maintenance.</span>
-      </div>
+      <!-- Help & Updates Panel -->
+      <section class="tab-panel help-panel" id="help-panel" role="tabpanel" aria-labelledby="tab-help" hidden>
+        <section class="update-card" aria-labelledby="update-title" aria-live="polite">
+          <div class="update-heading">
+            <div>
+              <h2 id="update-title">Updates</h2>
+              <p id="update-status">Checking GitHub for updates…</p>
+            </div>
+            <button class="diagnose-button" id="check-updates" type="button">Check</button>
+          </div>
+          <a class="action-link primary-action" id="download-update" href="#" target="_blank" rel="noopener noreferrer" hidden>Download update</a>
+          <a class="action-link secondary-action" id="release-update-link" href="#" target="_blank" rel="noopener noreferrer" hidden>View release</a>
+        </section>
 
-      <p class="migration-note">Updating from an older version resets the old Custom feature defaults once. You can turn individual options back on in Custom.</p>
+        <a class="action-link secondary-action" id="bug-report-link" href="https://github.com/BiniFn/SmoothBoost/issues/new" target="_blank" rel="noopener noreferrer">Submit a bug report on GitHub</a>
+        <a class="action-link secondary-action" href="https://github.com/BiniFn/SmoothBoost/issues" target="_blank" rel="noopener noreferrer">View GitHub issues</a>
 
-      <details class="help-card">
-        <summary>Install and use instructions</summary>
-        <ol class="help-steps">
-          <li><a href="https://github.com/BiniFn/SmoothBoost/releases/latest" target="_blank" rel="noopener noreferrer">Download the latest SmoothBoost ZIP</a> and extract it.</li>
-          <li>Open <code>chrome://extensions</code> in Chrome or Helium and turn on <strong>Developer mode</strong>.</li>
-          <li>Choose <strong>Load unpacked</strong> and select the extracted folder containing <code>manifest.json</code>.</li>
-          <li>Reload open tabs after installing or updating so the page scripts can start.</li>
-          <li>Use the <strong>Controls</strong> tab to choose a profile or switch to <strong>Custom</strong> to adjust individual controls. The top switch turns SmoothBoost off for this site.</li>
-        </ol>
-      </details>
-    </section>
+        <div class="credit-card">
+          <span class="credit-label">SMOOTHBOOST v2.0.0</span>
+          <span>Engineered for responsive, hardware-accelerated, and unbloated web browsing.</span>
+        </div>
+      </section>
     </main>
 
-    <!-- Bottom Shortcut & Actions -->
+    <!-- Bottom Actions -->
     <footer class="footer">
       <div class="shortcut-tip">
         <span>Shortcut:</span> <kbd>⌥ Option</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd>

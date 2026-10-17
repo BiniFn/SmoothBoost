@@ -1,56 +1,70 @@
 # SmoothBoost
 
-SmoothBoost is a Manifest V3 extension for Chrome and Helium. It reduces background page work while keeping visible media, controls, scrolling, and site navigation usable.
+SmoothBoost is a high-performance, unbloated Manifest V3 browser extension for Chrome and Helium. It intelligently eliminates background rendering overhead, throttles offscreen canvases and media, and accelerates page scrolling—keeping web browsing buttery-smooth while preserving active tools and media.
 
-## Credit
+## Highlights in v2.0.0
 
-The original SmoothBoost / Web Lag & Animation Killer project is by [BiniFn](https://github.com/BiniFn). This repository carries the project forward with Chrome and Helium packaging, safer site controls, diagnostics, and performance fixes.
+- **Smart Auto Optimization**: Automatically detects page archetypes (`interactive-canvas`, `media-stream`, `infinite-feed`, `standard`) and applies optimal performance tweaks. Completely avoids degrading productivity tools (Figma, Google Docs, Canva, Google Maps).
+- **Cross-Site Profile Memory**: Your chosen performance profile (Auto, Turbo, Balanced, Custom) is remembered globally across websites. Custom tuning tweaks automatically persist from site to site.
+- **Hardware-Composited Scrolling**: Automatically upgrades non-map scroll and touch listeners to passive (`passive: true`), unblocking the browser's hardware compositor thread for 60/120 FPS scrolling without breaking map pan/zoom.
+- **Offscreen Canvas Draw-Throttling**: Skips 2D and WebGL render calls on canvases outside the viewport while preserving detached memory buffers.
+- **Native Tab Memory Saver**: Leverages Chrome's native `chrome.tabs.discard()` engine to safely free RAM on background tabs inactive for over 30 minutes, without disturbing active, audible, or pinned tabs.
+- **CSSOM Font-Display Optimization**: Automatically patches web fonts to `font-display: swap` to prevent Flash of Invisible Text (FOIT) without layout shift.
+- **Modern, Single-Screen UI**: Clean dark glass interface with 100% vector SVG icons (zero emojis), live verified optimizer counters, and an instant "Site looks broken" fix.
+
+---
+
+## Profiles
+
+- **Smart Auto** *(Default)*: Runs lightweight idle heuristics (`requestIdleCallback`) to detect page structure. Pauses offscreen media, accelerates compositor scrolling, bypasses blur filters, and dynamically disables canvas throttling on interactive canvas editors (Figma, Docs, etc.).
+- **Turbo (Maximum)**: Full acceleration profile for high-power web browsing. Pauses offscreen ambient media, suspends offscreen canvas rendering, enforces compositor scrolling, decodes images asynchronously, and bypasses heavy backdrop blur filters while preserving panel contrast.
+- **Balanced**: Subtle optimizations that preserve page visuals and media behavior without heavy intervention.
+- **Custom**: Granular tuning drawer providing individual toggles for passive scrolling, offscreen canvas throttling, CSS animations, blur filters, lazy image decoding, and adaptive 30 FPS limits during sustained long frames.
+
+SmoothBoost only registers scripts on enabled sites. Sites disabled in the popup are completely excluded at the browser level.
+
+---
 
 ## Install in Chrome or Helium
 
-1. Download and extract the [latest SmoothBoost ZIP](https://github.com/BiniFn/SmoothBoost/releases/latest).
-2. Open `chrome://extensions` in Chrome or Helium and turn on **Developer mode**.
-3. Choose **Load unpacked** and select the extracted folder containing `manifest.json`.
-4. Pin SmoothBoost from the extensions menu if you want quick access.
-5. Reload tabs that were already open so the document-start scripts can take effect.
+1. Download and extract the [latest SmoothBoost ZIP](https://github.com/BiniFn/SmoothBoost/releases/latest) (or clone this repository).
+2. Open `chrome://extensions` in Chrome or Helium and enable **Developer mode**.
+3. Click **Load unpacked** and select the folder containing `manifest.json`.
+4. Pin SmoothBoost from the extensions toolbar for one-click access.
+5. Reload any active tabs to apply optimizations.
 
-The popup's **Help & Bugs** tab also has installation instructions. For local development, **Load unpacked** can point directly to this project folder.
+**Keyboard Shortcut**: `Alt + Shift + S` (macOS: `Option + Shift + S`) to instantly toggle SmoothBoost on the active site.
 
-The popup checks GitHub for a newer stable release when it opens, then caches the result for up to six hours. If an update is available, choose **Download SmoothBoost** in **Help & Bugs**. Chrome and Helium cannot automatically replace a Developer mode unpacked extension from a ZIP; replace the files in the loaded folder, then click **Reload** on the extensions page. A Chrome Web Store installation can use the browser's built-in updater.
+---
 
-## Profiles and controls
+## Build Release Package
 
-- **Maximum** pauses muted looping autoplay previews only while they are outside the viewport, pauses supported offscreen carousels, pauses offscreen CSS animations, and reduces expensive backdrop blur while raising translucent panel opacity to preserve contrast. It leaves visible previews, player controls, normal scrolling, and page animation frames alone.
-- On `reanime.to` home, Maximum stops the hero's automatic rotation after its first change, restores the slide that was showing, and keeps the site's manual controls available.
-- **Balanced** leaves page visuals and media behavior unchanged.
-- **Custom** controls apply to the current site. Optional controls include an adaptive 30 FPS limit that engages only after long animation frames and releases after the page recovers. It requires browser support for the Long Animation Frames API. **Skip rendering large feeds** can change scrollbar position on long pages.
-
-SmoothBoost registers its scripts only on sites that are enabled. A site turned off in the popup is excluded after the current tab is reloaded. **Why is this page slow?** samples autoplay videos, blurred panels, looping animations, and recent long frames, then offers one-tap settings. Counts are observations, not a promise that SmoothBoost can fix a site's own problems.
-
-In **Help & Bugs**, **Site looks broken?** turns SmoothBoost off for the current site and opens a prefilled GitHub issue. You can also submit an issue without changing the site setting, view existing issues, or read the original BiniFn credit.
-
-Shortcut: **Option/Alt + Shift + S**. Browser shortcut settings can reassign it.
-
-## Build the ZIP
-
-From the project folder, run:
+To create the release ZIP:
 
 ```sh
 python3 scripts/package_extension.py
 ```
 
-The generated `dist/SmoothBoost-1.0.8.zip` places `manifest.json` and the runtime files at the archive root. The test page and test suite are excluded. Chrome's **Load unpacked** expects an extracted directory; it does not load the ZIP directly.
+Outputs `dist/SmoothBoost-2.0.0.zip` containing all production runtime assets.
 
-## Benchmark
+---
 
-Open `test-page.html` in Chrome or Helium. If you use its local `file://` URL, allow SmoothBoost access to file URLs in the extension details. Use **Measure before** with SmoothBoost off, turn it on, then use **Measure after**. The page measures animation-frame delivery for a few seconds in the same tab; compare several runs because results vary with device load and power state. The page includes a sample video that requires internet access.
+## Automated Test Suite
 
-## Project files
+Run the full suite of automated unit and performance regression tests:
 
-- `manifest.json` — extension permissions, metadata, and shortcut.
-- `scripts/background.js` — settings, site badges, and enabled-site script registration.
-- `scripts/content.js` — isolated-world controls, offscreen observers, blur contrast, status, and diagnostics.
-- `scripts/page-hook.js` — narrowly scoped main-world carousel and adaptive frame hooks.
-- `data/site-rules.json` — generic carousel selectors and site-specific rules.
-- `popup/` — controls, diagnostics, install help, and issue reporting.
-- `test-page.html` and `tests/` — local benchmark page and automated checks; excluded from the ZIP.
+```sh
+node --test tests/*.test.js
+```
+
+---
+
+## Project Structure
+
+- `manifest.json` — Manifest V3 configuration with alarms and declarativeNetRequest permissions.
+- `scripts/background.js` — Service worker, tab discard scheduler, settings migrations, and dynamic script registration.
+- `scripts/content.js` — Isolated-world controller, idle archetype classifier, offscreen observers, and CSSOM font patcher.
+- `scripts/page-hook.js` — Main-world hooks for passive event enforcement, detached buffer protection, and carousel autoplay control.
+- `popup/` — Single-screen control panel (`popup.html`, `popup.css`, `popup.js`, `update-check.js`).
+- `data/site-rules.json` — Dynamic site matching rules.
+- `test-fixtures/` and `tests/` — Test suite and fixtures.

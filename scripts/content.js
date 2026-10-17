@@ -8,6 +8,10 @@
   const CHANNEL_ATTRIBUTE = 'data-smoothboost-channel';
   const isTopFrame = window === window.top;
   const REANIME_HOST = 'reanime.to';
+  const ARCHETYPE_CACHE_KEY = 'smoothBoostArchetypes';
+  const ARCHETYPE_MAX_ENTRIES = 500;
+  const ARCHETYPE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
   const DEFAULT_RULES = {
     genericCarouselSelectors: ['.swiper', '[data-swiper]'],
     siteRules: [{
@@ -16,9 +20,10 @@
       heroSelectors: ['[aria-label="Hero carousel"]', '[aria-label*="hero carousel" i]', '[data-testid*="hero-carousel" i]']
     }]
   };
+
   const DEFAULT_CONFIG = {
     globalEnabled: true,
-    mode: 'ultra',
+    mode: 'auto',
     customSettings: {
       killAnimations: false,
       killTransitions: false,
@@ -28,12 +33,17 @@
       throttleCanvasFps: false,
       contentVisibility: false,
       pauseOffscreenAnimations: false,
+      pauseOffscreenCanvas: false,
+      passiveScroll: false,
+      asyncImageDecoding: false,
+      fontDisplaySwap: false,
       fpsLimit: 30
     },
     siteOverrides: {}
   };
 
   let currentSettings = { enabled: false, mode: 'off' };
+  let currentArchetype = 'standard';
   let initialized = false;
   let reanimeRuleState = 'not-applicable';
   let storageChangeCount = 0;
@@ -44,6 +54,9 @@
   let animationObserver = null;
   let animationMutationObserver = null;
   let carouselMutationObserver = null;
+  let canvasObserver = null;
+  let observedCanvases = new Set();
+  let blurSelectors = [];
   let styleRootObserver = null;
   let diagnosticsObserver = null;
   let pendingCss = '';
@@ -56,6 +69,9 @@
   let hookStatusTimer = 0;
   let observedAnimationTargets = new WeakSet();
   let blurScanQueue = [];
+  let hookPassiveCount = 0;
+  let hookCanvasDrawSkipCount = 0;
+  let patchedFontsCount = 0;
   const longFrameTimes = [];
 
   function getReanimeRule() {
@@ -74,23 +90,48 @@
     const site = source.siteOverrides?.[hostname] || {};
     const enabled = site.enabled !== undefined ? site.enabled : source.globalEnabled !== false;
     if (!enabled) return { enabled: false, mode: 'off' };
-    const mode = site.mode || source.mode || 'ultra';
+    const mode = site.mode || source.mode || 'auto';
     const custom = {
       ...DEFAULT_CONFIG.customSettings,
       ...(source.customSettings || {}),
       ...(site.customSettings || {})
     };
 
-    if (mode === 'ultra') {
+    if (mode === 'auto') {
+      const isInteractiveCanvas = currentArchetype === 'interactive-canvas';
       return {
         enabled: true,
-        mode,
+        mode: 'auto',
         killAnimations: false,
         killTransitions: false,
         killBlurFilters: true,
         killScrollHijack: false,
         pauseBackgroundMedia: true,
         pauseOffscreenAnimations: true,
+        pauseOffscreenCanvas: !isInteractiveCanvas,
+        passiveScroll: true,
+        asyncImageDecoding: true,
+        fontDisplaySwap: true,
+        contentVisibility: false,
+        throttleCanvasFps: false,
+        fpsLimit: 30
+      };
+    }
+
+    if (mode === 'ultra') {
+      return {
+        enabled: true,
+        mode: 'ultra',
+        killAnimations: false,
+        killTransitions: false,
+        killBlurFilters: true,
+        killScrollHijack: false,
+        pauseBackgroundMedia: true,
+        pauseOffscreenAnimations: true,
+        pauseOffscreenCanvas: true,
+        passiveScroll: true,
+        asyncImageDecoding: true,
+        fontDisplaySwap: true,
         contentVisibility: false,
         throttleCanvasFps: false,
         fpsLimit: 30
@@ -100,13 +141,17 @@
     if (mode === 'balanced') {
       return {
         enabled: true,
-        mode,
+        mode: 'balanced',
         killAnimations: false,
         killTransitions: false,
         killBlurFilters: false,
         killScrollHijack: false,
         pauseBackgroundMedia: false,
         pauseOffscreenAnimations: false,
+        pauseOffscreenCanvas: false,
+        passiveScroll: false,
+        asyncImageDecoding: false,
+        fontDisplaySwap: false,
         contentVisibility: false,
         throttleCanvasFps: false,
         fpsLimit: 30
@@ -139,8 +184,11 @@
     if (settings.pauseOffscreenAnimations) {
       css += '[data-smoothboost-offscreen-animation="true"], [data-smoothboost-offscreen-animation="true"]::before, [data-smoothboost-offscreen-animation="true"]::after { animation-play-state: paused !important; }\n';
     }
+    if (settings.pauseOffscreenCanvas) {
+      css += 'canvas[data-smoothboost-offscreen-canvas="true"] { visibility: hidden !important; }\n';
+    }
     if (settings.contentVisibility) {
-      css += 'main, [role="main"] { content-visibility: auto !important; contain-intrinsic-size: auto 1000px !important; }\n';
+      css += 'main, [role="main"], [role="feed"] > *, article.post, .feed-item { content-visibility: auto !important; contain-intrinsic-size: auto 500px !important; }\n';
     }
     return css;
   }
@@ -184,12 +232,23 @@
 
   function syncPageHook(settings) {
     const optimizeOffscreen = settings.enabled && (
-      settings.mode === 'ultra' || settings.pauseOffscreenAnimations || isReanimeHomePage()
+      settings.mode === 'auto' || settings.mode === 'ultra' || settings.pauseOffscreenAnimations || isReanimeHomePage()
     );
     dispatchHookCommand(optimizeOffscreen ? 'optimizations-on' : 'optimizations-off');
     dispatchHookCommand(settings.enabled && settings.mode === 'custom' && settings.throttleCanvasFps
       ? 'adaptive-limit-on'
       : 'adaptive-limit-off');
+
+    // Armed canvas guard safety check: never arm on interactive canvas apps
+    if (settings.enabled && (settings.mode === 'auto' || settings.mode === 'ultra' || settings.pauseOffscreenCanvas)) {
+      if (currentArchetype === 'interactive-canvas') {
+        dispatchHookCommand('disable-canvas-guard');
+      } else {
+        dispatchHookCommand('enable-canvas-guard');
+      }
+    } else {
+      dispatchHookCommand('disable-canvas-guard');
+    }
   }
 
   function parseColor(color) {
@@ -199,6 +258,27 @@
     if (values.length < 3 || values.slice(0, 3).some((value) => !Number.isFinite(value))) return null;
     const alpha = values.length > 3 && Number.isFinite(values[3]) ? values[3] : 1;
     return { red: values[0], green: values[1], blue: values[2], alpha };
+  }
+
+  function scanStyleSheetBlurRules() {
+    try {
+      const sheets = document.styleSheets;
+      const selectors = [];
+      for (let i = 0; i < sheets.length; i++) {
+        let rules;
+        try { rules = sheets[i].cssRules; } catch (_e) { continue; }
+        if (!rules) continue;
+        for (let j = 0; j < rules.length; j++) {
+          const rule = rules[j];
+          if (rule.style && (rule.style.backdropFilter || rule.style.webkitBackdropFilter)) {
+            if (rule.selectorText) selectors.push(rule.selectorText);
+          }
+        }
+      }
+      blurSelectors = selectors;
+    } catch (_e) {
+      blurSelectors = [];
+    }
   }
 
   function inspectBlurElement(element) {
@@ -214,20 +294,21 @@
     if (background && background.alpha < 0.92 && !blurStates.has(element)) {
       const property = element.style.getPropertyValue?.('background-color') || '';
       const priority = element.style.getPropertyPriority?.('background-color') || '';
-      const replacement = `rgba(${Math.round(background.red)}, ${Math.round(background.green)}, ${Math.round(background.blue)}, 0.92)`;
-      blurStates.set(element, { property, priority, replacement });
-      element.style.setProperty?.('background-color', replacement, 'important');
+      blurStates.set(element, { originalBackground: property, priority });
+      element.style.setProperty('background-color', `rgba(${background.red}, ${background.green}, ${background.blue}, 0.92)`, 'important');
     }
     element.setAttribute('data-smoothboost-blur', 'true');
   }
 
   function restoreBlurElements() {
     for (const [element, state] of blurStates) {
-      if (element.style?.getPropertyValue?.('background-color') === state.replacement) {
-        if (state.property) element.style.setProperty('background-color', state.property, state.priority);
-        else element.style.removeProperty('background-color');
+      if (element.isConnected) {
+        if (state.originalBackground) {
+          element.style.setProperty('background-color', state.originalBackground, state.priority);
+        } else {
+          element.style.removeProperty('background-color');
+        }
       }
-      element.removeAttribute?.('data-smoothboost-blur');
     }
     blurStates.clear();
     document.querySelectorAll?.('[data-smoothboost-blur="true"]').forEach((element) => {
@@ -235,221 +316,281 @@
     });
   }
 
-  function queueBlurScan(root = document) {
-    if (!currentSettings.enabled || !currentSettings.killBlurFilters || !root) return;
-    if (root.nodeType === 1) blurScanQueue.push(root);
-    root.querySelectorAll?.('*').forEach((element) => blurScanQueue.push(element));
-    if (blurScanTimer) return;
-    const scanChunk = () => {
-      blurScanTimer = 0;
-      for (let count = 0; count < 180 && blurScanQueue.length; count += 1) inspectBlurElement(blurScanQueue.shift());
-      if (blurScanQueue.length && currentSettings.enabled && currentSettings.killBlurFilters) {
-        blurScanTimer = window.setTimeout(scanChunk, 16);
+  function scanBackdropBlurTargets() {
+    if (!currentSettings.enabled || !currentSettings.killBlurFilters) return;
+    const candidates = document.querySelectorAll?.('*') || [];
+    for (const element of candidates) {
+      if (element.blurred) {
+        inspectBlurElement(element);
+        continue;
       }
-    };
-    blurScanTimer = window.setTimeout(scanChunk, 0);
+      try {
+        const style = window.getComputedStyle?.(element);
+        const filter = [style?.backdropFilter, style?.webkitBackdropFilter]
+          .some((value) => value && value !== 'none');
+        if (filter) inspectBlurElement(element);
+      } catch (_error) {}
+    }
   }
 
-  function isAmbientPreview(video) {
-    return video?.autoplay && video.loop && video.muted && !video.controls;
+  function observeCanvas(canvas) {
+    if (!canvas || observedCanvases.has(canvas) || !canvasObserver) return;
+    observedCanvases.add(canvas);
+    canvasObserver.observe(canvas);
   }
 
-  function pauseVideoIfOffscreen(video) {
-    if (!currentSettings.enabled || !currentSettings.pauseBackgroundMedia || !isAmbientPreview(video) || video.paused) return;
-    video.pause();
-    video.setAttribute('data-smoothboost-paused', 'true');
-    pausedVideos.add(video);
+  function updateCanvasObserver() {
+    canvasObserver?.disconnect();
+    observedCanvases.clear();
+    canvasObserver = null;
+    const shouldObserve = currentSettings.enabled && (
+      currentSettings.mode === 'auto' || currentSettings.mode === 'ultra' || currentSettings.pauseOffscreenCanvas
+    ) && currentArchetype !== 'interactive-canvas';
+    if (!shouldObserve || typeof IntersectionObserver !== 'function') return;
+
+    canvasObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        const canvas = entry.target;
+        if (!canvas.isConnected) continue;
+        const rect = entry.boundingClientRect;
+        if (rect && (rect.width <= 0 || rect.height <= 0)) continue;
+        if (entry.isIntersecting) {
+          canvas.removeAttribute('data-smoothboost-offscreen-canvas');
+        } else {
+          canvas.setAttribute('data-smoothboost-offscreen-canvas', 'true');
+        }
+      }
+    }, { threshold: 0.01, rootMargin: '250px 0px 250px 0px' });
+
+    document.querySelectorAll('canvas').forEach(observeCanvas);
   }
 
-  function resumeVideo(video) {
-    if (!pausedVideos.has(video)) return;
-    pausedVideos.delete(video);
-    video.removeAttribute('data-smoothboost-paused');
-    const promise = video.play?.();
-    promise?.catch?.(() => {});
+  function optimizeImagesAndIframes() {
+    const shouldOptimize = currentSettings.enabled && (
+      currentSettings.mode === 'auto' || currentSettings.mode === 'ultra' || currentSettings.asyncImageDecoding
+    );
+    if (!shouldOptimize) return;
+    const images = document.querySelectorAll('img:not([data-smoothboost-decoded])');
+    images.forEach((img) => {
+      img.setAttribute('data-smoothboost-decoded', 'true');
+      if (!img.decoding || img.decoding === 'auto') img.decoding = 'async';
+      const rect = img.getBoundingClientRect ? img.getBoundingClientRect() : null;
+      if (rect && rect.top > window.innerHeight && !img.loading) {
+        img.loading = 'lazy';
+      }
+    });
+    const iframes = document.querySelectorAll('iframe:not([data-smoothboost-lazy])');
+    iframes.forEach((iframe) => {
+      iframe.setAttribute('data-smoothboost-lazy', 'true');
+      if (!iframe.loading) iframe.loading = 'lazy';
+    });
   }
 
-  function stopVideoHandling({ resume = true } = {}) {
+  function patchFontFaceDescriptors() {
+    const shouldPatch = currentSettings.enabled && (
+      currentSettings.mode === 'auto' || currentSettings.mode === 'ultra' || currentSettings.fontDisplaySwap
+    );
+    if (!shouldPatch) return;
+    try {
+      const sheets = document.styleSheets;
+      for (let i = 0; i < sheets.length; i++) {
+        const sheet = sheets[i];
+        let rules;
+        try { rules = sheet.cssRules; } catch (_corsError) { continue; }
+        if (!rules) continue;
+        for (let r = 0; r < rules.length; r++) {
+          const rule = rules[r];
+          if (rule.type === 5 || (typeof CSSFontFaceRule !== 'undefined' && rule instanceof CSSFontFaceRule)) {
+            try {
+              let currentDisplay = '';
+              try { currentDisplay = rule.style?.getPropertyValue?.('font-display') || rule.style?.fontDisplay || ''; } catch (_e) {}
+              if (!currentDisplay || currentDisplay === 'auto') {
+                try {
+                  rule.style?.setProperty?.('font-display', 'swap');
+                } catch (_e) {}
+                let updated = '';
+                try { updated = rule.style?.getPropertyValue?.('font-display') || rule.style?.fontDisplay || ''; } catch (_e) {}
+                if (updated !== 'swap') {
+                  const rawCss = rule.cssText || '';
+                  if (rawCss && !rawCss.includes('font-display')) {
+                    const newText = rawCss.replace(/}\s*$/, '; font-display: swap; }');
+                    sheet.deleteRule(r);
+                    sheet.insertRule(newText, r);
+                    patchedFontsCount += 1;
+                  }
+                } else {
+                  patchedFontsCount += 1;
+                }
+              }
+            } catch (_err) {}
+          }
+        }
+      }
+    } catch (_e) {}
+  }
+
+  function isBackgroundPreviewVideo(video) {
+    if (!video || !video.autoplay) return false;
+    if (video.controls || video.closest?.('ytd-watch-flexy, [data-player], .video-js, #player, .html5-video-player')) return false;
+    return video.muted || video.defaultMuted || video.volume === 0;
+  }
+
+  function observeVideo(video) {
+    if (isBackgroundPreviewVideo(video)) videoObserver?.observe(video);
+  }
+
+  function updateVideoObserver() {
     videoObserver?.disconnect();
     videoMutationObserver?.disconnect();
     videoObserver = null;
     videoMutationObserver = null;
-    if (resume) [...pausedVideos].forEach(resumeVideo);
-  }
-
-  function observeVideo(video) {
-    if (video?.tagName !== 'VIDEO' || !isAmbientPreview(video)) return;
-    videoObserver?.observe(video);
-  }
-
-  function startVideoHandling() {
-    stopVideoHandling({ resume: false });
-    if (!isTopFrame || !currentSettings.enabled || !currentSettings.pauseBackgroundMedia || typeof IntersectionObserver !== 'function') {
-      [...pausedVideos].forEach(resumeVideo);
-      return;
+    for (const video of pausedVideos) {
+      if (video.isConnected && video.paused) video.play?.().catch?.(() => {});
     }
+    pausedVideos.clear();
+    const shouldObserve = currentSettings.enabled && (
+      currentSettings.mode === 'auto' || currentSettings.mode === 'ultra' || currentSettings.pauseBackgroundMedia
+    );
+    if (!shouldObserve || typeof IntersectionObserver !== 'function') return;
+
     videoObserver = new IntersectionObserver((entries) => {
       for (const entry of entries) {
-        if (entry.isIntersecting && entry.intersectionRatio > 0) resumeVideo(entry.target);
-        else pauseVideoIfOffscreen(entry.target);
+        const video = entry.target;
+        if (!isBackgroundPreviewVideo(video)) continue;
+        if (!entry.isIntersecting && !video.paused) {
+          video.pause();
+          pausedVideos.add(video);
+        } else if (entry.isIntersecting && pausedVideos.has(video)) {
+          pausedVideos.delete(video);
+          video.play().catch(() => {});
+        }
       }
-    }, { threshold: 0.01 });
+    }, { threshold: 0.01, rootMargin: '250px 0px 250px 0px' });
+
     document.querySelectorAll('video').forEach(observeVideo);
-    if (typeof MutationObserver === 'function') {
+    if (typeof MutationObserver === 'function' && document.documentElement) {
       videoMutationObserver = new MutationObserver((mutations) => {
         for (const mutation of mutations) {
-          for (const node of mutation.addedNodes || []) {
+          mutation.addedNodes?.forEach((node) => {
+            if (node.nodeType !== 1) return;
             if (node.tagName === 'VIDEO') observeVideo(node);
-            else node.querySelectorAll?.('video').forEach(observeVideo);
-          }
+            node.querySelectorAll?.('video').forEach(observeVideo);
+          });
         }
       });
-      const root = document.documentElement;
-      if (root) videoMutationObserver.observe(root, { childList: true, subtree: true });
+      videoMutationObserver.observe(document.documentElement, { childList: true, subtree: true });
     }
   }
 
-  function isCssAnimated(element) {
-    try {
-      const animationName = window.getComputedStyle?.(element)?.animationName;
-      return !!animationName && animationName !== 'none';
-    } catch (_error) {
-      return false;
-    }
-  }
-
-  function observeAnimationElement(element) {
-    if (!currentSettings.enabled || !currentSettings.pauseOffscreenAnimations || element?.nodeType !== 1 || observedAnimationTargets.has(element) || !isCssAnimated(element)) return;
-    observedAnimationTargets.add(element);
-    animationTargets.add(element);
-    animationObserver?.observe(element);
-  }
-
-  function inspectAnimationSubtree(root) {
-    if (!currentSettings.enabled || !currentSettings.pauseOffscreenAnimations || !root) return;
-    let animations = [];
-    try { animations = root.getAnimations?.({ subtree: true }) || []; } catch (_error) {}
-    for (const animation of animations) {
-      const target = animation.effect?.target;
-      if (target?.nodeType === 1) observeAnimationElement(target);
-    }
-  }
-
-  function startAnimationHandling() {
-    stopAnimationHandling();
-    if (!isTopFrame || !currentSettings.enabled || !currentSettings.pauseOffscreenAnimations || typeof IntersectionObserver !== 'function') return;
-    animationObserver = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        const element = entry.target;
-        if (!element.isConnected) {
-          animationTargets.delete(element);
-          continue;
-        }
-        if (entry.isIntersecting && entry.intersectionRatio > 0) element.removeAttribute('data-smoothboost-offscreen-animation');
-        else element.setAttribute('data-smoothboost-offscreen-animation', 'true');
-      }
-    }, { threshold: 0.01 });
-    inspectAnimationSubtree(document.documentElement);
-    if (typeof MutationObserver === 'function') {
-      animationMutationObserver = new MutationObserver((mutations) => {
-        let shouldScan = false;
-        for (const mutation of mutations) {
-          if (mutation.type === 'childList') {
-            mutation.addedNodes?.forEach((node) => { inspectAnimationSubtree(node); shouldScan = true; });
-          } else if (mutation.type === 'attributes') {
-            observeAnimationElement(mutation.target);
-          }
-        }
-        if (shouldScan && animationTargets.size > 3000) {
-          // Forget detached targets before the set grows on long-lived feeds.
-          animationTargets = new Set([...animationTargets].filter((element) => element.isConnected));
-        }
-      });
-      animationMutationObserver.observe(document.documentElement, {
-        childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style']
-      });
-    }
-  }
-
-  function stopAnimationHandling() {
+  function updateAnimationObserver() {
     animationObserver?.disconnect();
     animationMutationObserver?.disconnect();
     animationObserver = null;
     animationMutationObserver = null;
-    for (const element of animationTargets) element.removeAttribute?.('data-smoothboost-offscreen-animation');
     animationTargets.clear();
     observedAnimationTargets = new WeakSet();
-    if (animationScanTimer) window.clearTimeout(animationScanTimer);
-    animationScanTimer = 0;
-  }
+    document.querySelectorAll('[data-smoothboost-offscreen-animation="true"]').forEach((element) => {
+      element.removeAttribute('data-smoothboost-offscreen-animation');
+    });
+    const shouldObserve = currentSettings.enabled && (
+      currentSettings.mode === 'auto' || currentSettings.mode === 'ultra' || currentSettings.pauseOffscreenAnimations
+    );
+    if (!shouldObserve || typeof IntersectionObserver !== 'function') return;
 
-  function matchesSelector(element, selector) {
-    try { return element.matches(selector); } catch (_error) { return false; }
-  }
-
-  function markCarousels(root = document) {
-    if (!currentSettings.enabled || !(currentSettings.mode === 'ultra' || currentSettings.pauseOffscreenAnimations || isReanimeHomePage())) return;
-    const selectors = siteRules.genericCarouselSelectors || DEFAULT_RULES.genericCarouselSelectors;
-    const mark = (element) => {
-      if (element?.nodeType !== 1 || !selectors.some((selector) => matchesSelector(element, selector))) return;
-      if (element.getAttribute('data-smoothboost-carousel') !== 'true') {
-        element.setAttribute('data-smoothboost-carousel', 'true');
-        markedCarousels.add(element);
+    animationObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        const element = entry.target;
+        if (entry.isIntersecting) {
+          element.removeAttribute('data-smoothboost-offscreen-animation');
+        } else {
+          element.setAttribute('data-smoothboost-offscreen-animation', 'true');
+        }
       }
-    };
-    if (root.nodeType === 1) mark(root);
-    try { root.querySelectorAll?.(selectors.join(',')).forEach(mark); } catch (_error) {}
+    }, { threshold: 0.01, rootMargin: '250px 0px 250px 0px' });
+
+    scanAnimationTargets();
+    if (typeof MutationObserver === 'function' && document.documentElement) {
+      animationMutationObserver = new MutationObserver(() => {
+        if (animationScanTimer) return;
+        animationScanTimer = window.setTimeout(() => {
+          animationScanTimer = 0;
+          scanAnimationTargets();
+        }, 180);
+      });
+      animationMutationObserver.observe(document.documentElement, { childList: true, subtree: true });
+    }
   }
 
-  function stopCarouselMarkers() {
+  function scanAnimationTargets() {
+    if (!animationObserver || typeof document.getAnimations !== 'function') return;
+    try {
+      const animations = document.getAnimations({ subtree: true });
+      for (const animation of animations) {
+        const target = animation.effect?.target;
+        if (!target || target.nodeType !== 1 || observedAnimationTargets.has(target)) continue;
+        let iterations = Infinity;
+        try {
+          const timing = animation.effect?.getTiming?.();
+          if (timing && timing.iterations !== undefined) iterations = timing.iterations;
+        } catch (_error) {}
+        if (iterations === Infinity) {
+          observedAnimationTargets.add(target);
+          animationTargets.add(target);
+          animationObserver.observe(target);
+        }
+      }
+    } catch (_error) {}
+  }
+
+  function markCarouselElement(element) {
+    if (!element || markedCarousels.has(element)) return;
+    markedCarousels.add(element);
+    element.setAttribute('data-smoothboost-carousel', 'true');
+  }
+
+  function scanGenericCarousels() {
+    const selectors = siteRules.genericCarouselSelectors || [];
+    if (!selectors.length) return;
+    for (const selector of selectors) {
+      try { document.querySelectorAll(selector).forEach(markCarouselElement); } catch (_error) {}
+    }
+  }
+
+  function updateCarouselMarkers() {
     carouselMutationObserver?.disconnect();
     carouselMutationObserver = null;
-    for (const element of markedCarousels) {
-      if (element.getAttribute?.('data-smoothboost-carousel') === 'true') element.removeAttribute('data-smoothboost-carousel');
-    }
     markedCarousels.clear();
+    const shouldMark = currentSettings.enabled && (
+      currentSettings.mode === 'auto' || currentSettings.mode === 'ultra' || currentSettings.pauseBackgroundMedia
+    );
+    if (!shouldMark) return;
+    scanGenericCarousels();
+    if (typeof MutationObserver === 'function' && document.documentElement) {
+      carouselMutationObserver = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          mutation.addedNodes?.forEach((node) => {
+            if (node.nodeType !== 1) return;
+            scanGenericCarousels();
+          });
+        }
+      });
+      carouselMutationObserver.observe(document.documentElement, { childList: true, subtree: true });
+    }
   }
 
   function updatePageObservers() {
-    startVideoHandling();
-    if (currentSettings.enabled && currentSettings.pauseOffscreenAnimations) startAnimationHandling();
-    else stopAnimationHandling();
-
-    stopCarouselMarkers();
-    if (currentSettings.enabled && (currentSettings.mode === 'ultra' || currentSettings.pauseOffscreenAnimations || isReanimeHomePage())) {
-      markCarousels(document);
-      if (typeof MutationObserver === 'function' && document.documentElement) {
-        carouselMutationObserver = new MutationObserver((mutations) => {
-          for (const mutation of mutations) mutation.addedNodes?.forEach(markCarousels);
-        });
-        carouselMutationObserver.observe(document.documentElement, { childList: true, subtree: true });
-      }
-    }
-
-    if (currentSettings.enabled && currentSettings.killBlurFilters) {
-      queueBlurScan(document);
-      if (!blurMutationObserver && typeof MutationObserver === 'function' && document.documentElement) {
-        blurMutationObserver = new MutationObserver((mutations) => {
-          for (const mutation of mutations) {
-            if (mutation.type === 'childList') mutation.addedNodes?.forEach(queueBlurScan);
-            else if (mutation.type === 'attributes') inspectBlurElement(mutation.target);
-          }
-        });
-        blurMutationObserver.observe(document.documentElement, {
-          childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style']
-        });
-      }
+    updateVideoObserver();
+    updateAnimationObserver();
+    updateCarouselMarkers();
+    updateCanvasObserver();
+    if (currentSettings.enabled && (currentSettings.mode === 'auto' || currentSettings.mode === 'ultra' || currentSettings.killBlurFilters)) {
+      scanBackdropBlurTargets();
     } else {
-      blurMutationObserver?.disconnect();
-      blurMutationObserver = null;
-      if (blurScanTimer) window.clearTimeout(blurScanTimer);
-      blurScanTimer = 0;
-      blurScanQueue = [];
       restoreBlurElements();
     }
+    optimizeImagesAndIframes();
+    patchFontFaceDescriptors();
   }
-
-  let blurMutationObserver = null;
 
   function startLongFrameObserver() {
     if (diagnosticsObserver || typeof PerformanceObserver !== 'function') return;
@@ -471,14 +612,24 @@
     const videos = [...(document.querySelectorAll?.('video') || [])];
     const autoplayVideos = videos.filter((video) => video.autoplay && !video.controls).length;
     let blurElements = 0;
+    const blurredCount = document.querySelectorAll?.('[data-smoothboost-blur="true"]')?.length || 0;
+    if (blurredCount > 0) {
+      blurElements = blurredCount;
+    }
     const candidates = [...(document.querySelectorAll?.('*') || [])].slice(0, 1500);
-    for (const element of candidates) {
-      try {
-        const style = window.getComputedStyle?.(element);
-        const filter = [style?.backdropFilter, style?.webkitBackdropFilter]
-          .some((value) => value && value !== 'none');
-        if (filter) blurElements += 1;
-      } catch (_error) {}
+    if (blurElements === 0) {
+      for (const element of candidates) {
+        if (element.blurred) {
+          blurElements += 1;
+          continue;
+        }
+        try {
+          const style = window.getComputedStyle?.(element);
+          const filter = [style?.backdropFilter, style?.webkitBackdropFilter]
+            .some((value) => value && value !== 'none');
+          if (filter) blurElements += 1;
+        } catch (_error) {}
+      }
     }
     let animationLoops = 0;
     try {
@@ -496,6 +647,81 @@
       sampledElements: candidates.length,
       longFrameApi: !!diagnosticsObserver
     };
+  }
+
+  // Bounded LRU Cache for Archetypes
+  async function saveCachedArchetype(hostname, archetype) {
+    try {
+      const stored = await chrome.storage.local.get(ARCHETYPE_CACHE_KEY);
+      const cache = stored[ARCHETYPE_CACHE_KEY] || {};
+      cache[hostname] = { archetype, timestamp: Date.now() };
+
+      const entries = Object.entries(cache);
+      if (entries.length > ARCHETYPE_MAX_ENTRIES) {
+        entries.sort((a, b) => (a[1].timestamp || 0) - (b[1].timestamp || 0));
+        while (entries.length > ARCHETYPE_MAX_ENTRIES) {
+          const oldest = entries.shift();
+          if (oldest) delete cache[oldest[0]];
+        }
+      }
+      await chrome.storage.local.set({ [ARCHETYPE_CACHE_KEY]: cache });
+    } catch (_e) {}
+  }
+
+  // Lightweight Idle Classifier (samples <= 200 elements)
+  function classifyPageArchetype() {
+    const hostname = window.location.hostname.toLowerCase();
+
+    // Check known interactive editors
+    if (/(figma|docs\.google|canva|sketch|photopea|webflow|desmos)\.com/i.test(hostname)) {
+      return 'interactive-canvas';
+    }
+
+    const appMeta = document.querySelector('meta[name="application-name"]');
+    if (appMeta && /figma|canva|editor|draw/i.test(appMeta.getAttribute('content') || '')) {
+      return 'interactive-canvas';
+    }
+
+    const canvases = document.querySelectorAll('canvas');
+    if (canvases.length > 0) {
+      for (let i = 0; i < Math.min(canvases.length, 5); i++) {
+        const c = canvases[i];
+        if (c.width >= (window.innerWidth || 800) * 0.8 && c.height >= (window.innerHeight || 600) * 0.8) {
+          return 'interactive-canvas';
+        }
+      }
+    }
+
+    const videos = document.querySelectorAll('video');
+    if (videos.length >= 2 || /(youtube|twitch|vimeo|netflix|hulu)\.com/i.test(hostname)) {
+      return 'media-stream';
+    }
+
+    if (document.querySelector('[role="feed"], [data-testid="primaryColumn"], .feed-item, article.post')) {
+      return 'infinite-feed';
+    }
+
+    return 'standard';
+  }
+
+  async function runIdleClassification() {
+    const hostname = window.location.hostname.toLowerCase();
+    currentArchetype = classifyPageArchetype();
+    await saveCachedArchetype(hostname, currentArchetype);
+
+    // If auto mode, re-apply settings with the verified archetype
+    if (currentSettings.enabled && currentSettings.mode === 'auto') {
+      const stored = await chrome.storage.local.get('smoothBoostConfig');
+      applySettings(effectiveSettings(stored.smoothBoostConfig, hostname));
+    }
+  }
+
+  function scheduleClassification() {
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(() => runIdleClassification().catch(() => {}), { timeout: 1500 });
+    } else {
+      window.setTimeout(() => runIdleClassification().catch(() => {}), 500);
+    }
   }
 
   function updateReanimeRuleState(status) {
@@ -523,8 +749,13 @@
   }
 
   function handlePageHookEvent(event) {
-    if (!isReanimeHomePage() || !currentSettings.enabled || !event.detail) return;
-    if (event.detail.action === 'carousel-status') updateReanimeRuleState(event.detail.status);
+    if (!currentSettings.enabled || !event.detail) return;
+    if (event.detail.action === 'carousel-status' && isReanimeHomePage()) {
+      updateReanimeRuleState(event.detail.status);
+    } else if (event.detail.action === 'hook-metrics') {
+      hookPassiveCount = event.detail.passiveListenersIntercepted || 0;
+      hookCanvasDrawSkipCount = event.detail.canvasDrawCallsSkipped || 0;
+    }
   }
 
   function observePageHookChannel() {
@@ -587,17 +818,38 @@
     const hostname = window.location.hostname.toLowerCase();
     const startingStorageChangeCount = storageChangeCount;
     const rulesPromise = loadSiteRules();
-    const stored = await chrome.storage.local.get('smoothBoostConfig');
+    const stored = await chrome.storage.local.get(['smoothBoostConfig', ARCHETYPE_CACHE_KEY]);
     startLongFrameObserver();
+
+    // Check cached archetype
+    const cache = stored?.[ARCHETYPE_CACHE_KEY] || {};
+    const cachedEntry = cache[hostname];
+    if (cachedEntry && Number.isFinite(cachedEntry.timestamp) && (Date.now() - cachedEntry.timestamp < ARCHETYPE_TTL_MS)) {
+      currentArchetype = cachedEntry.archetype;
+    }
+
     if (storageChangeCount === startingStorageChangeCount) {
-      applySettings(effectiveSettings(stored.smoothBoostConfig, hostname));
+      applySettings(effectiveSettings(stored?.smoothBoostConfig, hostname));
     }
     observePageHookChannel();
     initialized = true;
+
     rulesPromise.then((rules) => {
       siteRules = rules;
       if (currentSettings.enabled) updatePageObservers();
     });
+
+    scheduleClassification();
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        patchFontFaceDescriptors();
+        optimizeImagesAndIframes();
+      });
+    } else {
+      patchFontFaceDescriptors();
+      optimizeImagesAndIframes();
+    }
   }
 
   chrome.storage.onChanged.addListener((changes, areaName) => {
@@ -612,14 +864,43 @@
       applySettings(effectiveSettings(message.config, window.location.hostname.toLowerCase()));
       sendResponse?.({ success: true });
     } else if (message.type === 'GET_STATUS') {
+      dispatchHookCommand('get-hook-metrics');
       sendResponse?.(initialized ? {
         status: 'active',
         enabled: currentSettings.enabled,
         mode: currentSettings.mode || 'off',
+        archetype: currentArchetype,
         siteRule: isReanimeHomePage() ? reanimeRuleState : 'not-applicable'
       } : { status: 'initializing' });
     } else if (message.type === 'GET_DIAGNOSTICS') {
       sendResponse?.({ status: initialized ? 'active' : 'initializing', diagnostics: getDiagnostics() });
+    } else if (message.type === 'GET_METRICS') {
+      dispatchHookCommand('get-hook-metrics');
+      sendResponse?.({
+        status: initialized ? 'active' : 'initializing',
+        enabled: currentSettings.enabled,
+        mode: currentSettings.mode || 'off',
+        archetype: currentArchetype,
+        metrics: {
+          passiveListeners: hookPassiveCount,
+          pausedVideos: pausedVideos.size,
+          bypassedBlurs: blurStates.size,
+          offscreenCanvases: document.querySelectorAll('canvas[data-smoothboost-offscreen-canvas="true"]').length,
+          canvasDrawsSkipped: hookCanvasDrawSkipCount,
+          patchedFonts: patchedFontsCount
+        }
+      });
+    } else if (message.type === 'PURGE_ARCHETYPE') {
+      const hostname = window.location.hostname.toLowerCase();
+      chrome.storage.local.get(ARCHETYPE_CACHE_KEY).then((stored) => {
+        const cache = stored[ARCHETYPE_CACHE_KEY] || {};
+        delete cache[hostname];
+        return chrome.storage.local.set({ [ARCHETYPE_CACHE_KEY]: cache });
+      }).then(() => {
+        scheduleClassification();
+        sendResponse?.({ success: true });
+      }).catch(() => sendResponse?.({ success: false }));
+      return true;
     }
     return true;
   });

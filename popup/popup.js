@@ -1,9 +1,10 @@
-// SmoothBoost - popup controller
+// SmoothBoost - popup controller (v2.0.0)
 
 const DEFAULT_SETTINGS = {
-  settingsVersion: 3,
+  settingsVersion: 4,
   globalEnabled: true,
-  mode: 'ultra',
+  mode: 'auto',
+  showAutoPromo: false,
   customSettings: {
     killAnimations: false,
     killTransitions: false,
@@ -13,6 +14,11 @@ const DEFAULT_SETTINGS = {
     throttleCanvasFps: false,
     contentVisibility: false,
     pauseOffscreenAnimations: false,
+    pauseOffscreenCanvas: false,
+    passiveScroll: false,
+    asyncImageDecoding: false,
+    discardIdleTabs: false,
+    fontDisplaySwap: false,
     fpsLimit: 30
   },
   siteOverrides: {}
@@ -28,9 +34,13 @@ let lastDiagnostics = null;
 
 const domainLabel = document.getElementById('domain-label');
 const siteToggle = document.getElementById('site-toggle');
+const btnAuto = document.getElementById('btn-auto');
 const btnUltra = document.getElementById('btn-ultra');
 const btnBalanced = document.getElementById('btn-balanced');
 const btnCustom = document.getElementById('btn-custom');
+const autoPromoBanner = document.getElementById('auto-promo-banner');
+const btnAcceptAuto = document.getElementById('btn-accept-auto');
+const btnDismissAuto = document.getElementById('btn-dismiss-auto');
 const resetBtn = document.getElementById('reset-defaults');
 const controlsTab = document.getElementById('tab-controls');
 const helpTab = document.getElementById('tab-help');
@@ -42,6 +52,8 @@ const statusDetail = document.getElementById('status-detail');
 const statusProfile = document.getElementById('status-profile');
 const statusSiteRule = document.getElementById('status-site-rule');
 const siteRuleRow = document.getElementById('site-rule-row');
+const metricsContainer = document.getElementById('metrics-container');
+const togglesWrapper = document.getElementById('toggles-wrapper');
 const toggleAnim = document.getElementById('toggle-animations');
 const toggleTrans = document.getElementById('toggle-transitions');
 const toggleBlur = document.getElementById('toggle-blur');
@@ -50,10 +62,9 @@ const toggleMedia = document.getElementById('toggle-media');
 const toggleFps = document.getElementById('toggle-fps');
 const toggleOffscreen = document.getElementById('toggle-offscreen-animations');
 const toggleContentVisibility = document.getElementById('toggle-content-visibility');
-const diagnosticsButton = document.getElementById('diagnose-page');
-const diagnosticsSummary = document.getElementById('diagnostics-summary');
-const diagnosticsResults = document.getElementById('diagnostics-results');
-const diagnosticsSuggestions = document.getElementById('diagnostics-suggestions');
+const toggleOffscreenCanvas = document.getElementById('toggle-offscreen-canvas');
+const togglePassiveScroll = document.getElementById('toggle-passive-scroll');
+const toggleAsyncImages = document.getElementById('toggle-async-images');
 const siteBrokenButton = document.getElementById('site-broken');
 const bugReportLink = document.getElementById('bug-report-link');
 const updateStatus = document.getElementById('update-status');
@@ -62,6 +73,20 @@ const downloadUpdateLink = document.getElementById('download-update');
 const releaseUpdateLink = document.getElementById('release-update-link');
 
 const PRESET_CONFIGS = {
+  auto: {
+    killAnimations: false,
+    killTransitions: false,
+    killBlurFilters: true,
+    killScrollHijack: false,
+    pauseBackgroundMedia: true,
+    throttleCanvasFps: false,
+    pauseOffscreenAnimations: true,
+    contentVisibility: false,
+    pauseOffscreenCanvas: true,
+    passiveScroll: true,
+    asyncImageDecoding: true,
+    fontDisplaySwap: true
+  },
   ultra: {
     killAnimations: false,
     killTransitions: false,
@@ -70,7 +95,11 @@ const PRESET_CONFIGS = {
     pauseBackgroundMedia: true,
     throttleCanvasFps: false,
     pauseOffscreenAnimations: true,
-    contentVisibility: false
+    contentVisibility: false,
+    pauseOffscreenCanvas: true,
+    passiveScroll: true,
+    asyncImageDecoding: true,
+    fontDisplaySwap: true
   },
   balanced: {
     killAnimations: false,
@@ -80,7 +109,11 @@ const PRESET_CONFIGS = {
     pauseBackgroundMedia: false,
     throttleCanvasFps: false,
     pauseOffscreenAnimations: false,
-    contentVisibility: false
+    contentVisibility: false,
+    pauseOffscreenCanvas: false,
+    passiveScroll: false,
+    asyncImageDecoding: false,
+    fontDisplaySwap: false
   }
 };
 
@@ -110,11 +143,12 @@ async function init() {
   renderUI();
   requestPageStatus();
   bindEvents();
-  bugReportLink.href = buildIssueUrl(false);
+  if (bugReportLink) bugReportLink.href = buildIssueUrl(false);
   void checkForUpdates();
 }
 
 function renderUpdateResult(result, checkedAt, note = '') {
+  if (!downloadUpdateLink || !releaseUpdateLink || !updateStatus) return;
   downloadUpdateLink.hidden = true;
   releaseUpdateLink.hidden = true;
 
@@ -145,14 +179,13 @@ function renderUpdateResult(result, checkedAt, note = '') {
 }
 
 async function checkForUpdates(force = false) {
+  if (!checkUpdatesButton || !updateStatus) return;
   const currentVersion = chrome.runtime.getManifest().version;
   let cached = null;
   try {
     const stored = await chrome.storage.local.get(UPDATE_CACHE_KEY);
     cached = stored[UPDATE_CACHE_KEY];
-  } catch (_error) {
-    // Continue with a network check if extension storage is unavailable.
-  }
+  } catch (_error) {}
 
   const isFresh = cached && Number.isFinite(cached.checkedAt)
     && Date.now() - cached.checkedAt >= 0
@@ -165,7 +198,7 @@ async function checkForUpdates(force = false) {
 
   checkUpdatesButton.disabled = true;
   checkUpdatesButton.textContent = 'Checking…';
-  updateStatus.textContent = 'Checking GitHub for a newer version…';
+  updateStatus.textContent = 'Checking GitHub for updates…';
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), 8000);
 
@@ -189,9 +222,7 @@ async function checkForUpdates(force = false) {
           hasZip: result.hasZip
         }
       });
-    } catch (_error) {
-      // The result is still useful even when it cannot be cached.
-    }
+    } catch (_error) {}
     renderUpdateResult(result, checkedAt);
   } catch (_error) {
     if (cachedResult) {
@@ -202,16 +233,16 @@ async function checkForUpdates(force = false) {
   } finally {
     window.clearTimeout(timeoutId);
     checkUpdatesButton.disabled = false;
-    checkUpdatesButton.textContent = 'Check now';
+    checkUpdatesButton.textContent = 'Check';
   }
 }
 
 function getSiteState() {
-  if (!currentHostname) return { enabled: config.globalEnabled, mode: config.mode || 'ultra' };
+  if (!currentHostname) return { enabled: config.globalEnabled, mode: config.mode || 'auto' };
   const override = config.siteOverrides?.[currentHostname] || {};
   return {
     enabled: override.enabled !== undefined ? override.enabled : config.globalEnabled,
-    mode: override.mode || config.mode || 'ultra'
+    mode: override.mode || config.mode || 'auto'
   };
 }
 
@@ -227,6 +258,7 @@ function getCustomSettings() {
 function getEffectiveSettings() {
   const { enabled, mode } = getSiteState();
   if (!enabled) return { enabled: false, mode: 'off' };
+  if (mode === 'auto') return { enabled: true, mode, ...PRESET_CONFIGS.auto };
   if (mode === 'ultra') return { enabled: true, mode, ...PRESET_CONFIGS.ultra };
   if (mode === 'balanced') return { enabled: true, mode, ...PRESET_CONFIGS.balanced };
   return { enabled: true, mode: 'custom', ...getCustomSettings() };
@@ -236,112 +268,72 @@ function renderUI() {
   const { enabled, mode } = getSiteState();
   siteToggle.checked = enabled;
   document.body.classList.toggle('site-disabled', !enabled);
-  [btnUltra, btnBalanced, btnCustom].forEach((button) => button.classList.remove('active'));
-  ({ ultra: btnUltra, balanced: btnBalanced, custom: btnCustom }[mode] || btnCustom).classList.add('active');
 
-  const switchValues = mode === 'custom' ? getCustomSettings() : PRESET_CONFIGS[mode] || PRESET_CONFIGS.ultra;
-  toggleAnim.checked = !!switchValues.killAnimations;
-  toggleTrans.checked = !!switchValues.killTransitions;
-  toggleBlur.checked = !!switchValues.killBlurFilters;
-  toggleScroll.checked = !!switchValues.killScrollHijack;
-  toggleMedia.checked = !!switchValues.pauseBackgroundMedia;
-  toggleFps.checked = !!switchValues.throttleCanvasFps;
-  toggleOffscreen.checked = !!switchValues.pauseOffscreenAnimations;
-  toggleContentVisibility.checked = !!switchValues.contentVisibility;
+  if (btnAuto) btnAuto.classList.toggle('active', mode === 'auto');
+  if (btnUltra) btnUltra.classList.toggle('active', mode === 'ultra');
+  if (btnBalanced) btnBalanced.classList.toggle('active', mode === 'balanced');
+  if (btnCustom) btnCustom.classList.toggle('active', mode === 'custom');
 
-  const customOnly = mode !== 'custom';
-  [toggleAnim, toggleTrans, toggleBlur, toggleScroll, toggleMedia, toggleFps, toggleOffscreen, toggleContentVisibility]
-    .forEach((input) => { input.disabled = customOnly; });
-}
-
-function sendTabMessage(tabId, message) {
-  return new Promise((resolve) => {
-    let settled = false;
-    const finish = (response, error = null) => {
-      if (settled) return;
-      settled = true;
-      resolve({ response, error });
-    };
-    try {
-      const result = chrome.tabs.sendMessage(tabId, message, { frameId: 0 }, (response) => {
-        const error = chrome.runtime.lastError;
-        finish(response, error || null);
-      });
-      if (result && typeof result.then === 'function') result.then((response) => finish(response)).catch((error) => finish(undefined, error));
-    } catch (error) {
-      finish(undefined, error);
-    }
-  });
-}
-
-function sendRuntimeMessage(message) {
-  return new Promise((resolve) => {
-    try {
-      chrome.runtime.sendMessage(message, (response) => {
-        const error = chrome.runtime.lastError;
-        resolve({ response, error: error || null });
-      });
-    } catch (error) {
-      resolve({ response: undefined, error });
-    }
-  });
-}
-
-async function injectCurrentTabScripts() {
-  if (!currentTab?.id || !getSiteState().enabled) return false;
-  try {
-    await chrome.scripting.executeScript({
-      target: { tabId: currentTab.id, frameIds: [0] },
-      world: 'MAIN',
-      files: ['scripts/page-hook.js']
-    });
-    await chrome.scripting.executeScript({
-      target: { tabId: currentTab.id, frameIds: [0] },
-      files: ['scripts/content.js']
-    });
-    return true;
-  } catch (_error) {
-    return false;
+  if (togglesWrapper) {
+    togglesWrapper.hidden = (mode !== 'custom');
   }
+
+  if (autoPromoBanner) {
+    autoPromoBanner.hidden = !(config.showAutoPromo && mode !== 'auto' && enabled);
+  }
+
+  const custom = getCustomSettings();
+  if (toggleAnim) toggleAnim.checked = custom.killAnimations;
+  if (toggleTrans) toggleTrans.checked = custom.killTransitions;
+  if (toggleBlur) toggleBlur.checked = custom.killBlurFilters;
+  if (toggleScroll) toggleScroll.checked = custom.killScrollHijack;
+  if (toggleMedia) toggleMedia.checked = custom.pauseBackgroundMedia;
+  if (toggleFps) toggleFps.checked = custom.throttleCanvasFps;
+  if (toggleOffscreen) toggleOffscreen.checked = custom.pauseOffscreenAnimations;
+  if (toggleContentVisibility) toggleContentVisibility.checked = custom.contentVisibility;
+  if (toggleOffscreenCanvas) toggleOffscreenCanvas.checked = custom.pauseOffscreenCanvas;
+  if (togglePassiveScroll) togglePassiveScroll.checked = custom.passiveScroll;
+  if (toggleAsyncImages) toggleAsyncImages.checked = custom.asyncImageDecoding;
+}
+
+function updateSiteOverride(patch) {
+  if (!currentHostname) {
+    Object.assign(config, patch);
+    return;
+  }
+  const current = config.siteOverrides?.[currentHostname] || {};
+  config.siteOverrides = {
+    ...(config.siteOverrides || {}),
+    [currentHostname]: { ...current, ...patch }
+  };
 }
 
 async function saveAndBroadcast() {
   await chrome.storage.local.set({ smoothBoostConfig: config });
-  await sendRuntimeMessage({ type: 'SYNC_CONTENT_SCRIPTS' });
-  if (!currentTab?.id) return;
-
-  const { enabled } = getSiteState();
-  const result = await sendTabMessage(currentTab.id, { type: 'CONFIG_UPDATED', config });
-  if (enabled && result.error) await injectCurrentTabScripts();
-
-  if (currentTab.url) {
-    const isEnabled = getSiteState().enabled;
-    const mode = getSiteState().mode;
-    chrome.action.setBadgeText({ tabId: currentTab.id, text: isEnabled ? (mode === 'ultra' ? 'MAX' : 'ON') : 'OFF' });
-    chrome.action.setBadgeBackgroundColor({ tabId: currentTab.id, color: isEnabled ? '#10b981' : '#6b7280' });
-  }
-  requestPageStatus();
-}
-
-function updateSiteOverride(patch) {
-  if (currentHostname) {
-    config.siteOverrides ||= {};
-    config.siteOverrides[currentHostname] = { ...(config.siteOverrides[currentHostname] || {}), ...patch };
-  } else {
-    Object.assign(config, patch);
+  if (currentTab?.id) {
+    sendTabMessage(currentTab.id, { type: 'CONFIG_UPDATED', config });
+    requestPageStatus();
   }
 }
 
 function setMode(mode) {
-  updateSiteOverride({ mode });
+  config.mode = mode;
+  if (currentHostname && config.siteOverrides?.[currentHostname]?.mode) {
+    delete config.siteOverrides[currentHostname].mode;
+  }
   renderUI();
   saveAndBroadcast();
 }
 
 function setCustomSetting(key, value) {
-  const current = getCustomSettings();
-  current[key] = value;
-  updateSiteOverride({ mode: 'custom', customSettings: current });
+  config.mode = 'custom';
+  if (!config.customSettings) {
+    config.customSettings = { ...DEFAULT_SETTINGS.customSettings };
+  }
+  config.customSettings[key] = value;
+  if (currentHostname && config.siteOverrides?.[currentHostname]?.customSettings) {
+    delete config.siteOverrides[currentHostname].customSettings;
+  }
   renderUI();
   saveAndBroadcast();
 }
@@ -358,7 +350,8 @@ function renderReloadStatus() {
   statusPage.textContent = 'Reload tab to activate';
   statusDetail.textContent = 'Reload this tab after installing or updating SmoothBoost.';
   statusProfile.textContent = '—';
-  siteRuleRow.hidden = true;
+  if (siteRuleRow) siteRuleRow.hidden = true;
+  if (metricsContainer) metricsContainer.innerHTML = '';
 }
 
 function renderUnsupportedStatus() {
@@ -366,7 +359,8 @@ function renderUnsupportedStatus() {
   statusPage.textContent = 'Unsupported page';
   statusDetail.textContent = 'The browser does not allow extensions to run on this page.';
   statusProfile.textContent = '—';
-  siteRuleRow.hidden = true;
+  if (siteRuleRow) siteRuleRow.hidden = true;
+  if (metricsContainer) metricsContainer.innerHTML = '';
 }
 
 function renderSiteOffStatus() {
@@ -374,7 +368,60 @@ function renderSiteOffStatus() {
   statusPage.textContent = 'Off for this site';
   statusDetail.textContent = 'SmoothBoost is not injected here. Turn it on and reload this tab to apply it.';
   statusProfile.textContent = 'Off';
-  siteRuleRow.hidden = true;
+  if (siteRuleRow) siteRuleRow.hidden = true;
+  if (metricsContainer) metricsContainer.innerHTML = '';
+}
+
+function renderMetricsPills(metrics) {
+  if (!metricsContainer || !metrics) return;
+  const pills = [];
+
+  if (metrics.passiveListeners > 0) {
+    pills.push(`
+      <span class="metric-pill">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 7l-5-5-5 5M17 17l-5 5-5-5"/></svg>
+        ${metrics.passiveListeners} scroll listeners passive
+      </span>
+    `);
+  }
+
+  if (metrics.pausedVideos > 0) {
+    pills.push(`
+      <span class="metric-pill">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="4" height="16" x="6" y="4" rx="1"/><rect width="4" height="16" x="14" y="4" rx="1"/></svg>
+        ${metrics.pausedVideos} background videos paused
+      </span>
+    `);
+  }
+
+  if (metrics.bypassedBlurs > 0) {
+    pills.push(`
+      <span class="metric-pill">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        ${metrics.bypassedBlurs} blur panels bypassed
+      </span>
+    `);
+  }
+
+  if (metrics.offscreenCanvases > 0 || metrics.canvasDrawsSkipped > 0) {
+    pills.push(`
+      <span class="metric-pill">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        Canvas draw-skipping active
+      </span>
+    `);
+  }
+
+  if (metrics.patchedFonts > 0) {
+    pills.push(`
+      <span class="metric-pill">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>
+        ${metrics.patchedFonts} fonts swapped
+      </span>
+    `);
+  }
+
+  metricsContainer.innerHTML = pills.join('');
 }
 
 function requestPageStatus(attempt = 0) {
@@ -400,91 +447,52 @@ function requestPageStatus(attempt = 0) {
     statusDot.className = response.enabled ? 'status-dot is-active' : 'status-dot is-muted';
     statusPage.textContent = response.enabled ? 'Active' : 'Off for this site';
     statusDetail.textContent = response.enabled
-      ? 'SmoothBoost is running in this tab.'
+      ? (response.mode === 'auto'
+          ? (response.archetype === 'interactive-canvas'
+              ? 'Smart Auto: Interactive canvas app detected. Bypassing canvas throttling to ensure full input responsiveness.'
+              : 'Smart Auto: Running verified heuristics for responsive browsing.')
+          : 'SmoothBoost is running in this tab.')
       : 'SmoothBoost is loaded, but paused for this site.';
-    statusProfile.textContent = response.enabled
-      ? ({ ultra: 'Maximum', balanced: 'Balanced', custom: 'Custom' }[response.mode] || 'Custom')
-      : 'Off';
-    const onReanime = response.siteRule !== 'not-applicable';
-    siteRuleRow.hidden = !onReanime;
-    if (onReanime) renderRuleStatus(response.siteRule);
+
+    const modeLabels = { auto: 'Smart Auto', ultra: 'Maximum', balanced: 'Balanced', custom: 'Custom' };
+    statusProfile.textContent = response.enabled ? (modeLabels[response.mode] || 'Custom') : 'Off';
+
+    const onReanime = response.siteRule && response.siteRule !== 'not-applicable';
+    if (siteRuleRow) {
+      siteRuleRow.hidden = !onReanime;
+      if (onReanime) renderRuleStatus(response.siteRule);
+    }
+
+    // Request actual optimizer metrics
+    sendTabMessage(currentTab.id, { type: 'GET_METRICS' }).then(({ response: metricsResp }) => {
+      if (metricsResp?.metrics) renderMetricsPills(metricsResp.metrics);
+    });
   });
 }
 
-function renderDiagnostics(diagnostics) {
-  lastDiagnostics = diagnostics;
-  diagnosticsResults.hidden = false;
-  document.getElementById('count-autoplay').textContent = String(diagnostics.autoplayVideos);
-  document.getElementById('count-blur').textContent = String(diagnostics.blurElements);
-  document.getElementById('count-animations').textContent = String(diagnostics.animationLoops);
-  document.getElementById('count-frames').textContent = diagnostics.longFrameApi ? String(diagnostics.longFrames) : 'N/A';
-  diagnosticsSummary.textContent = diagnostics.longFrameApi
-    ? `Recent 30-second sample; ${diagnostics.sampledElements} elements checked for blur.`
-    : `Long-frame reporting is not available here; ${diagnostics.sampledElements} elements checked for blur.`;
-  renderSuggestions(diagnostics);
-}
-
-function renderSuggestions(diagnostics) {
-  const settings = getEffectiveSettings();
-  const suggestions = [];
-  if (diagnostics.autoplayVideos > 0 && !settings.pauseBackgroundMedia) {
-    suggestions.push(['pauseBackgroundMedia', 'Pause offscreen autoplay previews']);
-  }
-  if (diagnostics.blurElements > 0 && !settings.killBlurFilters) {
-    suggestions.push(['killBlurFilters', 'Reduce backdrop blur']);
-  }
-  if (diagnostics.animationLoops > 0 && !settings.pauseOffscreenAnimations) {
-    suggestions.push(['pauseOffscreenAnimations', 'Pause offscreen animations']);
-  }
-  if (diagnostics.longFrames > 0 && diagnostics.longFrameApi && !settings.throttleCanvasFps) {
-    suggestions.push(['throttleCanvasFps', 'Try adaptive frame limiting']);
-  }
-  diagnosticsSuggestions.replaceChildren();
-  if (!suggestions.length) {
-    diagnosticsSuggestions.hidden = true;
-    return;
-  }
-  diagnosticsSuggestions.hidden = false;
-  for (const [key, label] of suggestions) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'suggestion-button';
-    button.textContent = label;
-    button.addEventListener('click', () => setCustomSetting(key, true));
-    diagnosticsSuggestions.appendChild(button);
-  }
-}
-
-async function runDiagnostics() {
-  if (!currentTab?.id) return;
-  diagnosticsButton.disabled = true;
-  diagnosticsButton.textContent = 'Checking';
-  const { response, error } = await sendTabMessage(currentTab.id, { type: 'GET_DIAGNOSTICS' });
-  diagnosticsButton.disabled = false;
-  diagnosticsButton.textContent = 'Check';
-  if (!error && response?.diagnostics) {
-    renderDiagnostics(response.diagnostics);
-  } else {
-    diagnosticsSummary.textContent = getSiteState().enabled
-      ? 'Reload this tab to collect page activity.'
-      : 'Turn SmoothBoost on for this site to inspect page activity.';
-  }
+function sendTabMessage(tabId, message) {
+  return new Promise((resolve) => {
+    try {
+      chrome.tabs.sendMessage(tabId, message, { frameId: 0 }, (response) => {
+        const error = chrome.runtime.lastError;
+        resolve({ response, error });
+      });
+    } catch (err) {
+      resolve({ response: null, error: err });
+    }
+  });
 }
 
 function buildIssueUrl(siteBroken) {
   const profile = getSiteState().mode || 'unknown';
   const browser = typeof navigator !== 'undefined' ? (navigator.userAgent || 'Unknown browser') : 'Unknown browser';
   const title = siteBroken ? `[Bug] Site looks broken on ${currentHostname || 'this page'}` : '[Bug] SmoothBoost issue';
-  const counts = lastDiagnostics
-    ? `\nDiagnostics: autoplay videos ${lastDiagnostics.autoplayVideos}, blur panels ${lastDiagnostics.blurElements}, looping animations ${lastDiagnostics.animationLoops}, long frames ${lastDiagnostics.longFrames}.`
-    : '';
   const body = [
     '## Page details',
     `- Site: ${currentHostname || 'unknown'}`,
     `- Profile: ${profile}`,
     `- Browser: ${browser}`,
     siteBroken ? '- SmoothBoost was turned off for this site from the popup.' : '',
-    counts,
     '',
     '## What happened?',
     '',
@@ -500,17 +508,35 @@ function buildIssueUrl(siteBroken) {
 }
 
 function bindEvents() {
-  controlsTab.addEventListener('click', () => selectTab('controls'));
-  helpTab.addEventListener('click', () => selectTab('help'));
-  checkUpdatesButton.addEventListener('click', () => { void checkForUpdates(true); });
+  if (controlsTab) controlsTab.addEventListener('click', () => selectTab('controls'));
+  if (helpTab) helpTab.addEventListener('click', () => selectTab('help'));
+  if (checkUpdatesButton) checkUpdatesButton.addEventListener('click', () => { void checkForUpdates(true); });
+
   siteToggle.addEventListener('change', () => {
     updateSiteOverride({ enabled: siteToggle.checked });
     renderUI();
     saveAndBroadcast();
   });
-  btnUltra.addEventListener('click', () => setMode('ultra'));
-  btnBalanced.addEventListener('click', () => setMode('balanced'));
-  btnCustom.addEventListener('click', () => setMode('custom'));
+
+  if (btnAuto) btnAuto.addEventListener('click', () => setMode('auto'));
+  if (btnUltra) btnUltra.addEventListener('click', () => setMode('ultra'));
+  if (btnBalanced) btnBalanced.addEventListener('click', () => setMode('balanced'));
+  if (btnCustom) btnCustom.addEventListener('click', () => setMode('custom'));
+
+  if (btnAcceptAuto) {
+    btnAcceptAuto.addEventListener('click', () => {
+      config.showAutoPromo = false;
+      setMode('auto');
+    });
+  }
+
+  if (btnDismissAuto) {
+    btnDismissAuto.addEventListener('click', () => {
+      config.showAutoPromo = false;
+      if (autoPromoBanner) autoPromoBanner.hidden = true;
+      chrome.storage.local.set({ smoothBoostConfig: config });
+    });
+  }
 
   [
     [toggleAnim, 'killAnimations'],
@@ -520,39 +546,64 @@ function bindEvents() {
     [toggleMedia, 'pauseBackgroundMedia'],
     [toggleFps, 'throttleCanvasFps'],
     [toggleOffscreen, 'pauseOffscreenAnimations'],
-    [toggleContentVisibility, 'contentVisibility']
-  ].forEach(([input, key]) => input.addEventListener('change', () => setCustomSetting(key, input.checked)));
-
-  diagnosticsButton.addEventListener('click', runDiagnostics);
-  siteBrokenButton.addEventListener('click', async () => {
-    if (!currentHostname || !currentTab?.id) return;
-    updateSiteOverride({ enabled: false });
-    renderUI();
-    await saveAndBroadcast();
-    await chrome.tabs.create({ url: buildIssueUrl(true) });
-  });
-  bugReportLink.addEventListener('click', (event) => {
-    event.preventDefault();
-    chrome.tabs.create({ url: buildIssueUrl(false) });
+    [toggleContentVisibility, 'contentVisibility'],
+    [toggleOffscreenCanvas, 'pauseOffscreenCanvas'],
+    [togglePassiveScroll, 'passiveScroll'],
+    [toggleAsyncImages, 'asyncImageDecoding']
+  ].forEach(([input, key]) => {
+    if (input) input.addEventListener('change', () => setCustomSetting(key, input.checked));
   });
 
-  resetBtn.addEventListener('click', async () => {
-    config = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-    renderUI();
-    await saveAndBroadcast();
-  });
+  if (siteBrokenButton) {
+    siteBrokenButton.addEventListener('click', async () => {
+      if (!currentHostname || !currentTab?.id) return;
+      updateSiteOverride({ enabled: false });
+      renderUI();
+
+      // Purge cached archetype so a bad guess doesn't stick
+      try {
+        await chrome.runtime.sendMessage({ type: 'PURGE_ARCHETYPE', hostname: currentHostname });
+      } catch (_e) {}
+
+      await saveAndBroadcast();
+
+      // Reload tab to instantly restore original site appearance
+      try {
+        await chrome.tabs.reload(currentTab.id);
+      } catch (_e) {}
+    });
+  }
+
+  if (bugReportLink) {
+    bugReportLink.addEventListener('click', (event) => {
+      event.preventDefault();
+      chrome.tabs.create({ url: buildIssueUrl(false) });
+    });
+  }
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', async () => {
+      config = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+      renderUI();
+      await saveAndBroadcast();
+    });
+  }
 }
 
 function selectTab(tabName) {
   const showControls = tabName === 'controls';
-  controlsTab.classList.toggle('is-selected', showControls);
-  helpTab.classList.toggle('is-selected', !showControls);
-  controlsTab.setAttribute('aria-selected', String(showControls));
-  helpTab.setAttribute('aria-selected', String(!showControls));
-  controlsTab.tabIndex = showControls ? 0 : -1;
-  helpTab.tabIndex = showControls ? -1 : 0;
-  controlsPanel.hidden = !showControls;
-  helpPanel.hidden = showControls;
+  if (controlsTab) {
+    controlsTab.classList.toggle('is-selected', showControls);
+    controlsTab.setAttribute('aria-selected', String(showControls));
+    controlsTab.tabIndex = showControls ? 0 : -1;
+  }
+  if (helpTab) {
+    helpTab.classList.toggle('is-selected', !showControls);
+    helpTab.setAttribute('aria-selected', String(!showControls));
+    helpTab.tabIndex = showControls ? -1 : 0;
+  }
+  if (controlsPanel) controlsPanel.hidden = !showControls;
+  if (helpPanel) helpPanel.hidden = showControls;
 }
 
 document.addEventListener('DOMContentLoaded', init);
