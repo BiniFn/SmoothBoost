@@ -198,7 +198,7 @@ code, pre {
 }
 
 .site-header.is-scrolled {
-  background-color: rgba(6, 5, 4, 0.85);
+  background-color: rgba(6, 5, 4, 0.88);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom-color: var(--border-subtle);
@@ -225,6 +225,7 @@ code, pre {
   width: 30px;
   height: 30px;
   border-radius: var(--radius-sm);
+  flex-shrink: 0;
 }
 
 .nav-menu {
@@ -266,7 +267,7 @@ code, pre {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 44px;
+  min-height: 44px;
   padding: 0 20px;
   border-radius: 9999px;
   font-weight: 600;
@@ -277,6 +278,7 @@ code, pre {
               transform 0.2s ease;
   border: none;
   text-decoration: none;
+  text-align: center;
 }
 
 .btn-primary {
@@ -355,9 +357,9 @@ svg.star-icon {
 }
 
 .hero-title {
-  font-size: clamp(34px, 5.5vw, 56px);
+  font-size: clamp(30px, 5.5vw, 56px);
   font-weight: 800;
-  line-height: 1.05;
+  line-height: 1.08;
   letter-spacing: -0.035em;
   margin-bottom: 20px;
   max-width: 860px;
@@ -488,7 +490,7 @@ svg.star-icon {
   box-shadow: 0 0 8px var(--accent-cyan);
 }
 
-/* Integrations / Browser Compatibility Row ("Plays nicely with everything you use") */
+/* Integrations / Browser Compatibility Row */
 .integrations-section {
   padding: 50px 0 20px;
 }
@@ -562,7 +564,7 @@ svg.star-icon {
 
 .section-eyebrow {
   font-size: 11px;
-  font-bold;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.4px;
   color: rgba(255, 255, 255, 0.72);
@@ -681,6 +683,7 @@ svg.star-icon {
   justify-content: space-between;
   border-bottom: 0.8px solid var(--border-subtle);
   padding-bottom: 14px;
+  gap: 12px;
 }
 
 .detail-title-group {
@@ -711,6 +714,7 @@ svg.star-icon {
   border-radius: 9999px;
   color: rgba(255, 255, 255, 0.85);
   font-family: var(--font-mono);
+  white-space: nowrap;
 }
 
 .metrics-strip {
@@ -1149,34 +1153,40 @@ svg.star-icon {
   }
 }
 
-/* Responsive Media Queries */
+/* ==========================================================================
+   MOBILE & RESPONSIVE POLISH (Eliminating all cramped layouts)
+   ========================================================================== */
+
 @media (max-width: 980px) {
-  .profile-showcase-grid {
-    grid-template-columns: 1fr;
-  }
-  .benchmark-grid {
-    grid-template-columns: 1fr;
-  }
   .platform-grid {
     grid-template-columns: 1fr;
+    gap: 28px;
   }
   .footer-grid {
     grid-template-columns: 1fr;
-    gap: 30px;
+    gap: 28px;
   }
 }
 
 @media (max-width: 768px) {
+  .site-header {
+    padding: 14px 0;
+  }
+  .site-header.is-scrolled {
+    padding: 10px 0;
+  }
   .nav-menu {
     position: fixed;
-    top: 65px;
+    top: 60px;
     left: 0;
     right: 0;
     background: rgba(6, 5, 4, 0.98);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     flex-direction: column;
+    align-items: flex-start;
     padding: 24px;
+    gap: 20px;
     border-bottom: 0.8px solid var(--border-subtle);
     display: none;
   }
@@ -1184,6 +1194,227 @@ svg.star-icon {
     display: flex;
   }
   .mobile-menu-btn {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .header-actions .btn-primary span {
+    display: none;
+  }
+  .header-actions .btn-primary {
+    padding: 0 12px;
+    min-width: 44px;
+  }
+
+  /* Spacing Scale Reductions */
+  .hero-section {
+    padding: 95px 0 24px;
+  }
+  .section-padding {
+    padding: 44px 0 16px;
+  }
+  .section-head {
+    margin-bottom: 24px;
+  }
+  .section-title {
+    font-size: clamp(22px, 6vw, 30px);
+  }
+  .section-desc {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* Outer Card Padding Reduction to Free Up Space */
+  .section-card {
+    padding: 24px 14px;
+    border-radius: var(--radius-lg);
+  }
+
+  /* Horizontal Scrollable Profile Tabs on Mobile */
+  .profile-showcase-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .profile-selector-pane {
+    flex-direction: row;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding: 2px 2px 10px;
+    gap: 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .profile-selector-pane::-webkit-scrollbar {
+    display: none;
+  }
+  .profile-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 9px 14px;
+    font-size: 13px;
+    gap: 8px;
+  }
+
+  /* Profile Details Pane */
+  .profile-detail-pane {
+    gap: 16px;
+  }
+  .metrics-strip {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .metric-card {
+    padding: 10px 12px;
+  }
+  .metric-card-val {
+    font-size: 13.5px;
+  }
+  .sim-rules-list {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .sim-rule-item {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  /* Benchmark Section on Mobile */
+  .benchmark-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .benchmark-box {
+    padding: 16px 12px;
+  }
+  .benchmark-scroll-target {
+    height: 160px;
+    padding: 10px;
+  }
+  .benchmark-stats-strip {
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11.5px;
+  }
+
+  /* Feature Grid on Mobile */
+  .feature-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .feature-card {
+    padding: 20px 16px;
+  }
+
+  /* Horizontal Scrollable Tabs on Mobile */
+  .platform-tabs-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding: 4px 4px 10px;
+    margin-bottom: 16px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .platform-tabs-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .platform-tab-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: 12.5px;
+    padding: 8px 14px;
+  }
+
+  /* Nested Panels Breathing Room */
+  .platform-panel {
+    padding: 18px 12px;
+    border-radius: var(--radius-md);
+  }
+  .platform-download-card {
+    padding: 20px 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 0 14px;
+  }
+  .hero-outer-card {
+    padding: 36px 12px 32px;
+    border-radius: 20px;
+  }
+  .hero-title {
+    font-size: 26px;
+    line-height: 1.15;
+    margin-bottom: 14px;
+  }
+  .hero-lead {
+    font-size: 13.5px;
+    line-height: 1.5;
+    margin-bottom: 24px;
+  }
+  .hero-ctas {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+  .hero-ctas .btn {
+    width: 100%;
+    max-width: 320px;
+  }
+  .hero-platforms-line {
+    margin-bottom: 28px;
+    font-size: 12px;
+  }
+  .hero-stage-wrapper {
+    max-width: 100%;
+  }
+  .device-frame {
+    border-radius: 18px;
+  }
+  .device-inner {
+    border-radius: 16px;
+    padding: 4px;
+  }
+  .stage-viewport {
+    aspect-ratio: 16 / 12;
+    border-radius: 12px;
+  }
+  .stage-overlay {
+    bottom: 6px;
+    left: 6px;
+    right: 6px;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  .integrations-list {
+    gap: 14px 20px;
+  }
+  .integration-item span {
+    font-size: 13px;
+  }
+  .integration-item svg {
+    width: 18px;
+    height: 18px;
+  }
+  .faq-question {
+    padding: 14px 16px;
+    font-size: 13.5px;
+  }
+  .faq-answer {
+    padding: 0 16px 14px;
+    font-size: 12.5px;
+  }
+  .changelog-box {
+    padding: 14px 12px;
+    font-size: 12.5px;
+  }
+  .site-footer {
+    padding: 40px 0 24px;
+  }
+  .footer-bottom {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
   }
 }
