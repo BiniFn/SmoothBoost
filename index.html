@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmoothBoost — Cross-Browser Web Performance Extension</title>
+  <meta name="description" content="Open-source browser extension that offloads scroll listeners to the GPU compositor, skips offscreen canvas draw calls, pauses background media, and cuts battery drain across Chrome, Titanium Android, and Firefox.">
+  <meta name="keywords" content="SmoothBoost, browser extension, passive event listeners, compositor thread, canvas performance, web performance, battery saver, chrome extension, firefox addon, android browser extension">
+  <meta name="author" content="BiniFn">
+  <link rel="canonical" href="https://binifn.github.io/SmoothBoost/">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://binifn.github.io/SmoothBoost/">
+  <meta property="og:title" content="SmoothBoost — Cross-Browser Web Performance Extension">
+  <meta property="og:description" content="Offload scroll listeners to the GPU compositor, skip offscreen canvas draw calls, pause background media, and reduce battery drain.">
+  <meta property="og:image" content="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/icons/icon128.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:url" content="https://binifn.github.io/SmoothBoost/">
+  <meta name="twitter:title" content="SmoothBoost — Cross-Browser Web Performance Extension">
+  <meta name="twitter:description" content="Offload scroll listeners to the GPU compositor, skip offscreen canvas draw calls, and reduce battery drain across desktop and mobile browsers.">
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/icons/icon128.png">
+
+  <link rel="icon" type="image/png" href="icons/icon48.png">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <span aria-hidden="true" class="scroll-progress-bar"></span>
+
+  <!-- Navigation Header -->
+  <header class="site-header" role="banner">
+    <div class="container nav-wrapper">
+      <a href="#" class="logo-group" aria-label="SmoothBoost Home">
+        <svg class="logo-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="32" height="32" rx="8" fill="#111113" stroke="rgba(255, 255, 255, 0.18)" stroke-width="1.5"/>
+          <path d="M7 16L13 22L25 10" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="21" cy="11" r="3" fill="#38bdf8"/>
+        </svg>
+        <span>SmoothBoost</span>
+      </a>
+
+      <nav id="nav-menu" class="nav-menu" role="navigation" aria-label="Main Navigation">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#profiles" class="nav-link">Profiles</a>
+        <a href="#benchmark" class="nav-link">Benchmark</a>
+        <a href="#safeguards" class="nav-link">Safeguards</a>
+        <a href="#compatibility" class="nav-link">Platforms</a>
+        <a href="#faq" class="nav-link">FAQ</a>
+      </nav>
+
+      <div class="header-actions">
+        <a href="#compatibility" class="btn btn-primary" aria-label="Download SmoothBoost Extension">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 17V3"/>
+            <path d="m6 11 6 6 6-6"/>
+            <path d="M19 21H5"/>
+          </svg>
+          <span>Get Extension</span>
+        </a>
+
+        <a href="https://github.com/BiniFn/SmoothBoost" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" aria-label="Star SmoothBoost on GitHub">
+          <svg class="star-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+
+        <button id="mobile-menu-toggle" class="mobile-menu-btn" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="nav-menu">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <!-- Hero Section with Atmospheric Mesh & Floating 3D Device Viewport -->
+    <section class="hero-section" aria-labelledby="hero-heading">
+      <div class="container">
+        <div class="hero-outer-card">
+          <!-- Mesh Blobs -->
+          <div class="mesh-container" aria-hidden="true">
+            <div class="mesh-blob blob-cyan"></div>
+            <div class="mesh-blob blob-sky"></div>
+            <div class="mesh-blob blob-emerald"></div>
+            <div class="mesh-vignette"></div>
+          </div>
+
+          <div class="hero-tag">
+            <span class="tag-dot" aria-hidden="true"></span>
+            <span>Version <strong data-release-version>v2.1.0</strong> Active</span>
+          </div>
+
+          <h1 id="hero-heading" class="hero-title">
+            <span class="text-white">Hardware Compositor Scrolling.</span> <span class="text-muted">No Compromise.</span>
+          </h1>
+
+          <p class="hero-lead">
+            SmoothBoost intercepts blocking scroll listeners, skips offscreen canvas draw calls, pauses background videos, and reduces battery drain across desktop and mobile browsers.
+          </p>
+
+          <div class="hero-ctas">
+            <a href="#compatibility" class="btn btn-primary">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 17V3"/>
+                <path d="m6 11 6 6 6-6"/>
+                <path d="M19 21H5"/>
+              </svg>
+              <span>Download Latest Release</span>
+            </a>
+
+            <a href="https://github.com/BiniFn/SmoothBoost" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+              <svg class="star-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>
+              </svg>
+              <span>Star on GitHub</span>
+            </a>
+          </div>
+
+          <p class="hero-stats-line">
+            Latest release: <strong data-release-version>v2.1.0</strong> • Verified across <strong>59 automated tests</strong>
+          </p>
+
+          <p class="hero-platforms-line">
+            Available on <a href="#compatibility">Chrome</a>, <a href="#compatibility">Titanium Android</a>, <a href="#compatibility">Helium</a> and <a href="#compatibility">Firefox</a>
+          </p>
+
+          <!-- 3D Kinetic Canvas Stage Inside Hardware Frame -->
+          <div class="hero-stage-wrapper">
+            <div class="device-frame">
+              <div class="device-inner">
+                <div id="hero-3d-container" class="stage-viewport">
+                  <canvas id="hero-3d-canvas" class="canvas-3d" aria-label="Interactive 3D kinetic compositor visualization"></canvas>
+                  <div class="stage-overlay">
+                    <div class="stage-status-indicator">
+                      <span class="status-dot-pulse" aria-hidden="true"></span>
+                      <span>Compositor Engine</span>
+                    </div>
+                    <span id="stage-profile-label">Interactive 3D Viewport</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Integrations / Compatibility Row ("Plays nicely with everything you use") -->
+    <section class="integrations-section" aria-labelledby="integrations-title">
+      <div class="container">
+        <div class="integrations-head">
+          <h2 id="integrations-title" class="integrations-title">Accelerates smoothly across every engine you use.</h2>
+          <p class="integrations-desc">
+            Passive scroll listeners, offscreen canvas draw throttling, and background video pausing built directly on web platform standards.
+          </p>
+        </div>
+
+        <ul class="integrations-list">
+          <li class="integration-item">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+              <circle cx="12" cy="12" r="4"/>
+              <line x1="21.17" y1="8" x2="12" y2="8" stroke="currentColor" stroke-width="2"/>
+              <line x1="3.95" y1="6.06" x2="8.54" y2="14" stroke="currentColor" stroke-width="2"/>
+              <line x1="10.88" y1="21.94" x2="15.46" y2="14" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span>Google Chrome</span>
+          </li>
+          <li class="integration-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14.93V17a1 1 0 0 1-2 0v-.07A7.003 7.003 0 0 1 5.07 11H5a1 1 0 0 1 0-2h.07A7.003 7.003 0 0 1 11 5.07V5a1 1 0 0 1 2 0v.07A7.003 7.003 0 0 1 18.93 11H19a1 1 0 0 1 0 2h-.07A7.003 7.003 0 0 1 13 16.93z"/>
+            </svg>
+            <span>Titanium Android</span>
+          </li>
+          <li class="integration-item">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-6h2v6zm0-8h-2V7h2v1z"/>
+            </svg>
+            <span>Helium Desktop</span>
+          </li>
+          <li class="integration-item">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879v-6.988h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.891h-2.33v6.988C18.343 21.128 22 16.991 22 12c0-5.523-4.477-10-10-10z"/>
+            </svg>
+            <span>Firefox Desktop</span>
+          </li>
+          <li class="integration-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+              <line x1="12" y1="18" x2="12.01" y2="18"/>
+            </svg>
+            <span>Firefox for Android</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Profiles Interactive Showcase Section -->
+    <section id="profiles" class="section-padding" aria-labelledby="profiles-heading">
+      <div class="container">
+        <div class="section-card">
+          <div class="section-head">
+            <div class="section-eyebrow">Autonomous Engine</div>
+            <h2 id="profiles-heading" class="section-title">5 Tailored Performance Profiles</h2>
+            <p class="section-desc">
+              Select a profile to inspect its active browser flags, listener behavior, and runtime safeguards.
+            </p>
+          </div>
+
+          <div class="profile-showcase-grid">
+            <!-- Left: Profile Selector Tabs -->
+            <div class="profile-selector-pane" role="tablist" aria-label="Performance Profile Presets">
+              <button class="profile-btn is-active" data-profile-btn="auto" role="tab" aria-selected="true" id="tab-auto">
+                <span>Smart Auto</span>
+                <span class="profile-btn-badge">AUTO</span>
+              </button>
+              <button class="profile-btn" data-profile-btn="ultra" role="tab" aria-selected="false" id="tab-ultra">
+                <span>Turbo (Maximum)</span>
+                <span class="profile-btn-badge">MAX</span>
+              </button>
+              <button class="profile-btn" data-profile-btn="balanced" role="tab" aria-selected="false" id="tab-balanced">
+                <span>Balanced</span>
+                <span class="profile-btn-badge">BAL</span>
+              </button>
+              <button class="profile-btn" data-profile-btn="battery" role="tab" aria-selected="false" id="tab-battery">
+                <span>Battery Saver</span>
+                <span class="profile-btn-badge">BATT</span>
+              </button>
+              <button class="profile-btn" data-profile-btn="custom" role="tab" aria-selected="false" id="tab-custom">
+                <span>Custom Profile</span>
+                <span class="profile-btn-badge">CUSTOM</span>
+              </button>
+            </div>
+
+            <!-- Right: Live Detail Pane -->
+            <div class="profile-detail-pane" role="tabpanel" aria-labelledby="tab-auto">
+              <div class="detail-header">
+                <div class="detail-title-group">
+                  <span id="sim-badge" class="profile-badge badge-auto">AUTO</span>
+                  <h3 id="sim-title" style="font-size: 1.25rem;">Smart Auto</h3>
+                </div>
+                <span class="asset-badge">Real-Time Settings Model</span>
+              </div>
+
+              <p id="sim-desc" style="color: rgba(255, 255, 255, 0.65); font-size: 14px;">
+                Idle heuristics classify page structure to protect interactive editors while accelerating general web browsing.
+              </p>
+
+              <div class="metrics-strip">
+                <div class="metric-card">
+                  <div class="metric-card-label">Passive Listeners</div>
+                  <div id="sim-metric-passive" class="metric-card-val">42 listeners</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-card-label">Videos Paused</div>
+                  <div id="sim-metric-videos" class="metric-card-val">4 paused</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-card-label">Blurs Bypassed</div>
+                  <div id="sim-metric-blurs" class="metric-card-val">18 bypassed</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-card-label">Canvas State</div>
+                  <div id="sim-metric-canvas" class="metric-card-val">Active (Exempts Docs/Figma)</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-card-label">Fonts Swapped</div>
+                  <div id="sim-metric-fonts" class="metric-card-val">8 swapped</div>
+                </div>
+              </div>
+
+              <div>
+                <h4 style="font-size: 11px; margin-bottom: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Execution Rules</h4>
+                <ul id="sim-rules-list" class="sim-rules-list"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Scroll Benchmark & Compositor Simulator Section -->
+    <section id="benchmark" class="section-padding" aria-labelledby="benchmark-heading">
+      <div class="container">
+        <div class="section-card">
+          <div class="section-head">
+            <div class="section-eyebrow">Interactive Verification</div>
+            <h2 id="benchmark-heading" class="section-title">Compositor Thread vs. Main Thread</h2>
+            <p class="section-desc">
+              Test the difference in scroll responsiveness below. Scroll both panes on your device to observe frame timings.
+            </p>
+          </div>
+
+          <div class="benchmark-grid">
+            <!-- Unoptimized Pane -->
+            <div class="benchmark-box">
+              <div class="benchmark-header">
+                <h3 style="font-size: 15px;">Blocking Scroll Handlers</h3>
+                <span class="benchmark-badge badge-unopt">Main-Thread Bound</span>
+              </div>
+              <p style="font-size: 13px; color: rgba(255, 255, 255, 0.55);">
+                Simulates synchronous wheel and touch listeners that block scroll dispatch until JavaScript calculations complete.
+              </p>
+              <div id="bench-unoptimized" class="benchmark-scroll-target" tabindex="0" role="region" aria-label="Unoptimized scroll test area">
+                <div class="benchmark-scroll-content">
+                  <div class="scroll-dummy-item">Scroll Item 01 — Synchronous listener executing on main thread</div>
+                  <div class="scroll-dummy-item">Scroll Item 02 — Dispatch paused waiting for preventDefault() check</div>
+                  <div class="scroll-dummy-item">Scroll Item 03 — JavaScript task queue delayed by layout cycle</div>
+                  <div class="scroll-dummy-item">Scroll Item 04 — Main thread stall causes visual stutter</div>
+                  <div class="scroll-dummy-item">Scroll Item 05 — Frame budget exceeded (&gt; 16.6ms)</div>
+                  <div class="scroll-dummy-item">Scroll Item 06 — Wheel event delay accumulates across inputs</div>
+                  <div class="scroll-dummy-item">Scroll Item 07 — Compositor unable to scroll independently</div>
+                  <div class="scroll-dummy-item">Scroll Item 08 — Scroll down further to test frame delivery</div>
+                </div>
+              </div>
+              <div class="benchmark-stats-strip">
+                <span>Frame Rate: <strong id="bench-unopt-fps">32 FPS</strong></span>
+                <span>Frame Time: <strong id="bench-unopt-time">18.4ms / frame</strong></span>
+              </div>
+            </div>
+
+            <!-- Optimized Pane -->
+            <div class="benchmark-box is-optimized">
+              <div class="benchmark-header">
+                <h3 style="font-size: 15px;">SmoothBoost Passive Listeners</h3>
+                <span class="benchmark-badge badge-opt">GPU Composited</span>
+              </div>
+              <p style="font-size: 13px; color: rgba(255, 255, 255, 0.55);">
+                Enforces passive listener registration. The compositor thread updates scroll offsets immediately without waiting for JavaScript.
+              </p>
+              <div id="bench-optimized" class="benchmark-scroll-target" tabindex="0" role="region" aria-label="Optimized scroll test area">
+                <div class="benchmark-scroll-content">
+                  <div class="scroll-dummy-item">Scroll Item 01 — Passive listener registered on window</div>
+                  <div class="scroll-dummy-item">Scroll Item 02 — Compositor thread processes touch &amp; wheel directly</div>
+                  <div class="scroll-dummy-item">Scroll Item 03 — Zero main thread dispatch delay</div>
+                  <div class="scroll-dummy-item">Scroll Item 04 — Stable 60 FPS frame delivery during rapid swiping</div>
+                  <div class="scroll-dummy-item">Scroll Item 05 — Sub-5ms input response on display refresh</div>
+                  <div class="scroll-dummy-item">Scroll Item 06 — Interactive maps and sliders preserved by guard</div>
+                  <div class="scroll-dummy-item">Scroll Item 07 — Hardware compositor drives smooth inertia</div>
+                  <div class="scroll-dummy-item">Scroll Item 08 — Continuous 60 FPS verified across viewports</div>
+                </div>
+              </div>
+              <div class="benchmark-stats-strip">
+                <span>Frame Rate: <strong id="bench-opt-fps">60 FPS (Hardware Composited)</strong></span>
+                <span>Frame Time: <strong id="bench-opt-time">4.2ms / frame</strong></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Core Features Grid Section with Spotlight Hover Cards -->
+    <section id="features" class="section-padding" aria-labelledby="features-heading">
+      <div class="container">
+        <div class="section-card">
+          <div class="section-head">
+            <div class="section-eyebrow">Core Mechanisms</div>
+            <h2 id="features-heading" class="section-title">Built on Native Browser Primitives</h2>
+            <p class="section-desc">
+              SmoothBoost applies concrete web platform optimizations without altering application logic or injecting external frameworks.
+            </p>
+          </div>
+
+          <div class="feature-grid">
+            <!-- Feature 1 -->
+            <article class="spotlight-card feature-card">
+              <div class="feature-icon-wrap" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                  <polyline points="17 6 23 6 23 12"/>
+                </svg>
+              </div>
+              <h3>Passive Event Listeners</h3>
+              <p>
+                Wraps window and document <code>addEventListener</code> calls for wheel and touch events with <code>{ passive: true }</code>. This permits the browser compositor thread to scroll immediately without waiting on main-thread execution.
+              </p>
+            </article>
+
+            <!-- Feature 2 -->
+            <article class="spotlight-card feature-card">
+              <div class="feature-icon-wrap" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                  <line x1="8" y1="21" x2="16" y2="21"/>
+                  <line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+              </div>
+              <h3>Offscreen Canvas Draw-Skipping</h3>
+              <p>
+                Attaches an <code>IntersectionObserver</code> to HTML5 <code>&lt;canvas&gt;</code> elements. 2D rendering contexts skip expensive draw operations while positioned outside the active viewport, conserving GPU fill rate.
+              </p>
+            </article>
+
+            <!-- Feature 3 -->
+            <article class="spotlight-card feature-card">
+              <div class="feature-icon-wrap" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="23 7 16 12 23 17 23 7"/>
+                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                </svg>
+              </div>
+              <h3>Ambient Video Suspending</h3>
+              <p>
+                Identifies background, muted, autoplaying promotional videos positioned offscreen and pauses their playback. Automatically resumes playback when the user scrolls them back into view.
+              </p>
+            </article>
+
+            <!-- Feature 4 -->
+            <article class="spotlight-card feature-card">
+              <div class="feature-icon-wrap" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="4 7 4 4 20 4 20 7"/>
+                  <line x1="9" y1="20" x2="15" y2="20"/>
+                  <line x1="12" y1="4" x2="12" y2="20"/>
+                </svg>
+              </div>
+              <h3>CSSOM Font-Display Swap</h3>
+              <p>
+                Inspects declared <code>@font-face</code> rules via the CSS Object Model and updates their descriptor to <code>font-display: swap</code>. Eliminates invisible text (FOIT) during web font downloads.
+              </p>
+            </article>
+
+            <!-- Feature 5 -->
+            <article class="spotlight-card feature-card">
+              <div class="feature-icon-wrap" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                </svg>
+              </div>
+              <h3>Backdrop Filter Bypass</h3>
+              <p>
+                Replaces high-overhead CSS <code>backdrop-filter: blur()</code> declarations with clean semi-opaque solid panel colors, removing multi-pass GPU composition bottlenecks on low-power devices.
+              </p>
+            </article>
+
+            <!-- Feature 6 -->
+            <article class="spotlight-card feature-card">
+              <div class="feature-icon-wrap" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </div>
+              <h3>Autonomous Page Classification</h3>
+              <p>
+                Scans structural DOM markers during browser idle intervals. Interactive tools such as Google Docs, Figma, Canva, and WebGL game engines are detected and exempted from canvas throttling.
+              </p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Archetype Safeguards & Recovery Section -->
+    <section id="safeguards" class="section-padding" aria-labelledby="safeguards-heading">
+      <div class="container">
+        <div class="section-card">
+          <div class="section-head">
+            <div class="section-eyebrow">Reliability &amp; Safety</div>
+            <h2 id="safeguards-heading" class="section-title">Zero Regressions on Production Apps</h2>
+            <p class="section-desc">
+              Aggressive optimizations that break production software are useless. SmoothBoost isolates productivity tools, editors, and maps from unsafe overrides.
+            </p>
+          </div>
+
+          <div class="platform-tabs-nav" role="tablist" aria-label="Archetype Safeguard Categories">
+            <button class="platform-tab-btn is-active" data-archetype-tab="editors" role="tab" aria-selected="true" id="arch-tab-editors">
+              <span>Design &amp; Document Editors</span>
+            </button>
+            <button class="platform-tab-btn" data-archetype-tab="games" role="tab" aria-selected="false" id="arch-tab-games">
+              <span>Canvas &amp; WebGL Games</span>
+            </button>
+            <button class="platform-tab-btn" data-archetype-tab="maps" role="tab" aria-selected="false" id="arch-tab-maps">
+              <span>Maps &amp; Interactive Sliders</span>
+            </button>
+          </div>
+
+          <!-- Panel 1: Editors -->
+          <div class="platform-panel" data-archetype-panel="editors" role="tabpanel" aria-labelledby="arch-tab-editors">
+            <div class="platform-grid">
+              <div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 12px;">Protected: Figma, Canva, Google Docs</h3>
+                <p style="color: rgba(255, 255, 255, 0.65); font-size: 13.5px; margin-bottom: 20px;">
+                  Design editors and spreadsheets rely on multi-buffered offscreen canvases to pre-render layers, fonts, and vector paths. SmoothBoost detects these applications and ensures draw calls are never intercepted.
+                </p>
+                <ul class="step-list">
+                  <li class="step-item">
+                    <div class="step-num">1</div>
+                    <div class="step-text">
+                      <h4>DOM Archetype Detection</h4>
+                      <p>Scans for known editor markers (e.g. <code>.kix-appview</code>, <code>[data-testid="stage"]</code>) at idle timing.</p>
+                    </div>
+                  </li>
+                  <li class="step-item">
+                    <div class="step-num">2</div>
+                    <div class="step-text">
+                      <h4>Detached Canvas Exemption</h4>
+                      <p>Canvases not attached to the visible document DOM are treated as computation buffers and preserved completely.</p>
+                    </div>
+                  </li>
+                  <li class="step-item">
+                    <div class="step-num">3</div>
+                    <div class="step-text">
+                      <h4>Bounded Archetype Cache</h4>
+                      <p>Classifications are retained in a 500-host LRU cache with a 7-day TTL, preventing unbounded memory growth.</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              <div class="platform-download-card">
+                <div class="asset-badge">Archetype Status</div>
+                <h4 style="font-size: 1.1rem; color: #ffffff;">Exempted from Canvas Throttling</h4>
+                <p style="font-size: 13px; color: rgba(255, 255, 255, 0.6); line-height: 1.6;">
+                  SmoothBoost automatically tags hostnames matching editor patterns. Even under Turbo mode, drawing pipelines on Figma or Google Docs run at standard browser frequency.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel 2: Games -->
+          <div class="platform-panel" data-archetype-panel="games" role="tabpanel" aria-labelledby="arch-tab-games" hidden>
+            <div class="platform-grid">
+              <div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 12px;">Protected: Three.js, Babylon.js, Phaser</h3>
+                <p style="color: rgba(255, 255, 255, 0.65); font-size: 13.5px; margin-bottom: 20px;">
+                  Browser games frequently use requestAnimationFrame render loops that must not be clamped arbitrarily without user consent.
+                </p>
+                <ul class="step-list">
+                  <li class="step-item">
+                    <div class="step-num">1</div>
+                    <div class="step-text">
+                      <h4>WebGL Context Preservation</h4>
+                      <p>WebGL and WebGL2 contexts are recognized; draw calls remain uninhibited while game canvas is active.</p>
+                    </div>
+                  </li>
+                  <li class="step-item">
+                    <div class="step-num">2</div>
+                    <div class="step-text">
+                      <h4>Adaptive Frame Rate Cap</h4>
+                      <p>Frame rate caps (30 FPS limiter) apply only when explicitly toggled in Custom or Battery Saver profiles.</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              <div class="platform-download-card">
+                <div class="asset-badge">Gaming Profile</div>
+                <h4 style="font-size: 1.1rem; color: #ffffff;">Full Render Rate Maintained</h4>
+                <p style="font-size: 13px; color: rgba(255, 255, 255, 0.6); line-height: 1.6;">
+                  WebGL games and 3D scenes continue to render at your display's full native refresh rate (60 Hz / 120 Hz / 144 Hz).
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel 3: Maps -->
+          <div class="platform-panel" data-archetype-panel="maps" role="tabpanel" aria-labelledby="arch-tab-maps" hidden>
+            <div class="platform-grid">
+              <div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 12px;">Protected: Google Maps, Mapbox, Leaflet</h3>
+                <p style="color: rgba(255, 255, 255, 0.65); font-size: 13.5px; margin-bottom: 20px;">
+                  Interactive maps and pinch-to-zoom widgets call <code>event.preventDefault()</code> to stop the whole page from scrolling while zooming the map.
+                </p>
+                <ul class="step-list">
+                  <li class="step-item">
+                    <div class="step-num">1</div>
+                    <div class="step-text">
+                      <h4>Interactive Container Detection</h4>
+                      <p>Identifies <code>.gm-style</code>, <code>.mapboxgl-canvas</code>, and map viewport elements.</p>
+                    </div>
+                  </li>
+                  <li class="step-item">
+                    <div class="step-num">2</div>
+                    <div class="step-text">
+                      <h4>Scroll Guard Bypass</h4>
+                      <p>Preserves non-passive event listeners inside map containers so pinch-to-zoom and wheel zoom function properly.</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              <div class="platform-download-card">
+                <div class="asset-badge">Interactive Guard</div>
+                <h4 style="font-size: 1.1rem; color: #ffffff;">Wheel Zoom &amp; Pan Verified</h4>
+                <p style="font-size: 13px; color: rgba(255, 255, 255, 0.6); line-height: 1.6;">
+                  Tested directly against Google Maps and Leaflet tiles. SmoothBoost speeds up page scroll without disabling map zooming.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Platform Installation & Downloads Section -->
+    <section id="compatibility" class="section-padding" aria-labelledby="platforms-heading">
+      <div class="container">
+        <div class="section-card">
+          <div class="section-head">
+            <div class="section-eyebrow">Distribution Builds</div>
+            <h2 id="platforms-heading" class="section-title">Install SmoothBoost on Your Device</h2>
+            <p class="section-desc">
+              Production builds available for desktop and mobile Chromium and Gecko engines.
+            </p>
+          </div>
+
+          <!-- Platform Tabs -->
+          <div class="platform-tabs-nav" role="tablist" aria-label="Supported Platforms">
+            <button class="platform-tab-btn is-active" data-platform-tab="chrome" role="tab" aria-selected="true" id="tab-plat-chrome">
+              <span>Chrome &amp; Helium</span>
+            </button>
+            <button class="platform-tab-btn" data-platform-tab="titanium" role="tab" aria-selected="false" id="tab-plat-titanium">
+              <span>Titanium Browser (Android)</span>
+            </button>
+            <button class="platform-tab-btn" data-platform-tab="firefox" role="tab" aria-selected="false" id="tab-plat-firefox">
+              <span>Firefox Desktop</span>
+            </button>
+            <button class="platform-tab-btn" data-platform-tab="firefox-android" role="tab" aria-selected="false" id="tab-plat-firefox-android">
+              <span>Firefox for Android</span>
+            </button>
+          </div>
+
+          <!-- Platform Panel: Chrome & Helium -->
+          <div class="platform-panel" data-platform-panel="chrome" role="tabpanel" aria-labelledby="tab-plat-chrome">
+            <div class="platform-grid">
+              <div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 12px;">Chrome &amp; Helium Desktop</h3>
+                <p style="color: rgba(255, 255, 255, 0.65); font-size: 13.5px; margin-bottom: 24px;">
+                  Built for Manifest V3 on Chromium. Operates via service worker background lifecycle and native tab discard controls.
+                </p>
+                <ul class="step-list">
+                  <li class="step-item">
+                    <div class="step-num">1</div>
+                    <div class="step-text">
+                      <h4>Download Extension Package</h4>
+                      <p>Download the distribution ZIP file below and extract it to a local folder.</p>
+                    </div>
+                  </li>
+                  <li class="step-item">
+                    <div class="step-num">2</div>
+                    <div class="step-text">
+                      <h4>Open Extensions Management</h4>
+                      <p>Navigate to <code>chrome://extensions</code> (or <code>helium://extensions</code>) and enable <strong>Developer mode</strong>.</p>
+                    </div>
+                  </li>
+                  <li class="step-item">
+                    <div class="step-num">3</div>
+                    <div class="step-text">
+                      <h4>Load Unpacked</h4>
+                      <p>Click <strong>Load unpacked</strong> and select the unzipped directory containing <code>manifest.json</code>.</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              <div class="platform-download-card">
+                <span class="asset-badge" data-asset-size="chrome">38.0 KB</span>
+                <h4 style="font-size: 1.1rem; color: #ffffff;" data-asset-name="chrome">SmoothBoost-Chrome-2.1.0.zip</h4>
+                <a href="https://github.com/BiniFn/SmoothBoost/releases/latest/download/SmoothBoost-Chrome-2.1.0.zip" class="btn btn-primary" data-download="chrome" download="SmoothBoost-Chrome-2.1.0.zip">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 17V3"/>
+                    <path d="m6 11 6 6 6-6"/>
+                    <path d="M19 21H5"/>
+                  </svg>
+                  <span>Download Chrome ZIP</span>
+                </a>
+                <span style="font-size: 12px; color: var(--text-muted);">
+                  Manifest V3 • Chromium 114+ compatible
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Platform Panel: Titanium Android -->
+          <div class="platform-panel" data-platform-panel="titanium" role="tabpanel" aria-labelledby="tab-plat-titanium" hidden>
+            <div class="platform-grid">
+              <div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 12px;">Titanium Browser on Android</h3>
+                <p style="color: rgba(255, 255, 255, 0.65); font-size: 13.5px; margin-bottom: 24px;">
+                  Tailored for mobile Chromium on Google Play. Features touch-friendly tap targets (&ge;44px), guarded desktop APIs, and Android memory pressure handling.
+                </p>
+                <ul class="step-list">
+                  <li class="step-item">
+                    <div class="step-num">1</div>
+                    <div class="step-text">
+                      <h4>Install Titanium Browser</h4>
+                      <p>Install Titanium Browser from Google Play on your Android phone or tablet.</p>
+                    </div>
+                  </li>
+                  <li class="step-item">
+                    <div class="step-num">2</div>
+                    <div class="step-text">
+                      <h4>Download Titanium Extension Build</h4>
+                      <p>Download the Titanium Android ZIP build directly to your mobile device.</p>
+                    </div>
+                  </li>
+                  <li class="step-item">
+                    <div class="step-num">3</div>
+                    <div class="step-text">
+                      <h4>Load in Titanium Extensions</h4>
+                      <p>Open Titanium Browser menu &rarr; <strong>Extensions</strong>, toggle Developer mode, and load the extension.</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              <div class="platform-download-card">
+                <span class="asset-badge" data-asset-size="titanium">38.0 KB</span>
+                <h4 style="font-size: 1.1rem; color: #ffffff;" data-asset-name="titanium">SmoothBoost-Titanium-Android-2.1.0.zip</h4>
+                <a href="https://github.com/BiniFn/SmoothBoost/releases/latest/download/SmoothBoost-Titanium-Android-2.1.0.zip" class="btn btn-primary" data-download="titanium" download="SmoothBoost-Titanium-Android-2.1.0.zip">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 17V3"/>
+                    <path d="m6 11 6 6 6-6"/>
+                    <path d="M19 21H5"/>
+                  </svg>
+                  <span>Download Titanium ZIP</span>
+                </a>
+                <span style="font-size: 12px; color: var(--text-muted);">
+                  Chromium Mobile • Touch-optimized UI
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Platform Panel: Firefox Desktop -->
+          <div class="platform-panel" data-platform-panel="firefox" role="tabpanel" aria-labelledby="tab-plat-firefox" hidden>
+            <div class="platform-grid">
+              <div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 12px;">Firefox Desktop</h3>
+                <p style="color: rgba(255, 255, 255, 0.65); font-size: 13.5px; margin-bottom: 24px;">
+                  Gecko MV3 compliant build utilizing background event pages and Firefox 128+ execution models.
+                </p>
+                <ul class="step-list">
+                  <li class="step-item">
+                    <div class="step-num">1</div>
+                    <div class="step-text">
+                      <h4>Download Firefox ZIP</h4>
+                      <p>Download the Firefox distribution archive below and unpack it.</p>
+                    </div>
+                  </li>
+                  <li class="step-item">
+                    <div class="step-num">2</div>
+                    <div class="step-text">
+                      <h4>Open Debug Add-ons</h4>
+                      <p>Navigate to <code>about:debugging#/runtime/this-firefox</code> in Firefox.</p>
+                    </div>
+                  </li>
+                  <li class="step-item">
+                    <div class="step-num">3</div>
+                    <div class="step-text">
+                      <h4>Load Temporary Add-on</h4>
+                      <p>Click <strong>Load Temporary Add-on...</strong> and select the <code>manifest.json</code> inside the unzipped folder.</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              <div class="platform-download-card">
+                <span class="asset-badge" data-asset-size="firefox">38.1 KB</span>
+                <h4 style="font-size: 1.1rem; color: #ffffff;" data-asset-name="firefox">SmoothBoost-Firefox-2.1.0.zip</h4>
+                <a href="https://github.com/BiniFn/SmoothBoost/releases/latest/download/SmoothBoost-Firefox-2.1.0.zip" class="btn btn-primary" data-download="firefox" download="SmoothBoost-Firefox-2.1.0.zip">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 17V3"/>
+                    <path d="m6 11 6 6 6-6"/>
+                    <path d="M19 21H5"/>
+                  </svg>
+                  <span>Download Firefox ZIP</span>
+                </a>
+                <span style="font-size: 12px; color: var(--text-muted);">
+                  Gecko MV3 • Event Pages • Firefox 128+
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Platform Panel: Firefox for Android -->
+          <div class="platform-panel" data-platform-panel="firefox-android" role="tabpanel" aria-labelledby="tab-plat-firefox-android" hidden>
+            <div class="platform-grid">
+              <div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 12px;">Firefox for Android</h3>
+                <p style="color: rgba(255, 255, 255, 0.65); font-size: 13.5px; margin-bottom: 24px;">
+                  GeckoView mobile extension target configured for Firefox Nightly or developer collections with mobile touch guards.
+                </p>
+                <ul class="step-list">
+                  <li class="step-item">
+                    <div class="step-num">1</div>
+                    <div class="step-text">
+                      <h4>Enable Developer Add-ons</h4>
+                      <p>In Firefox Nightly for Android, navigate to Settings &rarr; About Firefox Nightly and tap the logo 5 times.</p>
+                    </div>
+                  </li>
+                  <li class="step-item">
+                    <div class="step-num">2</div>
+                    <div class="step-text">
+                      <h4>Download Android Package</h4>
+                      <p>Download the Firefox Android ZIP package below.</p>
+                    </div>
+                  </li>
+                  <li class="step-item">
+                    <div class="step-num">3</div>
+                    <div class="step-text">
+                      <h4>Install via WebIDE or Collection</h4>
+                      <p>Deploy using USB debugging via <code>web-ext run --target=firefox-android</code> or your Custom Add-on Collection.</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              <div class="platform-download-card">
+                <span class="asset-badge" data-asset-size="firefox-android">38.1 KB</span>
+                <h4 style="font-size: 1.1rem; color: #ffffff;" data-asset-name="firefox-android">SmoothBoost-Firefox-Android-2.1.0.zip</h4>
+                <a href="https://github.com/BiniFn/SmoothBoost/releases/latest/download/SmoothBoost-Firefox-Android-2.1.0.zip" class="btn btn-primary" data-download="firefox-android" download="SmoothBoost-Firefox-Android-2.1.0.zip">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 17V3"/>
+                    <path d="m6 11 6 6 6-6"/>
+                    <path d="M19 21H5"/>
+                  </svg>
+                  <span>Download Firefox Android ZIP</span>
+                </a>
+                <span style="font-size: 12px; color: var(--text-muted);">
+                  GeckoView MV3 • Mobile optimized
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Release Notes & Changelog Section -->
+    <section id="releases" class="section-padding" aria-labelledby="changelog-heading">
+      <div class="container">
+        <div class="section-card">
+          <div class="section-head">
+            <div class="section-eyebrow">Release Ledger</div>
+            <h2 id="changelog-heading" class="section-title">Latest Updates &amp; Changelog</h2>
+            <p class="section-desc">
+              Directly synchronized with published releases on GitHub.
+            </p>
+          </div>
+
+          <div style="max-width: 760px; margin: 0 auto;">
+            <div class="detail-header" style="margin-bottom: 16px;">
+              <div>
+                <span class="profile-badge badge-auto" data-release-version>v2.1.0</span>
+                <span style="margin-left: 10px; font-size: 13px; color: var(--text-muted);" data-release-date>October 18, 2026</span>
+              </div>
+              <a href="https://github.com/BiniFn/SmoothBoost/releases/latest" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="height: 36px; padding: 0 16px; font-size: 13px;" data-release-url>
+                <span>View GitHub Release</span>
+              </a>
+            </div>
+
+            <div id="release-notes-content" class="changelog-box">
+              <ul class="changelog-list">
+                <li class="changelog-item">Loading latest release notes from GitHub...</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Technical FAQ Section -->
+    <section id="faq" class="section-padding" aria-labelledby="faq-heading">
+      <div class="container">
+        <div class="section-card">
+          <div class="section-head">
+            <div class="section-eyebrow">Frequently Answered Details</div>
+            <h2 id="faq-heading" class="section-title">Technical Questions &amp; Specifications</h2>
+            <p class="section-desc">
+              Answers regarding security, implementation mechanisms, and browser compatibility.
+            </p>
+          </div>
+
+          <div class="faq-grid">
+            <div class="faq-item">
+              <button class="faq-question" aria-expanded="false">
+                <span>How does SmoothBoost make scrolling smoother?</span>
+                <svg class="faq-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              <div class="faq-answer" hidden>
+                Standard webpages often bind non-passive wheel and touch event listeners on the window or document. When the user scrolls, the browser compositor thread must wait for JavaScript to execute to determine whether <code>preventDefault()</code> is invoked. SmoothBoost intercepts these registration calls at document start and declares them passive, enabling the browser compositor to update scroll offsets on the GPU thread without blocking.
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <button class="faq-question" aria-expanded="false">
+                <span>Will offscreen canvas throttling break Figma or Google Docs?</span>
+                <svg class="faq-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              <div class="faq-answer" hidden>
+                No. SmoothBoost includes archetype detection heuristics that classify document editors, drawing applications, and WebGL canvases during browser idle time. Applications such as Figma, Google Docs, Canva, and Photopea are marked as exempt. In addition, detached offscreen buffer canvases used by editors for background rasterization are never intercepted.
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <button class="faq-question" aria-expanded="false">
+                <span>What does the Battery Saver profile do?</span>
+                <svg class="faq-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              <div class="faq-answer" hidden>
+                Battery Saver is configured specifically for mobile devices and laptops running on battery. It applies <code>content-visibility: auto</code> to deep offscreen DOM nodes (omitting top-level containers), pauses idle canvas rendering loops, suspends ambient promotional video playback, and throttles non-interactive animations, significantly reducing CPU wakeups and GPU draw time.
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <button class="faq-question" aria-expanded="false">
+                <span>Does SmoothBoost collect any telemetry, analytics, or user browsing data?</span>
+                <svg class="faq-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              <div class="faq-answer" hidden>
+                SmoothBoost collects zero analytics, zero telemetry, and makes zero network requests for tracking. The extension communicates solely with local browser storage. The only external network call is an optional, manual GitHub release check triggered by the user in the popup.
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <button class="faq-question" aria-expanded="false">
+                <span>How do I disable optimizations if a website looks broken?</span>
+                <svg class="faq-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              <div class="faq-answer" hidden>
+                Open the SmoothBoost popup and click "Site looks broken" under the Help tab, or toggle the power switch to OFF for that site. This instantly purges any cached archetype classification and excludes the current hostname from optimization script injection.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BitChord-style Closing CTA Card -->
+    <section class="section-padding" aria-labelledby="closing-title">
+      <div class="container">
+        <div class="hero-outer-card" style="padding: 60px 24px;">
+          <h2 id="closing-title" class="hero-title" style="font-size: clamp(26px, 4vw, 42px); margin-bottom: 24px;">
+            <span class="text-white">A lightweight performance engine</span> <span class="text-muted">with zero compromises.</span>
+          </h2>
+          <div class="hero-ctas">
+            <a href="#compatibility" class="btn btn-primary">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 17V3"/>
+                <path d="m6 11 6 6 6-6"/>
+                <path d="M19 21H5"/>
+              </svg>
+              <span>Download Extension</span>
+            </a>
+            <a href="https://github.com/BiniFn/SmoothBoost" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+              <svg class="star-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>
+              </svg>
+              <span>Star on GitHub</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <div class="logo-group">
+          <svg class="logo-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="#111113" stroke="rgba(255, 255, 255, 0.18)" stroke-width="1.5"/>
+            <path d="M7 16L13 22L25 10" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="21" cy="11" r="3" fill="#38bdf8"/>
+          </svg>
+          <span>SmoothBoost</span>
+        </div>
+        <p>
+          High-performance, open-source browser extension engineered to eliminate main-thread scroll latency and reduce background rendering cycles.
+        </p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Navigation</h4>
+        <ul class="footer-links">
+          <li><a href="#features">Technical Features</a></li>
+          <li><a href="#profiles">Profiles &amp; Rules</a></li>
+          <li><a href="#benchmark">Compositor Demo</a></li>
+          <li><a href="#safeguards">App Safeguards</a></li>
+          <li><a href="#compatibility">Downloads</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Project Resources</h4>
+        <ul class="footer-links">
+          <li><a href="https://github.com/BiniFn/SmoothBoost" target="_blank" rel="noopener noreferrer">GitHub Repository</a></li>
+          <li><a href="https://github.com/BiniFn/SmoothBoost/releases" target="_blank" rel="noopener noreferrer">All Release Builds</a></li>
+          <li><a href="https://github.com/BiniFn/SmoothBoost/issues" target="_blank" rel="noopener noreferrer">Issue Tracker</a></li>
+          <li><a href="https://github.com/BiniFn/SmoothBoost/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="container footer-bottom">
+      <span>&copy; 2026 SmoothBoost. Released under the MIT License.</span>
+      <span>Engineered for Chromium and Gecko browsers.</span>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="assets/js/releases.js"></script>
+  <script src="assets/js/three-scene.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

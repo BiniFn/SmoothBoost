@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://binifn.github.io/SmoothBoost/sitemap.xml
