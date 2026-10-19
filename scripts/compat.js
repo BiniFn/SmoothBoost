@@ -71,6 +71,16 @@
     }
   }
 
+  function getPlatformKey() {
+    if (isFirefox) {
+      return isAndroid ? 'firefox-android' : 'firefox';
+    }
+    if (isTitaniumAndroid || isAndroid) {
+      return 'titanium';
+    }
+    return 'chrome';
+  }
+
   return {
     ext,
     isFirefox,
@@ -82,6 +92,7 @@
     hasDnr,
     hasScripting,
     getStorage,
-    setStorage
+    setStorage,
+    getPlatformKey
   };
 });

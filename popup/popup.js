@@ -262,9 +262,13 @@ async function checkForUpdates(force = false) {
 
   try {
     const fetchImpl = typeof fetch === 'function' ? fetch : undefined;
+    const platformKey = typeof SmoothBoostCompat !== 'undefined' && typeof SmoothBoostCompat.getPlatformKey === 'function'
+      ? SmoothBoostCompat.getPlatformKey()
+      : 'chrome';
     const result = await SmoothBoostUpdates.fetchLatestReleaseInfo(currentVersion, {
       signal: controller.signal,
-      fetchImpl
+      fetchImpl,
+      platformKey
     });
     if (!result) throw new Error('Could not check GitHub');
 

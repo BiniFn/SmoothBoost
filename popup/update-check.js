@@ -67,7 +67,38 @@
     return result;
   }
 
-  function fromRelease(currentVersion, release) {
+  function matchPlatformAsset(assets, platformKey) {
+    if (!Array.isArray(assets) || assets.length === 0) return null;
+    const cleanKey = String(platformKey || '').toLowerCase();
+
+    // 1. Direct browser platform match
+    if (cleanKey === 'firefox-android') {
+      const match = assets.find((a) => a && typeof a.name === 'string' && /firefox-android/i.test(a.name));
+      if (match) return match;
+    } else if (cleanKey === 'firefox') {
+      const match = assets.find((a) => a && typeof a.name === 'string' && /firefox/i.test(a.name) && !/android/i.test(a.name));
+      if (match) return match;
+    } else if (cleanKey === 'titanium') {
+      const match = assets.find((a) => a && typeof a.name === 'string' && /titanium/i.test(a.name));
+      if (match) return match;
+    } else if (cleanKey === 'chrome') {
+      const match = assets.find((a) => a && typeof a.name === 'string' && /chrome/i.test(a.name));
+      if (match) return match;
+    }
+
+    // 2. Legacy alias or generic package SmoothBoost-<version>.zip
+    const legacy = assets.find((a) => a && typeof a.name === 'string' && /^smoothboost-\d/i.test(a.name));
+    if (legacy) return legacy;
+
+    // 3. Any SmoothBoost zip asset
+    return assets.find((a) => {
+      if (!a || typeof a.name !== 'string') return false;
+      const name = a.name.toLowerCase();
+      return name.endsWith('.zip') && name.includes('smoothboost');
+    }) || null;
+  }
+
+  function fromRelease(currentVersion, release, options = {}) {
     if (!release || typeof release !== 'object' || release.draft || release.prerelease) return null;
     const rawTag = sanitizeTag(release.tag_name);
     let parsedTag = parseVersion(rawTag);
@@ -78,14 +109,9 @@
     if (!parsedTag) return null;
 
     const latestVersion = parsedTag.join('.');
-    let matchedAsset = null;
-    if (Array.isArray(release.assets)) {
-      matchedAsset = release.assets.find((asset) => {
-        if (!asset || typeof asset.name !== 'string') return false;
-        const name = asset.name.toLowerCase();
-        return name.endsWith('.zip') && name.includes('smoothboost');
-      });
-    }
+    const matchedAsset = Array.isArray(release.assets)
+      ? matchPlatformAsset(release.assets, options.platformKey)
+      : null;
 
     const hasZip = Boolean(matchedAsset);
     return createResult(currentVersion, latestVersion, hasZip, {
@@ -108,6 +134,7 @@
     const fetcher = typeof options.fetchImpl === 'function' ? options.fetchImpl : (typeof fetch === 'function' ? fetch : null);
     if (!fetcher) return null;
     const signal = options.signal;
+    const platformKey = options.platformKey;
 
     // 1. Try official GitHub REST API
     try {
@@ -118,7 +145,7 @@
       });
       if (response && response.ok) {
         const release = await response.json();
-        const result = fromRelease(currentVersion, release);
+        const result = fromRelease(currentVersion, release, options);
         if (result) return result;
       }
     } catch (_apiError) {
@@ -146,10 +173,33 @@
             });
             if (assetsRes && assetsRes.ok) {
               const html = await assetsRes.text();
-              const zipMatch = /href="\/[^"]*\/releases\/download\/([^"']+)\/(SmoothBoost-[^"']+\.zip)"/i.exec(html);
-              if (zipMatch) {
+              const pattern = /href="\/[^"]*\/releases\/download\/([^"']+)\/(SmoothBoost-[^"']+\.zip)"/ig;
+              let match;
+              let bestZip = undefined;
+              const key = String(platformKey || '').toLowerCase();
+
+              while ((match = pattern.exec(html)) !== null) {
+                const zipCandidate = sanitizeZipName(match[2]);
+                if (!zipCandidate) continue;
+                if (!bestZip) bestZip = zipCandidate;
+                const lower = zipCandidate.toLowerCase();
+                if (key === 'firefox-android' && lower.includes('firefox-android')) {
+                  bestZip = zipCandidate;
+                  break;
+                } else if (key === 'firefox' && lower.includes('firefox') && !lower.includes('android')) {
+                  bestZip = zipCandidate;
+                  break;
+                } else if (key === 'titanium' && lower.includes('titanium')) {
+                  bestZip = zipCandidate;
+                  break;
+                } else if (key === 'chrome' && lower.includes('chrome')) {
+                  bestZip = zipCandidate;
+                  break;
+                }
+              }
+              if (bestZip) {
                 hasZip = true;
-                zipFileName = sanitizeZipName(zipMatch[2]);
+                zipFileName = bestZip;
               }
             }
           } catch (_assetsErr) {}
@@ -182,9 +232,16 @@
         const parsed = parseVersion(data?.version);
         if (parsed) {
           const latestVersion = parsed.join('.');
+          let zipName = `SmoothBoost-${latestVersion}.zip`;
+          const key = String(platformKey || '').toLowerCase();
+          if (key === 'firefox') zipName = `SmoothBoost-Firefox-${latestVersion}.zip`;
+          else if (key === 'firefox-android') zipName = `SmoothBoost-Firefox-Android-${latestVersion}.zip`;
+          else if (key === 'titanium') zipName = `SmoothBoost-Titanium-Android-${latestVersion}.zip`;
+          else if (key === 'chrome') zipName = `SmoothBoost-Chrome-${latestVersion}.zip`;
+
           const result = createResult(currentVersion, latestVersion, true, {
             tag: `v${parsed[0]}`,
-            zipFileName: `SmoothBoost-${latestVersion}.zip`
+            zipFileName: zipName
           });
           if (result) return result;
         }

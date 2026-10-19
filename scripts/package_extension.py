@@ -116,6 +116,18 @@ def build_target(target_name: str, dist_dir: Path, custom_output: Path | None = 
     return created
 
 
+def clean_old_versions(dist_dir: Path, current_version: str) -> list[str]:
+    """Prune distribution ZIPs belonging to older versions."""
+    removed = []
+    if not dist_dir.is_dir():
+        return removed
+    for archive in dist_dir.glob("SmoothBoost-*.zip"):
+        if not archive.name.endswith(f"-{current_version}.zip") and not archive.name.endswith(f"{current_version}.zip"):
+            archive.unlink(missing_ok=True)
+            removed.append(archive.name)
+    return removed
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -136,6 +148,17 @@ def main() -> None:
 
     dist_dir = PROJECT_ROOT / "dist"
     targets_to_build = list(TARGET_CONFIGS.keys()) if args.target == "all" else [args.target]
+
+    # Read current version from manifest.json to prune obsolete legacy archives
+    manifest_source = json.loads((PROJECT_ROOT / "manifest.json").read_text(encoding="utf-8"))
+    current_version = manifest_source.get("version", "")
+    if current_version and not args.output:
+        pruned = clean_old_versions(dist_dir, current_version)
+        if pruned:
+            print(f"Pruned {len(pruned)} obsolete release archive(s) from {dist_dir.name}/:")
+            for old_name in pruned:
+                print(f"  - {old_name}")
+            print()
 
     print(f"Building SmoothBoost release targets: {', '.join(targets_to_build)}\n")
     all_created: list[Path] = []

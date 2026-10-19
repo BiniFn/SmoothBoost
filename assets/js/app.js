@@ -244,6 +244,7 @@
 
     tabs.forEach((tab) => {
       tab.addEventListener('click', () => {
+        window.__smoothboostPlatformUserSelected = true;
         const target = tab.getAttribute('data-platform-tab');
 
         tabs.forEach((t) => {
