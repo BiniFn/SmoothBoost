@@ -5,9 +5,8 @@
 (function () {
   'use strict';
 
-  const root = document.documentElement;
-  if (!root || root.getAttribute('data-smoothboost-hook-installed') === 'true') return;
-  root.setAttribute('data-smoothboost-hook-installed', 'true');
+  if (window.__smoothboostHookInstalled) return;
+  window.__smoothboostHookInstalled = true;
 
   const CHANNEL_ATTRIBUTE = 'data-smoothboost-channel';
   const REANIME_HERO_SELECTOR = '[aria-label="Hero carousel"], [aria-label*="hero carousel" i], [data-testid*="hero-carousel" i]';
@@ -41,7 +40,26 @@
   }
 
   const channelName = makeChannelName();
-  root.setAttribute(CHANNEL_ATTRIBUTE, channelName);
+
+  function markRootInstalled() {
+    const root = document.documentElement;
+    if (root) {
+      root.setAttribute('data-smoothboost-hook-installed', 'true');
+      root.setAttribute(CHANNEL_ATTRIBUTE, channelName);
+      try {
+        window.dispatchEvent(new CustomEvent('__smoothboost_page_hook_ready__'));
+      } catch (_e) {}
+      return true;
+    }
+    return false;
+  }
+
+  if (!markRootInstalled()) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('readystatechange', () => markRootInstalled(), { once: true });
+      document.addEventListener('DOMContentLoaded', () => markRootInstalled(), { once: true });
+    }
+  }
 
   function publishCarouselStatus(status) {
     if (!isReanime) return;

@@ -353,6 +353,19 @@ chrome.runtime.onInstalled.addListener(async ({ reason } = {}) => {
     }
 
     await queueScriptSync();
+
+    if (chrome.scripting?.executeScript && chrome.tabs?.query) {
+      try {
+        const tabs = await chrome.tabs.query({ url: ["http://*/*", "https://*/*"] });
+        for (const tab of tabs) {
+          if (!tab.id) continue;
+          chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ["scripts/content.js"]
+          }).catch(() => {});
+        }
+      } catch (_e) {}
+    }
   } catch (_error) {
     // Avoid unhandled rejection in background service worker
   }
@@ -370,6 +383,9 @@ chrome.storage.onChanged?.addListener((changes, areaName) => {
     queueScriptSync().catch(() => {});
   }
 });
+
+// Proactively synchronize registered content scripts on service worker start
+queueScriptSync().catch(() => {});
 
 // Update the toolbar badge for the active site.
 async function updateBadge(tabId, url) {
@@ -450,6 +466,23 @@ chrome.runtime.onMessage?.addListener((message, _sender, sendResponse) => {
   if (message?.type === "SYNC_CONTENT_SCRIPTS") {
     queueScriptSync().then(() => sendResponse({ success: true })).catch(() => sendResponse({ success: false }));
     return true;
+  }
+  if (message?.type === "INJECT_PAGE_HOOK" && _sender?.tab?.id) {
+    const tabId = _sender.tab.id;
+    if (chrome.scripting?.executeScript) {
+      chrome.scripting.executeScript({
+        target: { tabId },
+        world: "MAIN",
+        files: ["scripts/page-hook.js"]
+      }).then(() => {
+        sendResponse({ injected: true });
+      }).catch((_err) => {
+        sendResponse({ injected: false });
+      });
+      return true;
+    }
+    sendResponse({ injected: false });
+    return false;
   }
   if (message?.type === "PURGE_ARCHETYPE" && message.hostname) {
     chrome.storage.local.get("smoothBoostArchetypes").then(({ smoothBoostArchetypes }) => {

@@ -192,3 +192,48 @@ test('keyboard toggle consumes the expected missing-receiver error', async () =>
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(storedConfig.siteOverrides['example.com'].enabled, false);
 });
+
+test('INJECT_PAGE_HOOK message injects page-hook.js into MAIN world via chrome.scripting', async () => {
+  let messageListener;
+  let executedTarget = null;
+  const event = () => ({ addListener() {} });
+  const chrome = {
+    runtime: {
+      onInstalled: event(),
+      onMessage: {
+        addListener(listener) { messageListener = listener; }
+      },
+      onStartup: event(),
+      lastError: undefined
+    },
+    storage: {
+      local: { async get() { return {}; }, async set() {} },
+      onChanged: event()
+    },
+    scripting: {
+      async executeScript(options) {
+        executedTarget = options;
+        return [{ result: null }];
+      }
+    },
+    tabs: { onActivated: event(), onUpdated: event() },
+    commands: { onCommand: event() },
+    action: { setBadgeText() {}, setBadgeBackgroundColor() {} }
+  };
+  vm.runInNewContext(backgroundSource, { chrome, URL, Promise });
+
+  let responseData = null;
+  const handled = messageListener(
+    { type: 'INJECT_PAGE_HOOK' },
+    { tab: { id: 42 } },
+    (res) => { responseData = res; }
+  );
+
+  assert.equal(handled, true);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(executedTarget.target.tabId, 42);
+  assert.equal(executedTarget.world, 'MAIN');
+  assert.equal(executedTarget.files[0], 'scripts/page-hook.js');
+  assert.equal(responseData.injected, true);
+});
+

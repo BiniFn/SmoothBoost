@@ -4,6 +4,9 @@
 (function () {
   'use strict';
 
+  if (window.__smoothboostContentInjected) return;
+  window.__smoothboostContentInjected = true;
+
   const STYLE_ID = 'smoothboost-injected-styles';
   const CHANNEL_ATTRIBUTE = 'data-smoothboost-channel';
   const isTopFrame = window === window.top;
@@ -201,7 +204,7 @@
       css += '* , *::before, *::after { transition-duration: 0.0001s !important; transition-delay: 0s !important; }\n';
     }
     if (settings.killBlurFilters) {
-      css += '[data-smoothboost-blur="true"] { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }\n';
+      css += '[data-smoothboost-blur="true"], .backdrop-blur, .backdrop-blur-sm, .backdrop-blur-md, .backdrop-blur-lg, .backdrop-blur-xl, [class*="backdrop-blur-"] { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }\n';
     }
     if (settings.pauseOffscreenAnimations) {
       css += '[data-smoothboost-offscreen-animation="true"], [data-smoothboost-offscreen-animation="true"]::before, [data-smoothboost-offscreen-animation="true"]::after { animation-play-state: paused !important; }\n';
@@ -403,10 +406,13 @@
     canvasObserver.observe(canvas);
   }
 
+  let canvasMutationObserver = null;
   function updateCanvasObserver() {
     canvasObserver?.disconnect();
+    canvasMutationObserver?.disconnect();
     observedCanvases.clear();
     canvasObserver = null;
+    canvasMutationObserver = null;
     const shouldObserve = currentSettings.enabled && (
       currentSettings.mode === 'auto' || currentSettings.mode === 'ultra' || currentSettings.pauseOffscreenCanvas
     ) && currentArchetype !== 'interactive-canvas' && currentArchetype !== 'game-canvas';
@@ -431,6 +437,18 @@
     }, { threshold: 0.01, rootMargin: '250px 0px 250px 0px' });
 
     document.querySelectorAll('canvas').forEach(observeCanvas);
+    if (typeof MutationObserver === 'function' && document.documentElement) {
+      canvasMutationObserver = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          mutation.addedNodes?.forEach((node) => {
+            if (node.nodeType !== 1) return;
+            if (node.tagName === 'CANVAS') observeCanvas(node);
+            node.querySelectorAll?.('canvas').forEach(observeCanvas);
+          });
+        }
+      });
+      canvasMutationObserver.observe(document.documentElement, { childList: true, subtree: true });
+    }
   }
 
   function optimizeImagesAndIframes() {
@@ -629,6 +647,7 @@
     }
   }
 
+  let carouselMutationTimer = 0;
   function updateCarouselMarkers() {
     carouselMutationObserver?.disconnect();
     carouselMutationObserver = null;
@@ -639,13 +658,12 @@
     if (!shouldMark) return;
     scanGenericCarousels();
     if (typeof MutationObserver === 'function' && document.documentElement) {
-      carouselMutationObserver = new MutationObserver((mutations) => {
-        for (const mutation of mutations) {
-          mutation.addedNodes?.forEach((node) => {
-            if (node.nodeType !== 1) return;
-            scanGenericCarousels();
-          });
-        }
+      carouselMutationObserver = new MutationObserver(() => {
+        if (carouselMutationTimer) return;
+        carouselMutationTimer = window.setTimeout(() => {
+          carouselMutationTimer = 0;
+          scanGenericCarousels();
+        }, 300);
       });
       carouselMutationObserver.observe(document.documentElement, { childList: true, subtree: true });
     }
@@ -835,6 +853,11 @@
     syncPageHook(currentSettings);
   }
 
+  // Listen for signal from page-hook.js when it initializes in the MAIN world
+  window.addEventListener('__smoothboost_page_hook_ready__', () => {
+    connectPageHook();
+  });
+
   function handlePageHookEvent(event) {
     if (!currentSettings.enabled || !event.detail) return;
     if (event.detail.action === 'carousel-status' && isReanimeHomePage()) {
@@ -846,9 +869,20 @@
   }
 
   function tryInjectPageHook() {
-    if (pageHookChannel || document.documentElement?.getAttribute?.(CHANNEL_ATTRIBUTE) || document.getElementById('smoothboost-page-hook-script')) return;
+    if (pageHookChannel || document.documentElement?.getAttribute?.(CHANNEL_ATTRIBUTE)) return;
+
+    // 1. Ask background service worker to inject via chrome.scripting.executeScript (bypasses page CSP)
     try {
-      if (typeof chrome.runtime?.getURL !== 'function') return;
+      if (typeof chrome.runtime?.sendMessage === 'function') {
+        chrome.runtime.sendMessage({ type: 'INJECT_PAGE_HOOK' }, (res) => {
+          if (res?.injected) connectPageHook();
+        });
+      }
+    } catch (_e) {}
+
+    // 2. Direct DOM script injection fallback
+    try {
+      if (typeof chrome.runtime?.getURL !== 'function' || document.getElementById('smoothboost-page-hook-script')) return;
       const script = document.createElement('script');
       script.id = 'smoothboost-page-hook-script';
       script.src = chrome.runtime.getURL('scripts/page-hook.js');
@@ -857,22 +891,24 @@
       if (target) {
         target.appendChild(script);
         script.onload = () => script.remove();
+        script.onerror = () => script.remove();
       }
-    } catch (_e) {
-      // If page Content Security Policy (CSP) restricts external script tags,
-      // fail gracefully. Isolated content-script optimizations continue safely.
-    }
+    } catch (_e) {}
   }
 
   function observePageHookChannel() {
     connectPageHook();
     if (!pageHookChannel) tryInjectPageHook();
-    if (pageHookChannel || typeof MutationObserver !== 'function' || !document.documentElement) return;
+    if (pageHookChannel || typeof MutationObserver !== 'function') return;
     const observer = new MutationObserver(() => {
       connectPageHook();
       if (pageHookChannel) observer.disconnect();
     });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: [CHANNEL_ATTRIBUTE] });
+    if (document.documentElement) {
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: [CHANNEL_ATTRIBUTE] });
+    } else {
+      observer.observe(document, { childList: true, subtree: true });
+    }
     window.setTimeout(() => { observer.disconnect(); connectPageHook(); }, 1500);
   }
 
@@ -938,15 +974,23 @@
 
     scheduleClassification();
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
-        patchFontFaceDescriptors();
-        optimizeImagesAndIframes();
-      });
-    } else {
-      patchFontFaceDescriptors();
-      optimizeImagesAndIframes();
+    function onDomReady() {
+      updatePageObservers();
     }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', onDomReady, { once: true });
+    } else {
+      onDomReady();
+    }
+
+    window.addEventListener('load', () => {
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(() => updatePageObservers());
+      } else {
+        window.setTimeout(() => updatePageObservers(), 250);
+      }
+    }, { once: true });
   }
 
   chrome.storage.onChanged.addListener((changes, areaName) => {
