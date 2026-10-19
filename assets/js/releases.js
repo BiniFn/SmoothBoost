@@ -11,37 +11,37 @@
   const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
   const DEFAULT_RELEASE = {
-    version: 'v2.1.0',
-    publishedAt: 'October 18, 2026',
+    version: 'v2.2.0',
+    publishedAt: 'October 19, 2026',
     releaseUrl: RELEASES_PAGE_URL,
-    body: `### SmoothBoost v2.1.0 — Cross-Browser & Mobile Edition
+    body: `### SmoothBoost v2.2.0 — Stability, Contrast Safety & Device Setup Update
 
-- **Titanium Browser for Android**: Dedicated mobile release with touch-friendly controls (>= 44px tap targets) and Android Low Memory Killer (LMK) protection.
-- **Firefox Desktop & Android (Gecko MV3)**: Event-page background scripts with Firefox 128+ \`world: "MAIN"\` content script support.
-- **Battery Saver Profile**: Reduces CPU/GPU drain on mobile devices and laptops by enabling \`content-visibility: auto\` and pausing idle canvas draw loops.
-- **Interactive App Safeguards**: Classifies page archetypes and strictly exempts Figma, Google Docs, Canva, and WebGL games from canvas draw-skips.
-- **Settings Backup & Restore**: Export and import configurations via JSON with schema validation.
-- **100% Vector Dark UI**: Streamlined interface with vector SVG icons and verified operational metrics.`,
+- **Glassmorphic Contrast Safeguard**: Prevents translucent light cards (e.g., link-in-bio sites like Taplink) with light text from being forced to opaque white.
+- **Backdrop Blur Scan Optimization**: Eliminated whole-DOM forced reflow lag by targeting stylesheet rules and glass classes directly instead of querying all elements.
+- **Background & Particle Canvas Protection**: Canvases with fixed positioning or viewport backgrounds (such as ambient rain or snow) stay active without false-positive draw skips.
+- **Live WebRTC Stream Protection**: Live webcam and screen-sharing video elements on Google Meet, Discord, Zoom, and Teams are never throttled.
+- **Image Decoding Optimization**: Replaced layout-thrashing geometry checks with index and priority thresholds, protecting hero images.
+- **Device Setup Tutorial**: Step-by-step installation instructions for Android Titanium, desktop Chromium, and Firefox.`,
     downloads: {
       chrome: {
-        name: 'SmoothBoost-Chrome-2.1.0.zip',
-        url: `https://github.com/${GITHUB_REPO}/releases/latest/download/SmoothBoost-Chrome-2.1.0.zip`,
-        size: '38.0 KB'
+        name: 'SmoothBoost-Chrome-2.2.0.zip',
+        url: `https://github.com/${GITHUB_REPO}/releases/latest/download/SmoothBoost-Chrome-2.2.0.zip`,
+        size: '39.1 KB'
       },
       titanium: {
-        name: 'SmoothBoost-Titanium-Android-2.1.0.zip',
-        url: `https://github.com/${GITHUB_REPO}/releases/latest/download/SmoothBoost-Titanium-Android-2.1.0.zip`,
-        size: '38.0 KB'
+        name: 'SmoothBoost-Titanium-Android-2.2.0.zip',
+        url: `https://github.com/${GITHUB_REPO}/releases/latest/download/SmoothBoost-Titanium-Android-2.2.0.zip`,
+        size: '39.1 KB'
       },
       firefox: {
-        name: 'SmoothBoost-Firefox-2.1.0.zip',
-        url: `https://github.com/${GITHUB_REPO}/releases/latest/download/SmoothBoost-Firefox-2.1.0.zip`,
-        size: '38.1 KB'
+        name: 'SmoothBoost-Firefox-2.2.0.zip',
+        url: `https://github.com/${GITHUB_REPO}/releases/latest/download/SmoothBoost-Firefox-2.2.0.zip`,
+        size: '39.2 KB'
       },
       firefoxAndroid: {
-        name: 'SmoothBoost-Firefox-Android-2.1.0.zip',
-        url: `https://github.com/${GITHUB_REPO}/releases/latest/download/SmoothBoost-Firefox-Android-2.1.0.zip`,
-        size: '38.1 KB'
+        name: 'SmoothBoost-Firefox-Android-2.2.0.zip',
+        url: `https://github.com/${GITHUB_REPO}/releases/latest/download/SmoothBoost-Firefox-Android-2.2.0.zip`,
+        size: '39.2 KB'
       }
     }
   };

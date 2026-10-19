@@ -324,11 +324,12 @@
   function isInteractiveTarget(target) {
     if (isMapHost) return true;
     if (!target) return false;
-    const isInput = target.tagName && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
-    if (isInput) return true;
+    const tagName = target.tagName ? String(target.tagName).toUpperCase() : '';
+    if (['INPUT', 'TEXTAREA', 'SELECT', 'CANVAS'].includes(tagName)) return true;
+    if (target.isContentEditable) return true;
     if (typeof target.closest === 'function') {
       return !!target.closest(
-        '.leaflet-container, .mapboxgl-map, [aria-roledescription="map"], canvas, [data-smoothboost-allow-prevent-default], [role="slider"], input[type="range"], .monaco-editor, .ace_editor, .cm-editor, #canvas, #unity-canvas, .game-canvas'
+        '.leaflet-container, .mapboxgl-map, [aria-roledescription="map"], canvas, [data-smoothboost-allow-prevent-default], [role="slider"], input[type="range"], .monaco-editor, .ace_editor, .cm-editor, #canvas, #unity-canvas, .game-canvas, [contenteditable="true"], [draggable="true"], [data-draggable], .draggable, .drag-handle, .swiper-slide, [role="dialog"], [aria-modal="true"]'
       );
     }
     return false;
@@ -363,6 +364,7 @@
     const canvas = ctx?.canvas;
     // Never skip draws on explicitly detached buffer canvases
     if (!canvas || canvas.isConnected === false) return false;
+    if (canvas.style && (canvas.style.position === 'fixed' || canvas.style.position === 'sticky')) return false;
     return canvas.getAttribute?.('data-smoothboost-offscreen-canvas') === 'true';
   }
 

@@ -90,6 +90,7 @@ async function createFrame(hostname, { topFrame = true, videos = [], extraElemen
     setTimeout,
     clearTimeout,
     getComputedStyle(element) {
+      if (element.customStyle) return element.customStyle;
       return element === extraElements[0] && extraElements[0].blurred
         ? { backdropFilter: 'blur(12px)', webkitBackdropFilter: 'none', backgroundColor: 'rgba(20, 30, 40, 0.2)', animationName: 'none' }
         : { backdropFilter: 'none', webkitBackdropFilter: 'none', backgroundColor: 'transparent', animationName: element.animationName || 'none' };
@@ -230,4 +231,32 @@ test('page status and diagnostics report measured page data', async () => {
   assert.equal(result.diagnostics.autoplayVideos, 1);
   assert.equal(typeof result.diagnostics.animationLoops, 'number');
   assert.equal(result.diagnostics.longFrameApi, false);
+});
+
+test('translucent light elements with light text are not forced to opaque white', async () => {
+  const panel = makeElement('DIV');
+  panel.blurred = true;
+  panel.customStyle = {
+    backdropFilter: 'blur(10px)',
+    webkitBackdropFilter: 'none',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    color: 'rgba(255, 255, 255, 0.95)',
+    animationName: 'none'
+  };
+  panel.querySelectorAll = () => [];
+  const frame = await createFrame('taplink.cc', { extraElements: [panel] });
+  await new Promise((resolve) => setTimeout(resolve, 25));
+
+  assert.equal(panel.getAttribute('data-smoothboost-blur'), 'true');
+  // Must NOT force background-color to 0.92, preserving contrast for light text!
+  assert.equal(panel.style.getPropertyValue('background-color'), '');
+});
+
+test('WebRTC media stream videos are not observed or paused as background previews', async () => {
+  const video = makeElement('VIDEO');
+  Object.assign(video, { autoplay: true, loop: true, muted: true, controls: false, paused: false, srcObject: {} });
+  const frame = await createFrame('meet.google.com', { videos: [video] });
+  // WebRTC stream is protected from background video throttling and never observed
+  assert.equal(video.paused, false, 'WebRTC video is never paused');
+  assert.equal(frame.observers.some((obs) => obs.targets?.has(video)), false, 'WebRTC video is never observed');
 });

@@ -24,7 +24,7 @@ function getPopupExports() {
   const context = {
     document: fakeDoc,
     window: { matchMedia: () => ({ matches: false }) },
-    chrome: { runtime: { getManifest: () => ({ version: '2.1.0' }) } },
+    chrome: { runtime: { getManifest: () => ({ version: '2.2.0' }) } },
     module: { exports: {} },
     URL,
     Blob: class {},
@@ -42,7 +42,7 @@ test('validateImportedSettings accepts valid SmoothBoost backup payload', () => 
 
   const backup = {
     app: 'SmoothBoost',
-    version: '2.1.0',
+    version: '2.2.0',
     exportedAt: '2026-10-17T20:00:00.000Z',
     config: {
       settingsVersion: 4,

@@ -201,7 +201,7 @@ test('update notification pops up on the main screen when an update is available
   const { elements } = await renderPopup({
     url: 'https://www.roblox.com/home',
     response: { status: 'active', enabled: true, mode: 'auto' },
-    mockRelease: { tag_name: 'v2.1.0', draft: false, prerelease: false, assets: [{ name: 'SmoothBoost-2.1.0.zip' }] }
+    mockRelease: { tag_name: 'v2.2.0', draft: false, prerelease: false, assets: [{ name: 'SmoothBoost-2.2.0.zip' }] }
   });
 
   // Simulate update check returning a newer version (e.g. v2.0.1)

@@ -13,7 +13,7 @@ test('Chrome & Titanium Android manifest.json is fully valid MV3 and all assets 
   const manifest = JSON.parse(content);
 
   assert.equal(manifest.manifest_version, 3, 'is MV3');
-  assert.equal(manifest.version, '2.1.0', 'version is 2.1.0');
+  assert.equal(manifest.version, '2.2.0', 'version is 2.2.0');
   assert.ok(manifest.name, 'has name');
   assert.ok(manifest.description, 'has description');
 
@@ -53,7 +53,7 @@ test('Firefox manifest.firefox.json is fully valid Gecko MV3 and all assets exis
   const manifest = JSON.parse(content);
 
   assert.equal(manifest.manifest_version, 3, 'is MV3');
-  assert.equal(manifest.version, '2.1.0', 'version is 2.1.0');
+  assert.equal(manifest.version, '2.2.0', 'version is 2.2.0');
 
   // Verify Gecko BSS
   const bss = manifest.browser_specific_settings;

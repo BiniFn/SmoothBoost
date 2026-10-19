@@ -12,7 +12,7 @@ const isMobilePlatform = typeof SmoothBoostCompat !== "undefined"
   : (typeof navigator !== "undefined" && /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || ""));
 
 const DEFAULT_SETTINGS = {
-  settingsVersion: 4,
+  settingsVersion: 5,
   globalEnabled: true,
   mode: "auto",
   showAutoPromo: false,

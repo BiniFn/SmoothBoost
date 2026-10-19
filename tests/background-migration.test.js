@@ -47,7 +47,7 @@ test('upgrade resets unsafe legacy Custom defaults and preserves profile and fra
     siteOverrides: { 'example.com': { mode: 'custom', enabled: false } }
   }, 'update');
 
-  assert.equal(migrated.settingsVersion, 4);
+  assert.equal(migrated.settingsVersion, 5);
   assert.equal(migrated.showAutoPromo, true);
   assert.equal(migrated.mode, 'custom');
   assert.equal(migrated.customSettings.killAnimations, false);
@@ -63,7 +63,7 @@ test('upgrade resets unsafe legacy Custom defaults and preserves profile and fra
 test('fresh install starts with safe Custom defaults', async () => {
   const installed = await runInstallation(null, 'install');
 
-  assert.equal(installed.settingsVersion, 4);
+  assert.equal(installed.settingsVersion, 5);
   assert.equal(installed.customSettings.killAnimations, false);
   assert.equal(installed.customSettings.killScrollHijack, false);
   assert.equal(installed.customSettings.pauseBackgroundMedia, false);

@@ -62,7 +62,7 @@ test('popup PRESET_CONFIGS defines aggressive battery savings without breaking C
   const context = {
     document: fakeDoc,
     window: { matchMedia: () => ({ matches: false }) },
-    chrome: { runtime: { getManifest: () => ({ version: '2.1.0' }) } },
+    chrome: { runtime: { getManifest: () => ({ version: '2.2.0' }) } },
     module: { exports: {} },
     URL,
     Blob: class {},

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "SmoothBoost: Web Lag & Animation Killer",
   "short_name": "SmoothBoost",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Intelligent web performance optimizer: eliminates lag, throttles background canvas & media, and accelerates scrolling.",
   "browser_specific_settings": {
     "gecko": {

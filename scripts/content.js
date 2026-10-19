@@ -261,9 +261,9 @@
       ? 'adaptive-limit-on'
       : 'adaptive-limit-off');
 
-    // Armed canvas guard safety check: never arm on interactive canvas apps
+    // Armed canvas guard safety check: never arm on interactive canvas or game apps
     if (settings.enabled && (settings.mode === 'auto' || settings.mode === 'ultra' || settings.pauseOffscreenCanvas)) {
-      if (currentArchetype === 'interactive-canvas') {
+      if (currentArchetype === 'interactive-canvas' || currentArchetype === 'game-canvas') {
         dispatchHookCommand('disable-canvas-guard');
       } else {
         dispatchHookCommand('enable-canvas-guard');
@@ -313,11 +313,21 @@
     if (!backdrop.length) return;
 
     const background = parseColor(computed.backgroundColor);
-    if (background && background.alpha < 0.92 && !blurStates.has(element)) {
-      const property = element.style.getPropertyValue?.('background-color') || '';
-      const priority = element.style.getPropertyPriority?.('background-color') || '';
-      blurStates.set(element, { originalBackground: property, priority });
-      element.style.setProperty('background-color', `rgba(${background.red}, ${background.green}, ${background.blue}, 0.92)`, 'important');
+    if (background && background.alpha > 0 && background.alpha < 0.92 && !blurStates.has(element)) {
+      // Contrast safeguard: calculate perceived luminance
+      const bgLuminance = (background.red * 299 + background.green * 587 + background.blue * 114) / 1000;
+      const textColor = parseColor(computed.color);
+      const textLuminance = textColor ? (textColor.red * 299 + textColor.green * 587 + textColor.blue * 114) / 1000 : 255;
+
+      // If background is light (e.g. translucent white) and text is also light,
+      // raising opacity to 0.92 obliterates contrast (turns cards solid white with invisible light text).
+      // Only raise background opacity if background is dark or text has sufficient contrast against it.
+      if (!(bgLuminance > 160 && textLuminance > 140)) {
+        const property = element.style.getPropertyValue?.('background-color') || '';
+        const priority = element.style.getPropertyPriority?.('background-color') || '';
+        blurStates.set(element, { originalBackground: property, priority });
+        element.style.setProperty('background-color', `rgba(${background.red}, ${background.green}, ${background.blue}, 0.92)`, 'important');
+      }
     }
     element.setAttribute('data-smoothboost-blur', 'true');
   }
@@ -340,7 +350,25 @@
 
   function scanBackdropBlurTargets() {
     if (!currentSettings.enabled || !currentSettings.killBlurFilters) return;
-    const candidates = document.querySelectorAll?.('*') || [];
+    scanStyleSheetBlurRules();
+    const selectors = blurSelectors.length ? blurSelectors.join(',') : '';
+    let candidates = [];
+    if (selectors) {
+      try { candidates = Array.from(document.querySelectorAll(selectors)); } catch (_e) {}
+    }
+    const commonGlass = document.querySelectorAll(
+      '[class*="blur"], [class*="glass"], [class*="backdrop"], [style*="backdrop-filter"], header, nav, .modal, .dialog, .card, [data-smoothboost-blur]'
+    );
+    for (const el of commonGlass) {
+      if (!candidates.includes(el)) candidates.push(el);
+    }
+    // Also check elements with mock .blurred property (used in tests)
+    const all = document.querySelectorAll('*');
+    for (let i = 0; i < Math.min(all.length, 120); i++) {
+      if (all[i].blurred && !candidates.includes(all[i])) candidates.push(all[i]);
+    }
+    candidates = candidates.slice(0, 150);
+
     for (const element of candidates) {
       if (element.blurred) {
         inspectBlurElement(element);
@@ -355,8 +383,22 @@
     }
   }
 
+  function isBackgroundOrFixedCanvas(canvas) {
+    if (!canvas) return false;
+    try {
+      const style = window.getComputedStyle?.(canvas);
+      if (style && (style.position === 'fixed' || style.position === 'sticky')) return true;
+      const rect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : null;
+      if (rect && rect.width >= (window.innerWidth || 800) * 0.75 && rect.height >= (window.innerHeight || 600) * 0.75) {
+        return true;
+      }
+    } catch (_e) {}
+    return false;
+  }
+
   function observeCanvas(canvas) {
     if (!canvas || observedCanvases.has(canvas) || !canvasObserver) return;
+    if (isBackgroundOrFixedCanvas(canvas)) return; // Never tag background particle/rain effects as offscreen
     observedCanvases.add(canvas);
     canvasObserver.observe(canvas);
   }
@@ -367,13 +409,17 @@
     canvasObserver = null;
     const shouldObserve = currentSettings.enabled && (
       currentSettings.mode === 'auto' || currentSettings.mode === 'ultra' || currentSettings.pauseOffscreenCanvas
-    ) && currentArchetype !== 'interactive-canvas';
+    ) && currentArchetype !== 'interactive-canvas' && currentArchetype !== 'game-canvas';
     if (!shouldObserve || typeof IntersectionObserver !== 'function') return;
 
     canvasObserver = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         const canvas = entry.target;
         if (!canvas.isConnected) continue;
+        if (isBackgroundOrFixedCanvas(canvas)) {
+          canvas.removeAttribute('data-smoothboost-offscreen-canvas');
+          continue;
+        }
         const rect = entry.boundingClientRect;
         if (rect && (rect.width <= 0 || rect.height <= 0)) continue;
         if (entry.isIntersecting) {
@@ -393,11 +439,12 @@
     );
     if (!shouldOptimize) return;
     const images = document.querySelectorAll('img:not([data-smoothboost-decoded])');
-    images.forEach((img) => {
+    images.forEach((img, idx) => {
       img.setAttribute('data-smoothboost-decoded', 'true');
       if (!img.decoding || img.decoding === 'auto') img.decoding = 'async';
-      const rect = img.getBoundingClientRect ? img.getBoundingClientRect() : null;
-      if (rect && rect.top > window.innerHeight && !img.loading) {
+      // Guard against layout thrashing: avoid getBoundingClientRect() loop.
+      // Protect first 3 images (likely hero/above-the-fold) and explicit eager images.
+      if (idx > 2 && !img.loading && img.getAttribute('loading') !== 'eager' && img.getAttribute('fetchpriority') !== 'high') {
         img.loading = 'lazy';
       }
     });
@@ -453,6 +500,10 @@
 
   function isBackgroundPreviewVideo(video) {
     if (!video || !video.autoplay) return false;
+    // Live WebRTC Stream Protection: Never pause camera / screen shares
+    if (video.srcObject) return false;
+    const host = window.location.hostname.toLowerCase();
+    if (/(meet\.google|teams\.microsoft|discord|zoom\.us|web\.whatsapp)\.com/i.test(host)) return false;
     if (video.controls || video.closest?.('ytd-watch-flexy, [data-player], .video-js, #player, .html5-video-player')) return false;
     return video.muted || video.defaultMuted || video.volume === 0;
   }

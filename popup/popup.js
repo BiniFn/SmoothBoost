@@ -1,7 +1,7 @@
-// SmoothBoost - popup controller (v2.0.0)
+// SmoothBoost - popup controller (v2.2.0)
 
 const DEFAULT_SETTINGS = {
-  settingsVersion: 4,
+  settingsVersion: 5,
   globalEnabled: true,
   mode: 'auto',
   showAutoPromo: false,
