@@ -229,9 +229,18 @@
     }
   }
 
+  function escapeHtml(text) {
+    return String(text || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   function markdownToHtml(md) {
     if (!md) return '';
-    return md
+    return escapeHtml(md)
       .replace(/### (.*?)\n/g, '<h4 class="changelog-heading">$1</h4>')
       .replace(/## (.*?)\n/g, '<h3 class="changelog-heading">$1</h3>')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')

@@ -245,7 +245,8 @@ async function checkBackgroundUpdates() {
 
     if (!tag) return;
     const vMatch = /^v?(\d{1,3}(?:\.\d{1,3}){0,2})/.exec(tag);
-    let parsedTag = vMatch ? vMatch[1] : tag.replace(/^v/, "");
+    if (!vMatch) return;
+    let parsedTag = vMatch[1];
     // Ensure at least 3 parts for consistency
     const parts = parsedTag.split(".");
     while (parts.length < 3) parts.push("0");

@@ -240,7 +240,7 @@
           else if (key === 'chrome') zipName = `SmoothBoost-Chrome-${latestVersion}.zip`;
 
           const result = createResult(currentVersion, latestVersion, true, {
-            tag: `v${parsed[0]}`,
+            tag: `v${latestVersion}`,
             zipFileName: zipName
           });
           if (result) return result;

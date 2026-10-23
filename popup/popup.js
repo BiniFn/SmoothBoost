@@ -450,34 +450,41 @@ function renderMetricsPills(metrics) {
   if (!metricsContainer || !metrics) return;
   const pills = [];
 
-  if (metrics.passiveListeners > 0) {
+  const passive = Math.max(0, Math.floor(Number(metrics.passiveListeners) || 0));
+  const videos = Math.max(0, Math.floor(Number(metrics.pausedVideos) || 0));
+  const blurs = Math.max(0, Math.floor(Number(metrics.bypassedBlurs) || 0));
+  const canvases = Math.max(0, Math.floor(Number(metrics.offscreenCanvases) || 0));
+  const draws = Math.max(0, Math.floor(Number(metrics.canvasDrawsSkipped) || 0));
+  const fonts = Math.max(0, Math.floor(Number(metrics.patchedFonts) || 0));
+
+  if (passive > 0) {
     pills.push(`
       <span class="metric-pill">
         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 7l-5-5-5 5M17 17l-5 5-5-5"/></svg>
-        ${metrics.passiveListeners} scroll listeners passive
+        ${passive} scroll listeners passive
       </span>
     `);
   }
 
-  if (metrics.pausedVideos > 0) {
+  if (videos > 0) {
     pills.push(`
       <span class="metric-pill">
         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="4" height="16" x="6" y="4" rx="1"/><rect width="4" height="16" x="14" y="4" rx="1"/></svg>
-        ${metrics.pausedVideos} background videos paused
+        ${videos} background videos paused
       </span>
     `);
   }
 
-  if (metrics.bypassedBlurs > 0) {
+  if (blurs > 0) {
     pills.push(`
       <span class="metric-pill">
         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        ${metrics.bypassedBlurs} blur panels bypassed
+        ${blurs} blur panels bypassed
       </span>
     `);
   }
 
-  if (metrics.offscreenCanvases > 0 || metrics.canvasDrawsSkipped > 0) {
+  if (canvases > 0 || draws > 0) {
     pills.push(`
       <span class="metric-pill">
         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
@@ -486,11 +493,11 @@ function renderMetricsPills(metrics) {
     `);
   }
 
-  if (metrics.patchedFonts > 0) {
+  if (fonts > 0) {
     pills.push(`
       <span class="metric-pill">
         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>
-        ${metrics.patchedFonts} fonts swapped
+        ${fonts} fonts swapped
       </span>
     `);
   }
@@ -779,6 +786,9 @@ function validateImportedSettings(parsed) {
     for (const [hostname, site] of Object.entries(rawConfig.siteOverrides)) {
       if (typeof hostname === 'string' && hostname.trim() && site && typeof site === 'object') {
         const cleanHost = hostname.trim().toLowerCase();
+        if (cleanHost === '__proto__' || cleanHost === 'prototype' || cleanHost === 'constructor') {
+          continue;
+        }
         const cleanSite = {};
         if (typeof site.enabled === 'boolean') cleanSite.enabled = site.enabled;
         if (validModes.includes(site.mode)) cleanSite.mode = site.mode;

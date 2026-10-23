@@ -863,8 +863,10 @@
     if (event.detail.action === 'carousel-status' && isReanimeHomePage()) {
       updateReanimeRuleState(event.detail.status);
     } else if (event.detail.action === 'hook-metrics') {
-      hookPassiveCount = event.detail.passiveListenersIntercepted || 0;
-      hookCanvasDrawSkipCount = event.detail.canvasDrawCallsSkipped || 0;
+      const passive = Number(event.detail.passiveListenersIntercepted);
+      const skipped = Number(event.detail.canvasDrawCallsSkipped);
+      hookPassiveCount = Number.isFinite(passive) && passive >= 0 ? Math.floor(passive) : 0;
+      hookCanvasDrawSkipCount = Number.isFinite(skipped) && skipped >= 0 ? Math.floor(skipped) : 0;
     }
   }
 
@@ -1004,6 +1006,7 @@
     if (message.type === 'CONFIG_UPDATED') {
       applySettings(effectiveSettings(message.config, window.location.hostname.toLowerCase()));
       sendResponse?.({ success: true });
+      return false;
     } else if (message.type === 'GET_STATUS') {
       dispatchHookCommand('get-hook-metrics');
       sendResponse?.(initialized ? {
@@ -1013,8 +1016,10 @@
         archetype: currentArchetype,
         siteRule: isReanimeHomePage() ? reanimeRuleState : 'not-applicable'
       } : { status: 'initializing' });
+      return false;
     } else if (message.type === 'GET_DIAGNOSTICS') {
       sendResponse?.({ status: initialized ? 'active' : 'initializing', diagnostics: getDiagnostics() });
+      return false;
     } else if (message.type === 'GET_METRICS') {
       dispatchHookCommand('get-hook-metrics');
       sendResponse?.({
@@ -1031,6 +1036,7 @@
           patchedFonts: patchedFontsCount
         }
       });
+      return false;
     } else if (message.type === 'PURGE_ARCHETYPE') {
       const hostname = window.location.hostname.toLowerCase();
       chrome.storage.local.get(ARCHETYPE_CACHE_KEY).then((stored) => {
@@ -1043,7 +1049,7 @@
       }).catch(() => sendResponse?.({ success: false }));
       return true;
     }
-    return true;
+    return false;
   });
 
   init().catch(() => {

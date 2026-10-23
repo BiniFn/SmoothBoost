@@ -105,3 +105,19 @@ test('validateImportedSettings defaults invalid profiles to auto and clamps fpsL
   assert.equal(validated.siteOverrides['example.com'].mode, undefined, 'fake mode ignored');
   assert.equal(validated.siteOverrides['example.com'].customSettings.fpsLimit, 10, 'fpsLimit clamped to 10');
 });
+
+test('validateImportedSettings ignores prototype pollution keys in siteOverrides', () => {
+  const { validateImportedSettings } = getPopupExports();
+
+  const payload = {
+    mode: 'auto',
+    siteOverrides: JSON.parse('{"__proto__": {"polluted": true}, "prototype": {"polluted": true}, "constructor": {"polluted": true}, "normal.com": {"enabled": true}}')
+  };
+
+  const validated = validateImportedSettings(payload);
+  assert.equal(Object.prototype.polluted, undefined, 'global Object prototype was not polluted');
+  assert.equal(Object.keys(validated.siteOverrides).includes('__proto__'), false, '__proto__ key was discarded');
+  assert.equal(Object.keys(validated.siteOverrides).includes('prototype'), false, 'prototype key was discarded');
+  assert.equal(Object.keys(validated.siteOverrides).includes('constructor'), false, 'constructor key was discarded');
+  assert.equal(validated.siteOverrides['normal.com'].enabled, true, 'valid host override preserved');
+});
