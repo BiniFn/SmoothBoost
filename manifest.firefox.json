@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "SmoothBoost: Web Lag & Animation Killer",
+  "name": "SmoothBoost: Web Performance Optimizer",
   "short_name": "SmoothBoost",
-  "version": "2.2.0",
-  "description": "Intelligent web performance optimizer: eliminates lag, throttles background canvas & media, and accelerates scrolling.",
+  "version": "2.3.0",
+  "description": "Browser-aware performance controls for smoother scrolling and lighter background work.",
   "browser_specific_settings": {
     "gecko": {
       "id": "smoothboost@binifn.github.io",

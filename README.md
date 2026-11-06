@@ -1,6 +1,6 @@
 # SmoothBoost
 
-SmoothBoost is a high-performance, cross-browser, and cross-platform web acceleration extension. It intelligently eliminates background rendering overhead, throttles offscreen canvases and media, and accelerates page scrolling—keeping web browsing buttery-smooth while protecting interactive productivity tools, games, and active media.
+SmoothBoost is a cross-browser performance extension for smoother scrolling and lighter background work. It detects the kind of page before applying heavier rules, while preserving live calls, interactive apps, and user-controlled animation preferences.
 
 Supported across **Chrome & Helium Desktop**, **Titanium Browser on Android**, **Firefox Desktop**, and **Firefox for Android**.
 
@@ -22,31 +22,34 @@ Supported across **Chrome & Helium Desktop**, **Titanium Browser on Android**, *
 
 ---
 
-## Core Features & What's New in v2.2.0
+## Core Features & What's New in v2.3.0
 
+- **Adaptive Frame Pressure Control**: The optional Custom limiter responds to sustained long frames with recovery windows, then yields to active input and live media.
 - **Contrast Safety for Glassmorphic Elements**: Guards translucent light cards with light text (such as link-in-bio profiles like Taplink) from being forced to opaque white.
 - **Backdrop Blur Scan Optimization**: Eliminated forced reflow lag by targeting stylesheet rules and glass classes directly instead of scanning the full DOM tree.
 - **Background & Particle Canvas Protection**: Ambient background canvases (such as rain or snow animations) with fixed positioning stay active without false-positive draw skips.
 - **Live WebRTC Stream Protection**: Live webcam and screen-sharing video elements on Google Meet, Discord, Zoom, and Teams are never throttled.
+- **Real-Time App Detection**: Discord, Meet, Teams, Zoom, and WhatsApp are recognized before heavier page scans. Automatic profiles preserve calls, canvas content, and interface motion while retaining safe scroll handling.
+- **Motion Preference Respect**: Automatic profiles leave animation playback on ws.ryuo.to to the site's Reduce motion setting.
 - **Cross-Browser & Mobile Architecture**: Universal `compat.js` abstraction normalizing Chromium (`chrome.*`) and Gecko (`browser.*`) runtimes across desktop and mobile.
 - **Titanium Browser for Android Support**: Dedicated `titanium-android` release target for Titanium Browser users on Google Play. Features responsive fluid layout (320px–420px), large touch targets (>= 44px), and background efficiency.
 - **Firefox MV3 Event Page Support**: Tailored Gecko Manifest V3 with event page background scripts, Firefox 128+ `world: "MAIN"` content scripts, and CSP-aware inline injection fallback.
 - **Battery Saver Profile (`battery`)**: High-efficiency profile cutting power consumption on mobile devices and laptops. Enables aggressive offscreen DOM `content-visibility: auto`, suspends background media and canvases, and throttles non-interactive animations while preserving touch responsiveness. Displays an amber `BATT` badge.
-- **Interactive App Safeguards**: Classifies pages into 5 archetypes (`interactive-canvas`, `media-stream`, `infinite-feed`, `game-canvas`, `standard`). Automatically disables canvas and animation throttling on Figma, Google Docs, Canva, Monaco/Ace code editors, and WebGL games.
+- **Interactive App Safeguards**: Classifies pages into 6 archetypes (`interactive-canvas`, `media-stream`, `infinite-feed`, `game-canvas`, `realtime-app`, `standard`). Automatically disables canvas and animation throttling on Figma, Google Docs, Canva, Monaco/Ace code editors, WebGL games, and live communication apps.
 - **Hardware-Composited Scrolling**: Upgrades scroll and touch listeners to `passive: true`, unblocking 60/120 FPS compositor scrolling while preserving `preventDefault` on maps (Google Maps, Leaflet) and sliders.
 - **Settings Backup & Restore**: Export settings to JSON and import them with schema validation and parameter clamping across all your devices and browsers.
 - **Site Recovery System**: Instant "Site looks broken" one-click override that disables optimizations for the current hostname, purges cached archetypes, and reloads the tab.
-- **100% Vector Dark UI**: Premium SVG vector icons, live verified optimizer counters (zero fake percentages), and complete elimination of emoji icons.
+- **Vector Dark UI**: SVG icons, a responsive controls panel, and diagnostics that report extension state.
 
 ---
 
 ## Profiles
 
-- **Smart Auto** *(Default)*: Runs lightweight idle heuristics (`requestIdleCallback`) to detect page structure. Pauses offscreen media, accelerates compositor scrolling, bypasses blur filters, and dynamically disables canvas throttling on interactive tools.
+- **Smart Auto** *(Default)*: Recognizes communication apps by hostname before generic page checks. Uses passive scrolling on safe targets, pauses offscreen work on standard pages, and keeps live calls and app motion active.
 - **Turbo (Maximum)**: Full acceleration profile for high-power web browsing. Pauses offscreen ambient media, suspends offscreen canvas rendering, enforces compositor scrolling, decodes images asynchronously, and bypasses heavy backdrop blur filters.
 - **Balanced**: Subtle optimizations that preserve page visuals and media behavior without heavy intervention.
-- **Battery Saver**: Aggressive power savings for mobile devices and laptops on battery power. Applies offscreen DOM `content-visibility`, suspends background canvas updates, pauses offscreen videos, and throttles canvas frames outside interactive editors.
-- **Custom**: Granular tuning drawer providing individual toggles for passive scrolling, offscreen canvas throttling, CSS animations, blur filters, lazy image decoding, and adaptive 30 FPS limits.
+- **Battery Saver**: Reduces background work on ordinary pages. It preserves live calls and app motion, and skips offscreen DOM changes on real-time communication sites.
+- **Custom**: Granular tuning drawer with passive scrolling, offscreen canvas control, CSS animation and blur controls, lazy image decoding, and a pressure-aware frame limiter that yields during input and live media.
 
 ---
 
@@ -55,19 +58,19 @@ Supported across **Chrome & Helium Desktop**, **Titanium Browser on Android**, *
 For detailed, platform-specific walkthroughs with screenshots and troubleshooting steps, read the [Device Setup Tutorial](https://binifn.github.io/SmoothBoost/tutorial.html).
 
 ### 1. Chrome & Helium Desktop
-1. Download `SmoothBoost-Chrome-2.2.0.zip` from [Releases](https://github.com/BiniFn/SmoothBoost/releases/latest) and unzip it.
+1. Download `SmoothBoost-Chrome-2.3.0.zip` from [Releases](https://github.com/BiniFn/SmoothBoost/releases/latest) and unzip it.
 2. Navigate to `chrome://extensions` and toggle **Developer mode** in the top right.
 3. Click **Load unpacked** and select the extracted folder.
 4. Pin SmoothBoost to the toolbar for quick access.
 
 ### 2. Titanium Browser on Android (Google Play)
-1. Download `SmoothBoost-Titanium-Android-2.2.0.zip` on your Android device.
+1. Download `SmoothBoost-Titanium-Android-2.3.0.zip` on your Android device.
 2. In Titanium Browser, navigate to `chrome://extensions` (or open the Extensions menu).
 3. Enable Developer Mode and install the extension via **Load unpacked** or via the Titanium Extension Manager.
 4. SmoothBoost opens in mobile-optimized portrait mode with large touch targets.
 
 ### 3. Firefox Desktop
-1. Download `SmoothBoost-Firefox-2.2.0.zip` from [Releases](https://github.com/BiniFn/SmoothBoost/releases/latest) and unzip it.
+1. Download `SmoothBoost-Firefox-2.3.0.zip` from [Releases](https://github.com/BiniFn/SmoothBoost/releases/latest) and unzip it.
 2. Navigate to `about:debugging#/runtime/this-firefox`.
 3. Click **Load Temporary Add-on…** and select `manifest.json` from the unzipped directory.
 4. SmoothBoost will appear in the Firefox extension toolbar.
@@ -94,10 +97,10 @@ python3 scripts/package_extension.py --target firefox-android
 ```
 
 Generated packages:
-- `dist/SmoothBoost-Chrome-2.2.0.zip` (and backwards-compatible `SmoothBoost-2.2.0.zip`)
-- `dist/SmoothBoost-Titanium-Android-2.2.0.zip`
-- `dist/SmoothBoost-Firefox-2.2.0.zip`
-- `dist/SmoothBoost-Firefox-Android-2.2.0.zip`
+- `dist/SmoothBoost-Chrome-2.3.0.zip` (and backwards-compatible `SmoothBoost-2.3.0.zip`)
+- `dist/SmoothBoost-Titanium-Android-2.3.0.zip`
+- `dist/SmoothBoost-Firefox-2.3.0.zip`
+- `dist/SmoothBoost-Firefox-Android-2.3.0.zip`
 
 ---
 

@@ -14,6 +14,15 @@
   const ARCHETYPE_CACHE_KEY = 'smoothBoostArchetypes';
   const ARCHETYPE_MAX_ENTRIES = 500;
   const ARCHETYPE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+  const REALTIME_APP_HOSTS = [
+    'discord.com',
+    'discordapp.com',
+    'meet.google.com',
+    'teams.microsoft.com',
+    'zoom.us',
+    'web.whatsapp.com'
+  ];
+  const MOTION_PRESERVATION_HOSTS = ['ws.ryuo.to'];
 
   const DEFAULT_RULES = {
     genericCarouselSelectors: ['.swiper', '[data-swiper]'],
@@ -46,7 +55,7 @@
   };
 
   let currentSettings = { enabled: false, mode: 'off' };
-  let currentArchetype = 'standard';
+  let currentArchetype = 'detecting';
   let initialized = false;
   let reanimeRuleState = 'not-applicable';
   let storageChangeCount = 0;
@@ -77,6 +86,18 @@
   let patchedFontsCount = 0;
   const longFrameTimes = [];
 
+  function hostMatches(hostname, domain) {
+    return hostname === domain || hostname.endsWith(`.${domain}`);
+  }
+
+  function isRealtimeAppHost(hostname = window.location.hostname.toLowerCase()) {
+    return REALTIME_APP_HOSTS.some((domain) => hostMatches(hostname, domain));
+  }
+
+  function preservesPageMotion(hostname = window.location.hostname.toLowerCase()) {
+    return MOTION_PRESERVATION_HOSTS.some((domain) => hostMatches(hostname, domain));
+  }
+
   function getReanimeRule() {
     const path = window.location.pathname;
     return siteRules.siteRules?.find((rule) =>
@@ -94,6 +115,8 @@
     const enabled = site.enabled !== undefined ? site.enabled : source.globalEnabled !== false;
     if (!enabled) return { enabled: false, mode: 'off' };
     const mode = site.mode || source.mode || 'auto';
+    const realtimeApp = isRealtimeAppHost(hostname) || currentArchetype === 'realtime-app';
+    const keepMotion = preservesPageMotion(hostname);
     const custom = {
       ...DEFAULT_CONFIG.customSettings,
       ...(source.customSettings || {}),
@@ -107,14 +130,14 @@
         mode: 'auto',
         killAnimations: false,
         killTransitions: false,
-        killBlurFilters: true,
+        killBlurFilters: !realtimeApp,
         killScrollHijack: false,
-        pauseBackgroundMedia: true,
-        pauseOffscreenAnimations: true,
-        pauseOffscreenCanvas: !isInteractiveCanvas,
+        pauseBackgroundMedia: !realtimeApp && !keepMotion,
+        pauseOffscreenAnimations: !realtimeApp && !keepMotion,
+        pauseOffscreenCanvas: !isInteractiveCanvas && !realtimeApp && !keepMotion,
         passiveScroll: true,
-        asyncImageDecoding: true,
-        fontDisplaySwap: true,
+        asyncImageDecoding: !realtimeApp,
+        fontDisplaySwap: !realtimeApp,
         contentVisibility: false,
         throttleCanvasFps: false,
         fpsLimit: 30
@@ -128,14 +151,14 @@
         mode: 'ultra',
         killAnimations: false,
         killTransitions: false,
-        killBlurFilters: true,
+        killBlurFilters: !realtimeApp,
         killScrollHijack: false,
-        pauseBackgroundMedia: true,
-        pauseOffscreenAnimations: true,
-        pauseOffscreenCanvas: !isInteractiveCanvas,
+        pauseBackgroundMedia: !realtimeApp && !keepMotion,
+        pauseOffscreenAnimations: !realtimeApp && !keepMotion,
+        pauseOffscreenCanvas: !isInteractiveCanvas && !realtimeApp && !keepMotion,
         passiveScroll: true,
-        asyncImageDecoding: true,
-        fontDisplaySwap: true,
+        asyncImageDecoding: !realtimeApp,
+        fontDisplaySwap: !realtimeApp,
         contentVisibility: false,
         throttleCanvasFps: false,
         fpsLimit: 30
@@ -169,16 +192,16 @@
         mode: 'battery',
         killAnimations: false,
         killTransitions: false,
-        killBlurFilters: true,
+        killBlurFilters: !realtimeApp,
         killScrollHijack: false,
-        pauseBackgroundMedia: true,
-        pauseOffscreenAnimations: true,
-        pauseOffscreenCanvas: !isInteractiveCanvas,
+        pauseBackgroundMedia: !realtimeApp && !keepMotion,
+        pauseOffscreenAnimations: !realtimeApp && !keepMotion,
+        pauseOffscreenCanvas: !isInteractiveCanvas && !realtimeApp && !keepMotion,
         passiveScroll: true,
-        asyncImageDecoding: true,
-        fontDisplaySwap: true,
-        contentVisibility: true,
-        throttleCanvasFps: !isInteractiveCanvas,
+        asyncImageDecoding: !realtimeApp,
+        fontDisplaySwap: !realtimeApp,
+        contentVisibility: !realtimeApp && !keepMotion,
+        throttleCanvasFps: !isInteractiveCanvas && !realtimeApp && !keepMotion,
         fpsLimit: 30
       };
     }
@@ -257,16 +280,17 @@
 
   function syncPageHook(settings) {
     const optimizeOffscreen = settings.enabled && (
-      settings.mode === 'auto' || settings.mode === 'ultra' || settings.pauseOffscreenAnimations || isReanimeHomePage()
+      settings.pauseBackgroundMedia || settings.pauseOffscreenAnimations || settings.pauseOffscreenCanvas || isReanimeHomePage()
     );
     dispatchHookCommand(optimizeOffscreen ? 'optimizations-on' : 'optimizations-off');
+    dispatchHookCommand(settings.enabled && settings.passiveScroll ? 'passive-scroll-on' : 'passive-scroll-off');
     dispatchHookCommand(settings.enabled && settings.mode === 'custom' && settings.throttleCanvasFps
       ? 'adaptive-limit-on'
       : 'adaptive-limit-off');
 
     // Armed canvas guard safety check: never arm on interactive canvas or game apps
-    if (settings.enabled && (settings.mode === 'auto' || settings.mode === 'ultra' || settings.pauseOffscreenCanvas)) {
-      if (currentArchetype === 'interactive-canvas' || currentArchetype === 'game-canvas') {
+    if (settings.enabled && settings.pauseOffscreenCanvas) {
+      if (currentArchetype === 'interactive-canvas' || currentArchetype === 'game-canvas' || currentArchetype === 'realtime-app') {
         dispatchHookCommand('disable-canvas-guard');
       } else {
         dispatchHookCommand('enable-canvas-guard');
@@ -413,9 +437,10 @@
     observedCanvases.clear();
     canvasObserver = null;
     canvasMutationObserver = null;
-    const shouldObserve = currentSettings.enabled && (
-      currentSettings.mode === 'auto' || currentSettings.mode === 'ultra' || currentSettings.pauseOffscreenCanvas
-    ) && currentArchetype !== 'interactive-canvas' && currentArchetype !== 'game-canvas';
+    const shouldObserve = currentSettings.enabled && currentSettings.pauseOffscreenCanvas
+      && currentArchetype !== 'interactive-canvas'
+      && currentArchetype !== 'game-canvas'
+      && currentArchetype !== 'realtime-app';
     if (!shouldObserve || typeof IntersectionObserver !== 'function') return;
 
     canvasObserver = new IntersectionObserver((entries) => {
@@ -452,9 +477,7 @@
   }
 
   function optimizeImagesAndIframes() {
-    const shouldOptimize = currentSettings.enabled && (
-      currentSettings.mode === 'auto' || currentSettings.mode === 'ultra' || currentSettings.asyncImageDecoding
-    );
+    const shouldOptimize = currentSettings.enabled && currentSettings.asyncImageDecoding;
     if (!shouldOptimize) return;
     const images = document.querySelectorAll('img:not([data-smoothboost-decoded])');
     images.forEach((img, idx) => {
@@ -474,9 +497,7 @@
   }
 
   function patchFontFaceDescriptors() {
-    const shouldPatch = currentSettings.enabled && (
-      currentSettings.mode === 'auto' || currentSettings.mode === 'ultra' || currentSettings.fontDisplaySwap
-    );
+    const shouldPatch = currentSettings.enabled && currentSettings.fontDisplaySwap;
     if (!shouldPatch) return;
     try {
       const sheets = document.styleSheets;
@@ -521,7 +542,7 @@
     // Live WebRTC Stream Protection: Never pause camera / screen shares
     if (video.srcObject) return false;
     const host = window.location.hostname.toLowerCase();
-    if (/(meet\.google|teams\.microsoft|discord|zoom\.us|web\.whatsapp)\.com/i.test(host)) return false;
+    if (isRealtimeAppHost(host)) return false;
     if (video.controls || video.closest?.('ytd-watch-flexy, [data-player], .video-js, #player, .html5-video-player')) return false;
     return video.muted || video.defaultMuted || video.volume === 0;
   }
@@ -539,9 +560,7 @@
       if (video.isConnected && video.paused) video.play?.().catch?.(() => {});
     }
     pausedVideos.clear();
-    const shouldObserve = currentSettings.enabled && (
-      currentSettings.mode === 'auto' || currentSettings.mode === 'ultra' || currentSettings.pauseBackgroundMedia
-    );
+    const shouldObserve = currentSettings.enabled && currentSettings.pauseBackgroundMedia && !isRealtimeAppHost();
     if (!shouldObserve || typeof IntersectionObserver !== 'function') return;
 
     videoObserver = new IntersectionObserver((entries) => {
@@ -583,9 +602,9 @@
     document.querySelectorAll('[data-smoothboost-offscreen-animation="true"]').forEach((element) => {
       element.removeAttribute('data-smoothboost-offscreen-animation');
     });
-    const shouldObserve = currentSettings.enabled && (
-      currentSettings.mode === 'auto' || currentSettings.mode === 'ultra' || currentSettings.pauseOffscreenAnimations
-    );
+    const shouldObserve = currentSettings.enabled
+      && currentSettings.pauseOffscreenAnimations
+      && (currentSettings.mode === 'custom' || (!isRealtimeAppHost() && !preservesPageMotion()));
     if (!shouldObserve || typeof IntersectionObserver !== 'function') return;
 
     animationObserver = new IntersectionObserver((entries) => {
@@ -652,10 +671,16 @@
     carouselMutationObserver?.disconnect();
     carouselMutationObserver = null;
     markedCarousels.clear();
-    const shouldMark = currentSettings.enabled && (
-      currentSettings.mode === 'auto' || currentSettings.mode === 'ultra' || currentSettings.pauseBackgroundMedia
-    );
-    if (!shouldMark) return;
+    const shouldMark = currentSettings.enabled
+      && (currentSettings.mode === 'auto' || currentSettings.mode === 'ultra' || currentSettings.pauseBackgroundMedia)
+      && !isRealtimeAppHost()
+      && !preservesPageMotion();
+    if (!shouldMark) {
+      document.querySelectorAll('[data-smoothboost-carousel="true"]').forEach((element) => {
+        element.removeAttribute('data-smoothboost-carousel');
+      });
+      return;
+    }
     scanGenericCarousels();
     if (typeof MutationObserver === 'function' && document.documentElement) {
       carouselMutationObserver = new MutationObserver(() => {
@@ -674,7 +699,7 @@
     updateAnimationObserver();
     updateCarouselMarkers();
     updateCanvasObserver();
-    if (currentSettings.enabled && (currentSettings.mode === 'auto' || currentSettings.mode === 'ultra' || currentSettings.killBlurFilters)) {
+    if (currentSettings.enabled && currentSettings.killBlurFilters) {
       scanBackdropBlurTargets();
     } else {
       restoreBlurElements();
@@ -763,6 +788,10 @@
   function classifyPageArchetype() {
     const hostname = window.location.hostname.toLowerCase();
 
+    // Detect live communication tools before generic canvas/media heuristics.
+    // These pages have frequent UI updates and must keep their motion and calls intact.
+    if (isRealtimeAppHost(hostname)) return 'realtime-app';
+
     // 1. Interactive Editors & Design Tools (Docs, Figma, Canva, Photopea, Monaco, Ace)
     if (/(figma|docs\.google|canva|sketch|photopea|webflow|desmos)\.com/i.test(hostname)) {
       return 'interactive-canvas';
@@ -811,11 +840,12 @@
 
   async function runIdleClassification() {
     const hostname = window.location.hostname.toLowerCase();
+    const previousArchetype = currentArchetype;
     currentArchetype = classifyPageArchetype();
     await saveCachedArchetype(hostname, currentArchetype);
 
     // If auto mode, re-apply settings with the verified archetype
-    if (currentSettings.enabled && currentSettings.mode === 'auto') {
+    if (currentArchetype !== previousArchetype && currentSettings.enabled && ['auto', 'ultra', 'battery'].includes(currentSettings.mode)) {
       const stored = await chrome.storage.local.get('smoothBoostConfig');
       applySettings(effectiveSettings(stored.smoothBoostConfig, hostname));
     }
@@ -956,6 +986,7 @@
       return;
     }
     const hostname = window.location.hostname.toLowerCase();
+    currentArchetype = classifyPageArchetype();
     const startingStorageChangeCount = storageChangeCount;
     const stored = await chrome.storage.local.get(['smoothBoostConfig', 'smoothBoostSiteRules', ARCHETYPE_CACHE_KEY]);
     siteRules = loadSiteRules(stored?.smoothBoostSiteRules);
@@ -964,7 +995,7 @@
     // Check cached archetype
     const cache = stored?.[ARCHETYPE_CACHE_KEY] || {};
     const cachedEntry = cache[hostname];
-    if (cachedEntry && Number.isFinite(cachedEntry.timestamp) && (Date.now() - cachedEntry.timestamp < ARCHETYPE_TTL_MS)) {
+    if (currentArchetype === 'standard' && cachedEntry && Number.isFinite(cachedEntry.timestamp) && (Date.now() - cachedEntry.timestamp < ARCHETYPE_TTL_MS)) {
       currentArchetype = cachedEntry.archetype;
     }
 
@@ -978,6 +1009,7 @@
 
     function onDomReady() {
       updatePageObservers();
+      scheduleClassification();
     }
 
     if (document.readyState === 'loading') {
@@ -988,9 +1020,15 @@
 
     window.addEventListener('load', () => {
       if ('requestIdleCallback' in window) {
-        window.requestIdleCallback(() => updatePageObservers());
+        window.requestIdleCallback(() => {
+          updatePageObservers();
+          scheduleClassification();
+        });
       } else {
-        window.setTimeout(() => updatePageObservers(), 250);
+        window.setTimeout(() => {
+          updatePageObservers();
+          scheduleClassification();
+        }, 250);
       }
     }, { once: true });
   }
@@ -1014,6 +1052,7 @@
         enabled: currentSettings.enabled,
         mode: currentSettings.mode || 'off',
         archetype: currentArchetype,
+        motionPreserved: preservesPageMotion() && !currentSettings.killAnimations && !currentSettings.killTransitions && !currentSettings.pauseOffscreenAnimations,
         siteRule: isReanimeHomePage() ? reanimeRuleState : 'not-applicable'
       } : { status: 'initializing' });
       return false;
@@ -1027,6 +1066,7 @@
         enabled: currentSettings.enabled,
         mode: currentSettings.mode || 'off',
         archetype: currentArchetype,
+        motionPreserved: preservesPageMotion() && !currentSettings.killAnimations && !currentSettings.killTransitions && !currentSettings.pauseOffscreenAnimations,
         metrics: {
           passiveListeners: hookPassiveCount,
           pausedVideos: pausedVideos.size,

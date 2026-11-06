@@ -11,37 +11,36 @@
   const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
   const DEFAULT_RELEASE = {
-    version: 'v2.2.0',
-    publishedAt: 'October 19, 2026',
+    version: 'v2.3.0',
+    publishedAt: 'November 6, 2026',
     releaseUrl: RELEASES_PAGE_URL,
-    body: `### SmoothBoost v2.2.0 — Stability, Contrast Safety & Device Setup Update
+    body: `### SmoothBoost v2.3.0 — Adaptive Responsiveness & Live App Safeguards
 
-- **Glassmorphic Contrast Safeguard**: Prevents translucent light cards (e.g., link-in-bio sites like Taplink) with light text from being forced to opaque white.
-- **Backdrop Blur Scan Optimization**: Eliminated whole-DOM forced reflow lag by targeting stylesheet rules and glass classes directly instead of querying all elements.
-- **Background & Particle Canvas Protection**: Canvases with fixed positioning or viewport backgrounds (such as ambient rain or snow) stay active without false-positive draw skips.
-- **Live WebRTC Stream Protection**: Live webcam and screen-sharing video elements on Google Meet, Discord, Zoom, and Teams are never throttled.
-- **Image Decoding Optimization**: Replaced layout-thrashing geometry checks with index and priority thresholds, protecting hero images.
-- **Device Setup Tutorial**: Step-by-step installation instructions for Android Titanium, desktop Chromium, and Firefox.`,
+- **Real-Time App Detection**: Discord, Google Meet, Teams, Zoom, and WhatsApp are recognized before heavier page scans. Automatic profiles preserve calls, canvas content, and interface motion.
+- **Motion Preference Respect**: Automatic profiles on ws.ryuo.to leave animation playback to the site's Reduce motion setting.
+- **Adaptive Frame Pressure Control**: The optional Custom limiter responds to sustained frame pressure with recovery windows and backs off around user input and live media.
+- **Clearer Status & Demos**: The popup explains which protections are active, and the site uses descriptive examples instead of unmeasured performance figures.
+- **Browser-Aware Scanning**: Expensive animation, canvas, blur, and font scans are skipped on real-time communication pages.`,
     downloads: {
       chrome: {
-        name: 'SmoothBoost-Chrome-2.2.0.zip',
-        url: `https://github.com/${GITHUB_REPO}/releases/download/v2.2.0/SmoothBoost-Chrome-2.2.0.zip`,
-        size: '39.1 KB'
+        name: 'SmoothBoost-Chrome-2.3.0.zip',
+        url: `https://github.com/${GITHUB_REPO}/releases/download/v2.3.0/SmoothBoost-Chrome-2.3.0.zip`,
+        size: '42.4 KB'
       },
       titanium: {
-        name: 'SmoothBoost-Titanium-Android-2.2.0.zip',
-        url: `https://github.com/${GITHUB_REPO}/releases/download/v2.2.0/SmoothBoost-Titanium-Android-2.2.0.zip`,
-        size: '39.1 KB'
+        name: 'SmoothBoost-Titanium-Android-2.3.0.zip',
+        url: `https://github.com/${GITHUB_REPO}/releases/download/v2.3.0/SmoothBoost-Titanium-Android-2.3.0.zip`,
+        size: '42.4 KB'
       },
       firefox: {
-        name: 'SmoothBoost-Firefox-2.2.0.zip',
-        url: `https://github.com/${GITHUB_REPO}/releases/download/v2.2.0/SmoothBoost-Firefox-2.2.0.zip`,
-        size: '39.2 KB'
+        name: 'SmoothBoost-Firefox-2.3.0.zip',
+        url: `https://github.com/${GITHUB_REPO}/releases/download/v2.3.0/SmoothBoost-Firefox-2.3.0.zip`,
+        size: '42.5 KB'
       },
       firefoxAndroid: {
-        name: 'SmoothBoost-Firefox-Android-2.2.0.zip',
-        url: `https://github.com/${GITHUB_REPO}/releases/download/v2.2.0/SmoothBoost-Firefox-Android-2.2.0.zip`,
-        size: '39.2 KB'
+        name: 'SmoothBoost-Firefox-Android-2.3.0.zip',
+        url: `https://github.com/${GITHUB_REPO}/releases/download/v2.3.0/SmoothBoost-Firefox-Android-2.3.0.zip`,
+        size: '42.5 KB'
       }
     }
   };
@@ -150,22 +149,22 @@
       chrome: {
         name: `SmoothBoost-Chrome-${cleanVer}.zip`,
         url: `https://github.com/${GITHUB_REPO}/releases/download/${version}/SmoothBoost-Chrome-${cleanVer}.zip`,
-        size: '39.1 KB'
+        size: '42.4 KB'
       },
       titanium: {
         name: `SmoothBoost-Titanium-Android-${cleanVer}.zip`,
         url: `https://github.com/${GITHUB_REPO}/releases/download/${version}/SmoothBoost-Titanium-Android-${cleanVer}.zip`,
-        size: '39.1 KB'
+        size: '42.4 KB'
       },
       firefox: {
         name: `SmoothBoost-Firefox-${cleanVer}.zip`,
         url: `https://github.com/${GITHUB_REPO}/releases/download/${version}/SmoothBoost-Firefox-${cleanVer}.zip`,
-        size: '39.2 KB'
+        size: '42.5 KB'
       },
       firefoxAndroid: {
         name: `SmoothBoost-Firefox-Android-${cleanVer}.zip`,
         url: `https://github.com/${GITHUB_REPO}/releases/download/${version}/SmoothBoost-Firefox-Android-${cleanVer}.zip`,
-        size: '39.2 KB'
+        size: '42.5 KB'
       }
     };
 
@@ -176,13 +175,13 @@
       const downloadUrl = asset.browser_download_url;
 
       if (/titanium/i.test(name)) {
-        downloads.titanium = { name, url: downloadUrl, size: sizeStr || '39.1 KB' };
+        downloads.titanium = { name, url: downloadUrl, size: sizeStr || '42.4 KB' };
       } else if (/firefox-android/i.test(name)) {
-        downloads.firefoxAndroid = { name, url: downloadUrl, size: sizeStr || '39.2 KB' };
+        downloads.firefoxAndroid = { name, url: downloadUrl, size: sizeStr || '42.5 KB' };
       } else if (/firefox/i.test(name)) {
-        downloads.firefox = { name, url: downloadUrl, size: sizeStr || '39.2 KB' };
+        downloads.firefox = { name, url: downloadUrl, size: sizeStr || '42.5 KB' };
       } else if (/chrome/i.test(name) || name === `SmoothBoost-${cleanVer}.zip`) {
-        downloads.chrome = { name, url: downloadUrl, size: sizeStr || '39.1 KB' };
+        downloads.chrome = { name, url: downloadUrl, size: sizeStr || '42.4 KB' };
       }
     }
 

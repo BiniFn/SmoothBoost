@@ -102,30 +102,30 @@ test('fetchLatestReleaseInfo falls back to redirect when API fails', async () =>
 
 test('fromRelease chooses platform-specific ZIP for that browser', () => {
   const multiAssetRelease = {
-    tag_name: 'v2.2.0',
+    tag_name: 'v2.3.0',
     draft: false,
     prerelease: false,
     assets: [
-      { name: 'SmoothBoost-Chrome-2.2.0.zip' },
-      { name: 'SmoothBoost-Titanium-Android-2.2.0.zip' },
-      { name: 'SmoothBoost-Firefox-2.2.0.zip' },
-      { name: 'SmoothBoost-Firefox-Android-2.2.0.zip' }
+      { name: 'SmoothBoost-Chrome-2.3.0.zip' },
+      { name: 'SmoothBoost-Titanium-Android-2.3.0.zip' },
+      { name: 'SmoothBoost-Firefox-2.3.0.zip' },
+      { name: 'SmoothBoost-Firefox-Android-2.3.0.zip' }
     ]
   };
 
   const firefoxResult = updates.fromRelease('2.1.0', multiAssetRelease, { platformKey: 'firefox' });
   assert.equal(firefoxResult.status, 'update');
-  assert.ok(firefoxResult.downloadUrl.endsWith('SmoothBoost-Firefox-2.2.0.zip'), 'Firefox got Firefox desktop package');
+  assert.ok(firefoxResult.downloadUrl.endsWith('SmoothBoost-Firefox-2.3.0.zip'), 'Firefox got Firefox desktop package');
 
   const firefoxAndroidResult = updates.fromRelease('2.1.0', multiAssetRelease, { platformKey: 'firefox-android' });
   assert.equal(firefoxAndroidResult.status, 'update');
-  assert.ok(firefoxAndroidResult.downloadUrl.endsWith('SmoothBoost-Firefox-Android-2.2.0.zip'), 'Firefox Android got Firefox Android package');
+  assert.ok(firefoxAndroidResult.downloadUrl.endsWith('SmoothBoost-Firefox-Android-2.3.0.zip'), 'Firefox Android got Firefox Android package');
 
   const titaniumResult = updates.fromRelease('2.1.0', multiAssetRelease, { platformKey: 'titanium' });
   assert.equal(titaniumResult.status, 'update');
-  assert.ok(titaniumResult.downloadUrl.endsWith('SmoothBoost-Titanium-Android-2.2.0.zip'), 'Titanium got Titanium Android package');
+  assert.ok(titaniumResult.downloadUrl.endsWith('SmoothBoost-Titanium-Android-2.3.0.zip'), 'Titanium got Titanium Android package');
 
   const chromeResult = updates.fromRelease('2.1.0', multiAssetRelease, { platformKey: 'chrome' });
   assert.equal(chromeResult.status, 'update');
-  assert.ok(chromeResult.downloadUrl.endsWith('SmoothBoost-Chrome-2.2.0.zip'), 'Chrome got Chrome package');
+  assert.ok(chromeResult.downloadUrl.endsWith('SmoothBoost-Chrome-2.3.0.zip'), 'Chrome got Chrome package');
 });

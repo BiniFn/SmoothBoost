@@ -15,7 +15,8 @@
   const nativeClearInterval = window.clearInterval;
   const nativeSetTimeout = window.setTimeout;
   const nativeClearTimeout = window.clearTimeout;
-  let optimizationsEnabled = true;
+  let optimizationsEnabled = false;
+  let passiveScrollEnabled = false;
   let adaptiveLimitEnabled = false;
   let throttling = false;
   let carouselObserver = null;
@@ -25,7 +26,21 @@
   let pausedCarouselInterval = null;
   let reanimeCarouselPaused = false;
   let adaptiveObserver = null;
-  let adaptiveReleaseTimer = 0;
+  let adaptiveAssessmentTimer = 0;
+  let adaptiveInputUntil = 0;
+  let adaptiveLastPressureAt = 0;
+  let adaptiveLastThrottleAt = 0;
+  let adaptivePressureTimes = [];
+  let adaptiveGuardsInstalled = false;
+  const activeMediaElements = new Set();
+
+  const ADAPTIVE_PRESSURE_WINDOW_MS = 8000;
+  const ADAPTIVE_PRESSURE_THRESHOLD = 3;
+  const ADAPTIVE_RECOVERY_MS = 6000;
+  const ADAPTIVE_THROTTLE_LEASE_MS = 5000;
+  const ADAPTIVE_COOLDOWN_MS = 12000;
+  const ADAPTIVE_INPUT_GRACE_MS = 1200;
+  const ADAPTIVE_EXCLUDED_HOSTS = ['discord.com', 'discordapp.com', 'ws.ryuo.to'];
 
   const carouselIntervals = new Map();
   const frameHooks = { requestOriginal: null, requestWrapper: null, cancelOriginal: null, cancelWrapper: null };
@@ -283,41 +298,198 @@
     window.cancelAnimationFrame = frameHooks.cancelWrapper;
   }
 
-  function engageAdaptiveThrottle() {
-    if (!adaptiveLimitEnabled) return;
-    throttling = true;
-    if (adaptiveReleaseTimer) nativeClearTimeout.call(window, adaptiveReleaseTimer);
-    adaptiveReleaseTimer = nativeSetTimeout.call(window, () => {
-      adaptiveReleaseTimer = 0;
-      throttling = false;
-      syncFrameHooks();
-    }, 6000);
+  function adaptiveNow() {
+    return window.performance?.now?.() ?? Date.now();
+  }
+
+  function isAdaptiveThrottleExcludedHost() {
+    const hostname = window.location?.hostname?.toLowerCase() || '';
+    return ADAPTIVE_EXCLUDED_HOSTS.some((domain) => hostname === domain || hostname.endsWith(`.${domain}`));
+  }
+
+  function hasActiveMediaPlayback() {
+    for (const media of activeMediaElements) {
+      if (!media.isConnected || media.paused || media.ended) {
+        activeMediaElements.delete(media);
+        continue;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  function isAdaptiveThrottleProtected(at = adaptiveNow()) {
+    return isAdaptiveThrottleExcludedHost()
+      || document.hidden
+      || at < adaptiveInputUntil
+      || hasActiveMediaPlayback();
+  }
+
+  function trimAdaptivePressure(at = adaptiveNow()) {
+    adaptivePressureTimes = adaptivePressureTimes.filter((time) => at - time <= ADAPTIVE_PRESSURE_WINDOW_MS);
+    if (!adaptivePressureTimes.length) adaptiveLastPressureAt = 0;
+  }
+
+  function releaseAdaptiveThrottle() {
+    if (!throttling) return;
+    throttling = false;
     syncFrameHooks();
+  }
+
+  function assessAdaptiveThrottle() {
+    adaptiveAssessmentTimer = 0;
+    if (!adaptiveLimitEnabled) return;
+
+    const at = adaptiveNow();
+    if (isAdaptiveThrottleProtected(at)) {
+      adaptivePressureTimes = [];
+      adaptiveLastPressureAt = 0;
+      releaseAdaptiveThrottle();
+    } else {
+      trimAdaptivePressure(at);
+      if (throttling) {
+        const recovered = adaptiveLastPressureAt > 0
+          && at - adaptiveLastPressureAt >= ADAPTIVE_RECOVERY_MS;
+        const leaseExpired = at - adaptiveLastThrottleAt >= ADAPTIVE_THROTTLE_LEASE_MS;
+        if (recovered || leaseExpired) releaseAdaptiveThrottle();
+      } else if (
+        adaptivePressureTimes.length >= ADAPTIVE_PRESSURE_THRESHOLD
+        && at - adaptiveLastThrottleAt >= ADAPTIVE_COOLDOWN_MS
+      ) {
+        throttling = true;
+        adaptiveLastThrottleAt = at;
+        syncFrameHooks();
+      }
+    }
+
+    adaptiveAssessmentTimer = nativeSetTimeout.call(window, assessAdaptiveThrottle, 1000);
+  }
+
+  function recordAdaptivePressure(at) {
+    if (!adaptiveLimitEnabled || isAdaptiveThrottleProtected(at)) {
+      adaptivePressureTimes = [];
+      adaptiveLastPressureAt = 0;
+      releaseAdaptiveThrottle();
+      return;
+    }
+    adaptivePressureTimes.push(at);
+    adaptiveLastPressureAt = at;
+    trimAdaptivePressure(at);
+    if (!adaptiveAssessmentTimer) assessAdaptiveThrottle();
+  }
+
+  function noteAdaptiveInput(event) {
+    if (event.type === 'pointermove' && event.buttons === 0) return;
+    adaptiveInputUntil = adaptiveNow() + ADAPTIVE_INPUT_GRACE_MS;
+    adaptivePressureTimes = [];
+    adaptiveLastPressureAt = 0;
+    releaseAdaptiveThrottle();
+  }
+
+  function updateActiveMedia(event) {
+    const media = event.target;
+    if (!media || !/^(AUDIO|VIDEO)$/.test(media.tagName || '')) return;
+    if (event.type === 'play') {
+      activeMediaElements.add(media);
+      adaptivePressureTimes = [];
+      adaptiveLastPressureAt = 0;
+      releaseAdaptiveThrottle();
+    } else {
+      activeMediaElements.delete(media);
+      if (!hasActiveMediaPlayback() && !adaptiveAssessmentTimer && adaptiveLimitEnabled) {
+        adaptiveAssessmentTimer = nativeSetTimeout.call(window, assessAdaptiveThrottle, 1000);
+      }
+    }
+  }
+
+  function handleAdaptiveVisibilityChange() {
+    if (document.hidden) {
+      adaptivePressureTimes = [];
+      adaptiveLastPressureAt = 0;
+      releaseAdaptiveThrottle();
+    }
+  }
+
+  function installAdaptiveGuards() {
+    if (adaptiveGuardsInstalled) return;
+    adaptiveGuardsInstalled = true;
+    ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart', 'scroll'].forEach((type) => {
+      document.addEventListener(type, noteAdaptiveInput, { capture: true, passive: true });
+    });
+    ['play', 'pause', 'ended', 'emptied'].forEach((type) => {
+      document.addEventListener(type, updateActiveMedia, true);
+    });
+    document.addEventListener('visibilitychange', handleAdaptiveVisibilityChange, true);
+
+    // A one-time scan covers media that began playing before Custom mode was enabled.
+    document.querySelectorAll('audio, video').forEach((media) => {
+      if (!media.paused && !media.ended) activeMediaElements.add(media);
+    });
+  }
+
+  function removeAdaptiveGuards() {
+    if (!adaptiveGuardsInstalled) return;
+    adaptiveGuardsInstalled = false;
+    ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart', 'scroll'].forEach((type) => {
+      document.removeEventListener(type, noteAdaptiveInput, true);
+    });
+    ['play', 'pause', 'ended', 'emptied'].forEach((type) => {
+      document.removeEventListener(type, updateActiveMedia, true);
+    });
+    document.removeEventListener('visibilitychange', handleAdaptiveVisibilityChange, true);
+    activeMediaElements.clear();
+    adaptiveInputUntil = 0;
   }
 
   function stopAdaptiveThrottle() {
     adaptiveLimitEnabled = false;
+    adaptivePressureTimes = [];
+    adaptiveLastPressureAt = 0;
+    adaptiveLastThrottleAt = 0;
     throttling = false;
     adaptiveObserver?.disconnect();
     adaptiveObserver = null;
-    if (adaptiveReleaseTimer) nativeClearTimeout.call(window, adaptiveReleaseTimer);
-    adaptiveReleaseTimer = 0;
+    if (adaptiveAssessmentTimer) nativeClearTimeout.call(window, adaptiveAssessmentTimer);
+    adaptiveAssessmentTimer = 0;
+    removeAdaptiveGuards();
     syncFrameHooks();
   }
 
   function startAdaptiveThrottle() {
-    stopAdaptiveThrottle();
+    // The isolated content script sends this action only for the explicit Custom FPS toggle.
+    if (adaptiveLimitEnabled) return;
+    if (isAdaptiveThrottleExcludedHost()) return;
+
     try {
-      if (typeof PerformanceObserver !== 'function' || !(PerformanceObserver.supportedEntryTypes || []).includes('long-animation-frame')) return;
+      if (typeof PerformanceObserver !== 'function') return;
+      const supported = PerformanceObserver.supportedEntryTypes || [];
+      const entryType = supported.includes('long-animation-frame')
+        ? 'long-animation-frame'
+        : supported.includes('longtask') ? 'longtask' : '';
+      if (!entryType) return;
+
       adaptiveLimitEnabled = true;
+      adaptiveLastThrottleAt = adaptiveNow() - ADAPTIVE_COOLDOWN_MS;
+      installAdaptiveGuards();
       adaptiveObserver = new PerformanceObserver((list) => {
-        if (list.getEntries().some((entry) => entry.duration >= 50)) engageAdaptiveThrottle();
+        if (isAdaptiveThrottleProtected()) {
+          adaptivePressureTimes = [];
+          adaptiveLastPressureAt = 0;
+          releaseAdaptiveThrottle();
+          return;
+        }
+        list.getEntries().forEach((entry) => {
+          if (entry.duration >= 50) recordAdaptivePressure(entry.startTime || adaptiveNow());
+        });
       });
-      adaptiveObserver.observe({ type: 'long-animation-frame', buffered: true });
+      adaptiveObserver.observe({ type: entryType, buffered: false });
+      if (!adaptiveAssessmentTimer) {
+        adaptiveAssessmentTimer = nativeSetTimeout.call(window, assessAdaptiveThrottle, 1000);
+      }
     } catch (_error) {
       adaptiveObserver?.disconnect();
       adaptiveObserver = null;
-      adaptiveLimitEnabled = false;
+      stopAdaptiveThrottle();
     }
   }
 
@@ -347,7 +519,7 @@
     if (target.isContentEditable) return true;
     if (typeof target.closest === 'function') {
       return !!target.closest(
-        '.leaflet-container, .mapboxgl-map, [aria-roledescription="map"], canvas, [data-smoothboost-allow-prevent-default], [role="slider"], input[type="range"], .monaco-editor, .ace_editor, .cm-editor, #canvas, #unity-canvas, .game-canvas, [contenteditable="true"], [draggable="true"], [data-draggable], .draggable, .drag-handle, .swiper-slide, [role="dialog"], [aria-modal="true"]'
+        '.leaflet-container, .mapboxgl-map, [aria-roledescription="map"], canvas, [data-smoothboost-allow-prevent-default], [role="slider"], input[type="range"], .monaco-editor, .ace_editor, .cm-editor, #canvas, #unity-canvas, .game-canvas, [contenteditable="true"], [draggable="true"], [data-draggable], .draggable, .drag-handle, .swiper-slide, .scroller, [data-list-id], [data-testid*="scroller"], [role="tree"], [role="listbox"], [role="menu"], [role="dialog"], [aria-modal="true"]'
       );
     }
     return false;
@@ -358,7 +530,7 @@
     if (!TargetProto || typeof TargetProto.addEventListener !== 'function') return;
     const nativeAddEventListener = TargetProto.addEventListener;
     TargetProto.addEventListener = function (type, listener, options) {
-      if (optimizationsEnabled && typeof listener === 'function' &&
+      if (passiveScrollEnabled && typeof listener === 'function' &&
           (type === 'wheel' || type === 'mousewheel' || type === 'touchstart' || type === 'touchmove')) {
         if (!isInteractiveTarget(this)) {
           passiveListenersIntercepted += 1;
@@ -448,6 +620,8 @@
     const action = event.detail?.action;
     if (action === 'optimizations-on') setOptimizations(true);
     else if (action === 'optimizations-off') setOptimizations(false);
+    else if (action === 'passive-scroll-on') passiveScrollEnabled = true;
+    else if (action === 'passive-scroll-off') passiveScrollEnabled = false;
     else if (action === 'adaptive-limit-on') startAdaptiveThrottle();
     else if (action === 'adaptive-limit-off') stopAdaptiveThrottle();
     else if (action === 'enable-canvas-guard') canvasGuardArmed = true;

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SmoothBoost — Cross-Browser Web Performance Extension</title>
-  <meta name="description" content="Open-source browser extension that offloads scroll listeners to the GPU compositor, skips offscreen canvas draw calls, pauses background media, and cuts battery drain across Chrome, Titanium Android, and Firefox.">
+  <meta name="description" content="Open-source browser extension for smoother scrolling, careful app detection, and lighter background work across desktop and mobile browsers.">
   <meta name="keywords" content="SmoothBoost, browser extension, passive event listeners, compositor thread, canvas performance, web performance, battery saver, chrome extension, firefox addon, android browser extension">
   <meta name="author" content="BiniFn">
   <link rel="canonical" href="https://binifn.github.io/SmoothBoost/">
@@ -96,7 +96,7 @@
 
           <div class="hero-tag">
             <span class="tag-dot" aria-hidden="true"></span>
-            <span>Version <strong data-release-version>v2.2.0</strong> Active</span>
+            <span>Version <strong data-release-version>v2.3.0</strong> Active</span>
           </div>
 
           <h1 id="hero-heading" class="hero-title">
@@ -104,11 +104,11 @@
           </h1>
 
           <p class="hero-lead">
-            SmoothBoost intercepts blocking scroll listeners, skips offscreen canvas draw calls, pauses background videos, and reduces battery drain across desktop and mobile browsers.
+            Smooth scrolling that keeps chats, calls, and page animations responsive.
           </p>
 
           <div class="hero-ctas">
-            <a href="https://github.com/BiniFn/SmoothBoost/releases/download/v2.2.0/SmoothBoost-Chrome-2.2.0.zip" class="btn btn-primary" data-auto-download="true" download="SmoothBoost-Chrome-2.2.0.zip">
+            <a href="https://github.com/BiniFn/SmoothBoost/releases/download/v2.3.0/SmoothBoost-Chrome-2.3.0.zip" class="btn btn-primary" data-auto-download="true" download="SmoothBoost-Chrome-2.3.0.zip">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 17V3"/>
                 <path d="m6 11 6 6 6-6"/>
@@ -126,7 +126,7 @@
           </div>
 
           <p class="hero-stats-line">
-            Latest release: <strong data-release-version>v2.2.0</strong> • Verified across <strong>61 automated tests</strong>
+                Latest release: <strong data-release-version>v2.3.0</strong> • Browser-aware performance controls
           </p>
 
           <p class="hero-platforms-line">
@@ -250,33 +250,33 @@
                   <span id="sim-badge" class="profile-badge badge-auto">AUTO</span>
                   <h3 id="sim-title" style="font-size: 1.25rem;">Smart Auto</h3>
                 </div>
-                <span class="asset-badge">Real-Time Settings Model</span>
+                <span class="asset-badge">Profile behavior preview</span>
               </div>
 
               <p id="sim-desc" style="color: rgba(255, 255, 255, 0.65); font-size: 14px;">
-                Idle heuristics classify page structure to protect interactive editors while accelerating general web browsing.
+                Detects page type before applying heavier rules. Live communication apps keep their calls, canvas content, and interface motion active.
               </p>
 
               <div class="metrics-strip">
                 <div class="metric-card">
-                  <div class="metric-card-label">Passive Listeners</div>
-                  <div id="sim-metric-passive" class="metric-card-val">42 listeners</div>
+                  <div class="metric-card-label">Passive scrolling</div>
+                  <div id="sim-metric-passive" class="metric-card-val">Safe targets only</div>
                 </div>
                 <div class="metric-card">
-                  <div class="metric-card-label">Videos Paused</div>
-                  <div id="sim-metric-videos" class="metric-card-val">4 paused</div>
+                  <div class="metric-card-label">Background media</div>
+                  <div id="sim-metric-videos" class="metric-card-val">Offscreen previews</div>
                 </div>
                 <div class="metric-card">
-                  <div class="metric-card-label">Blurs Bypassed</div>
-                  <div id="sim-metric-blurs" class="metric-card-val">18 bypassed</div>
+                  <div class="metric-card-label">Blur handling</div>
+                  <div id="sim-metric-blurs" class="metric-card-val">Profile controlled</div>
                 </div>
                 <div class="metric-card">
                   <div class="metric-card-label">Canvas State</div>
-                  <div id="sim-metric-canvas" class="metric-card-val">Active (Exempts Docs/Figma)</div>
+                  <div id="sim-metric-canvas" class="metric-card-val">Offscreen only</div>
                 </div>
                 <div class="metric-card">
-                  <div class="metric-card-label">Fonts Swapped</div>
-                  <div id="sim-metric-fonts" class="metric-card-val">8 swapped</div>
+                  <div class="metric-card-label">Font loading</div>
+                  <div id="sim-metric-fonts" class="metric-card-val">Optional</div>
                 </div>
               </div>
 
@@ -298,7 +298,7 @@
             <div class="section-eyebrow">Interactive Verification</div>
             <h2 id="benchmark-heading" class="section-title">Compositor Thread vs. Main Thread</h2>
             <p class="section-desc">
-              Test the difference in scroll responsiveness below. Scroll both panes on your device to observe frame timings.
+              This local demo adds a deliberate main-thread pause in the first pane. It does not measure extension performance.
             </p>
           </div>
 
@@ -306,7 +306,7 @@
             <!-- Unoptimized Pane -->
             <div class="benchmark-box">
               <div class="benchmark-header">
-                <h3 style="font-size: 15px;">Blocking Scroll Handlers</h3>
+                <h3 style="font-size: 15px;">Deliberate main-thread pause</h3>
                 <span class="benchmark-badge badge-unopt">Main-Thread Bound</span>
               </div>
               <p style="font-size: 13px; color: rgba(255, 255, 255, 0.55);">
@@ -325,35 +325,35 @@
                 </div>
               </div>
               <div class="benchmark-stats-strip">
-                <span>Frame Rate: <strong id="bench-unopt-fps">32 FPS</strong></span>
-                <span>Frame Time: <strong id="bench-unopt-time">18.4ms / frame</strong></span>
+                <span>Demo behavior: <strong id="bench-unopt-fps">Waiting for scroll</strong></span>
+                <span>Injected work: <strong id="bench-unopt-time">None yet</strong></span>
               </div>
             </div>
 
             <!-- Optimized Pane -->
             <div class="benchmark-box is-optimized">
               <div class="benchmark-header">
-                <h3 style="font-size: 15px;">SmoothBoost Passive Listeners</h3>
+                <h3 style="font-size: 15px;">Lightweight scroll handler</h3>
                 <span class="benchmark-badge badge-opt">GPU Composited</span>
               </div>
               <p style="font-size: 13px; color: rgba(255, 255, 255, 0.55);">
-                Enforces passive listener registration. The compositor thread updates scroll offsets immediately without waiting for JavaScript.
+                This pane adds no synthetic pause, so your device handles scrolling at its own pace.
               </p>
               <div id="bench-optimized" class="benchmark-scroll-target" tabindex="0" role="region" aria-label="Optimized scroll test area">
                 <div class="benchmark-scroll-content">
-                  <div class="scroll-dummy-item">Scroll Item 01 — Passive listener registered on window</div>
-                  <div class="scroll-dummy-item">Scroll Item 02 — Compositor thread processes touch &amp; wheel directly</div>
-                  <div class="scroll-dummy-item">Scroll Item 03 — Zero main thread dispatch delay</div>
-                  <div class="scroll-dummy-item">Scroll Item 04 — Stable 60 FPS frame delivery during rapid swiping</div>
-                  <div class="scroll-dummy-item">Scroll Item 05 — Sub-5ms input response on display refresh</div>
-                  <div class="scroll-dummy-item">Scroll Item 06 — Interactive maps and sliders preserved by guard</div>
-                  <div class="scroll-dummy-item">Scroll Item 07 — Hardware compositor drives smooth inertia</div>
-                  <div class="scroll-dummy-item">Scroll Item 08 — Continuous 60 FPS verified across viewports</div>
+                  <div class="scroll-dummy-item">Scroll Item 01 — No deliberate blocking task</div>
+                  <div class="scroll-dummy-item">Scroll Item 02 — Native browser scrolling</div>
+                  <div class="scroll-dummy-item">Scroll Item 03 — Actual results depend on your device</div>
+                  <div class="scroll-dummy-item">Scroll Item 04 — Map and slider controls keep native behavior</div>
+                  <div class="scroll-dummy-item">Scroll Item 05 — This is a local illustration</div>
+                  <div class="scroll-dummy-item">Scroll Item 06 — It does not benchmark the extension</div>
+                  <div class="scroll-dummy-item">Scroll Item 07 — Scroll to compare the demo behavior</div>
+                  <div class="scroll-dummy-item">Scroll Item 08 — Your browser controls the frame rate</div>
                 </div>
               </div>
               <div class="benchmark-stats-strip">
-                <span>Frame Rate: <strong id="bench-opt-fps">60 FPS (Hardware Composited)</strong></span>
-                <span>Frame Time: <strong id="bench-opt-time">4.2ms / frame</strong></span>
+                <span>Demo behavior: <strong id="bench-opt-fps">No synthetic pause</strong></span>
+                <span>Injected work: <strong id="bench-opt-time">None</strong></span>
               </div>
             </div>
           </div>
@@ -469,7 +469,7 @@
         <div class="section-card">
           <div class="section-head">
             <div class="section-eyebrow">Reliability &amp; Safety</div>
-            <h2 id="safeguards-heading" class="section-title">Zero Regressions on Production Apps</h2>
+            <h2 id="safeguards-heading" class="section-title">Protection for interactive apps</h2>
             <p class="section-desc">
               Aggressive optimizations that break production software are useless. SmoothBoost isolates productivity tools, editors, and maps from unsafe overrides.
             </p>
@@ -484,6 +484,9 @@
             </button>
             <button class="platform-tab-btn" data-archetype-tab="maps" role="tab" aria-selected="false" id="arch-tab-maps">
               <span>Maps &amp; Interactive Sliders</span>
+            </button>
+            <button class="platform-tab-btn" data-archetype-tab="communication" role="tab" aria-selected="false" id="arch-tab-communication">
+              <span>Chats &amp; Live Calls</span>
             </button>
           </div>
 
@@ -549,7 +552,7 @@
                     <div class="step-num">2</div>
                     <div class="step-text">
                       <h4>Adaptive Frame Rate Cap</h4>
-                      <p>Frame rate caps (30 FPS limiter) apply only when explicitly toggled in Custom or Battery Saver profiles.</p>
+                      <p>Custom's optional 30 FPS limiter waits for sustained frame pressure and yields during input, live media, and protected apps.</p>
                     </div>
                   </li>
                 </ul>
@@ -594,6 +597,48 @@
                 <h4 style="font-size: 1.1rem; color: #ffffff;">Wheel Zoom &amp; Pan Verified</h4>
                 <p style="font-size: 13px; color: rgba(255, 255, 255, 0.6); line-height: 1.6;">
                   Tested directly against Google Maps and Leaflet tiles. SmoothBoost speeds up page scroll without disabling map zooming.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel 4: Live communication apps -->
+          <div class="platform-panel" data-archetype-panel="communication" role="tabpanel" aria-labelledby="arch-tab-communication" hidden>
+            <div class="platform-grid">
+              <div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 12px;">Discord and live communication</h3>
+                <p style="color: rgba(255, 255, 255, 0.65); font-size: 13.5px; margin-bottom: 20px;">
+                  Smart Auto recognizes Discord, Meet, Teams, Zoom, and WhatsApp before it applies heavier page rules. Calls, interface motion, and canvas content stay active.
+                </p>
+                <ul class="step-list">
+                  <li class="step-item">
+                    <div class="step-num">1</div>
+                    <div class="step-text">
+                      <h4>Early app recognition</h4>
+                      <p>Known communication hosts are classified before generic media and canvas checks.</p>
+                    </div>
+                  </li>
+                  <li class="step-item">
+                    <div class="step-num">2</div>
+                    <div class="step-text">
+                      <h4>Lightweight scroll handling</h4>
+                      <p>Safe wheel and touch listeners can stay passive while interactive controls keep their native behavior.</p>
+                    </div>
+                  </li>
+                  <li class="step-item">
+                    <div class="step-num">3</div>
+                    <div class="step-text">
+                      <h4>Page motion stays on</h4>
+                      <p>Automatic offscreen animation, canvas, media, blur, and font scans are skipped for these apps.</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              <div class="platform-download-card">
+                <div class="asset-badge">Real-time app profile</div>
+                <h4 style="font-size: 1.1rem; color: #ffffff;">Calls and interface motion preserved</h4>
+                <p style="font-size: 13px; color: rgba(255, 255, 255, 0.6); line-height: 1.6;">
+                  On ws.ryuo.to, SmoothBoost also leaves animation playback to the site’s Reduce motion setting.
                 </p>
               </div>
             </div>
@@ -663,9 +708,9 @@
                 </ul>
               </div>
               <div class="platform-download-card">
-                <span class="asset-badge" data-asset-size="chrome">39.1 KB</span>
-                <h4 style="font-size: 1.1rem; color: #ffffff;" data-asset-name="chrome">SmoothBoost-Chrome-2.2.0.zip</h4>
-                <a href="https://github.com/BiniFn/SmoothBoost/releases/latest/download/SmoothBoost-Chrome-2.2.0.zip" class="btn btn-primary" data-download="chrome" download="SmoothBoost-Chrome-2.2.0.zip">
+                <span class="asset-badge" data-asset-size="chrome">42.4 KB</span>
+                <h4 style="font-size: 1.1rem; color: #ffffff;" data-asset-name="chrome">SmoothBoost-Chrome-2.3.0.zip</h4>
+                <a href="https://github.com/BiniFn/SmoothBoost/releases/latest/download/SmoothBoost-Chrome-2.3.0.zip" class="btn btn-primary" data-download="chrome" download="SmoothBoost-Chrome-2.3.0.zip">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 17V3"/>
                     <path d="m6 11 6 6 6-6"/>
@@ -714,9 +759,9 @@
                 </ul>
               </div>
               <div class="platform-download-card">
-                <span class="asset-badge" data-asset-size="titanium">39.1 KB</span>
-                <h4 style="font-size: 1.1rem; color: #ffffff;" data-asset-name="titanium">SmoothBoost-Titanium-Android-2.2.0.zip</h4>
-                <a href="https://github.com/BiniFn/SmoothBoost/releases/latest/download/SmoothBoost-Titanium-Android-2.2.0.zip" class="btn btn-primary" data-download="titanium" download="SmoothBoost-Titanium-Android-2.2.0.zip">
+                <span class="asset-badge" data-asset-size="titanium">42.4 KB</span>
+                <h4 style="font-size: 1.1rem; color: #ffffff;" data-asset-name="titanium">SmoothBoost-Titanium-Android-2.3.0.zip</h4>
+                <a href="https://github.com/BiniFn/SmoothBoost/releases/latest/download/SmoothBoost-Titanium-Android-2.3.0.zip" class="btn btn-primary" data-download="titanium" download="SmoothBoost-Titanium-Android-2.3.0.zip">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 17V3"/>
                     <path d="m6 11 6 6 6-6"/>
@@ -765,9 +810,9 @@
                 </ul>
               </div>
               <div class="platform-download-card">
-                <span class="asset-badge" data-asset-size="firefox">39.2 KB</span>
-                <h4 style="font-size: 1.1rem; color: #ffffff;" data-asset-name="firefox">SmoothBoost-Firefox-2.2.0.zip</h4>
-                <a href="https://github.com/BiniFn/SmoothBoost/releases/latest/download/SmoothBoost-Firefox-2.2.0.zip" class="btn btn-primary" data-download="firefox" download="SmoothBoost-Firefox-2.2.0.zip">
+                <span class="asset-badge" data-asset-size="firefox">42.5 KB</span>
+                <h4 style="font-size: 1.1rem; color: #ffffff;" data-asset-name="firefox">SmoothBoost-Firefox-2.3.0.zip</h4>
+                <a href="https://github.com/BiniFn/SmoothBoost/releases/latest/download/SmoothBoost-Firefox-2.3.0.zip" class="btn btn-primary" data-download="firefox" download="SmoothBoost-Firefox-2.3.0.zip">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 17V3"/>
                     <path d="m6 11 6 6 6-6"/>
@@ -816,9 +861,9 @@
                 </ul>
               </div>
               <div class="platform-download-card">
-                <span class="asset-badge" data-asset-size="firefox-android">39.2 KB</span>
-                <h4 style="font-size: 1.1rem; color: #ffffff;" data-asset-name="firefox-android">SmoothBoost-Firefox-Android-2.2.0.zip</h4>
-                <a href="https://github.com/BiniFn/SmoothBoost/releases/latest/download/SmoothBoost-Firefox-Android-2.2.0.zip" class="btn btn-primary" data-download="firefox-android" download="SmoothBoost-Firefox-Android-2.2.0.zip">
+                <span class="asset-badge" data-asset-size="firefox-android">42.5 KB</span>
+                <h4 style="font-size: 1.1rem; color: #ffffff;" data-asset-name="firefox-android">SmoothBoost-Firefox-Android-2.3.0.zip</h4>
+                <a href="https://github.com/BiniFn/SmoothBoost/releases/latest/download/SmoothBoost-Firefox-Android-2.3.0.zip" class="btn btn-primary" data-download="firefox-android" download="SmoothBoost-Firefox-Android-2.3.0.zip">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 17V3"/>
                     <path d="m6 11 6 6 6-6"/>
@@ -852,7 +897,7 @@
           <div style="max-width: 760px; margin: 0 auto;">
             <div class="detail-header" style="margin-bottom: 16px;">
               <div>
-                <span class="profile-badge badge-auto" data-release-version>v2.2.0</span>
+                <span class="profile-badge badge-auto" data-release-version>v2.3.0</span>
                 <span style="margin-left: 10px; font-size: 13px; color: var(--text-muted);" data-release-date>October 19, 2026</span>
               </div>
               <a href="https://github.com/BiniFn/SmoothBoost/releases/latest" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="height: 36px; padding: 0 16px; font-size: 13px;" data-release-url>
@@ -892,6 +937,18 @@
               </button>
               <div class="faq-answer" hidden>
                 Standard webpages often bind non-passive wheel and touch event listeners on the window or document. When the user scrolls, the browser compositor thread must wait for JavaScript to execute to determine whether <code>preventDefault()</code> is invoked. SmoothBoost intercepts these registration calls at document start and declares them passive, enabling the browser compositor to update scroll offsets on the GPU thread without blocking.
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <button class="faq-question" aria-expanded="false">
+                <span>Will SmoothBoost slow down Discord or hide site animations?</span>
+                <svg class="faq-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              <div class="faq-answer" hidden>
+                Smart Auto, Turbo, and Battery Saver recognize Discord and other live communication apps early. They keep calls, interface motion, and canvas content active while avoiding expensive animation, canvas, blur, and font scans. On ws.ryuo.to, SmoothBoost leaves motion playback to the site’s Reduce motion setting. Custom animation controls remain available if you choose them.
               </div>
             </div>
 

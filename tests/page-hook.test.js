@@ -8,6 +8,7 @@ const hookSource = fs.readFileSync(path.join(__dirname, '../scripts/page-hook.js
 
 function createHarness({ hostname = 'example.com', hero = null, carousels = [] } = {}) {
   let nextId = 1;
+  let performanceNow = 1000;
   const frames = [];
   const intervals = new Map();
   const timeouts = new Map();
@@ -51,7 +52,7 @@ function createHarness({ hostname = 'example.com', hero = null, carousels = [] }
     constructor(callback) { this.callback = callback; performanceObservers.push(this); }
     observe() {}
     disconnect() {}
-    emit(duration = 70) { this.callback({ getEntries: () => [{ duration }] }); }
+    emit(duration = 70) { this.callback({ getEntries: () => [{ duration, startTime: performanceNow }] }); }
   }
 
   const attributes = new Map();
@@ -64,6 +65,7 @@ function createHarness({ hostname = 'example.com', hero = null, carousels = [] }
   const window = new MockEventTarget();
   window.location = { hostname };
   window.top = window;
+  window.performance = { now: () => performanceNow };
   window.crypto = { getRandomValues(bytes) { bytes.fill(17); return bytes; } };
   window.requestAnimationFrame = (callback) => {
     const id = nextId++;
@@ -133,6 +135,7 @@ function createHarness({ hostname = 'example.com', hero = null, carousels = [] }
     const found = [...timeouts.entries()].find(([, timer]) => timer.delay === delay);
     assert.ok(found, `a ${delay}ms timeout should be queued`);
     timeouts.delete(found[0]);
+    performanceNow += delay;
     found[1].callback();
   }
 
@@ -151,6 +154,9 @@ test('page hook uses a random per-load command channel and accepts no arbitrary 
   harness.dispatchAction('adaptive-limit-on');
   assert.equal(harness.window.requestAnimationFrame, harness.originals.requestAnimationFrame, 'limiting waits for a long-frame signal');
   harness.performanceObservers.at(-1).emit();
+  harness.performanceObservers.at(-1).emit();
+  harness.performanceObservers.at(-1).emit();
+  harness.runTimeout(1000);
   assert.notEqual(harness.window.requestAnimationFrame, harness.originals.requestAnimationFrame, 'adaptive limiting still works without carousel optimizations');
 });
 
@@ -163,13 +169,16 @@ test('Maximum keeps animation frames uncapped until an adaptive trigger is obser
 
   harness.dispatchAction('adaptive-limit-on');
   harness.performanceObservers.at(-1).emit();
+  harness.performanceObservers.at(-1).emit();
+  harness.performanceObservers.at(-1).emit();
+  harness.runTimeout(1000);
   let throttledTimestamp = null;
   harness.window.requestAnimationFrame((timestamp) => { throttledTimestamp = timestamp; });
   harness.runFrame(20);
   assert.equal(throttledTimestamp, null);
   harness.runFrame(55);
   assert.equal(throttledTimestamp, 55);
-  harness.runTimeout(6000);
+  for (let index = 0; index < 5; index += 1) harness.runTimeout(1000);
   assert.equal(harness.window.requestAnimationFrame, harness.originals.requestAnimationFrame, 'the wrapper is removed after frames recover');
 });
 
@@ -177,6 +186,9 @@ test('adaptive 30 FPS limiter preserves requestAnimationFrame cancellation', () 
   const harness = createHarness();
   harness.dispatchAction('adaptive-limit-on');
   harness.performanceObservers.at(-1).emit();
+  harness.performanceObservers.at(-1).emit();
+  harness.performanceObservers.at(-1).emit();
+  harness.runTimeout(1000);
   let called = false;
   const id = harness.window.requestAnimationFrame(() => { called = true; });
   harness.runFrame(10);

@@ -1,0 +1,20 @@
+{
+  "scanned": "2026-11-06",
+  "findings": {
+    "fonts": "SF Pro Display/system sans and Droid Sans Mono in assets/css/style.css:26-27",
+    "palette": "Near-black surfaces with cyan, sky, emerald, and amber accents in assets/css/style.css:7-22",
+    "motion": "CSS mesh keyframes and a Three.js canvas on the landing page; page optimization hooks in scripts/content.js and scripts/page-hook.js",
+    "spacing": "Existing CSS custom properties and component rules in assets/css/style.css; no utility framework found",
+    "framework": "Static HTML, CSS, and JavaScript extension site; no package.json, Next, Vite, or design.md found"
+  },
+  "preserve": [
+    "SmoothBoost identity and black/cyan visual system",
+    "Existing page routes, links, script hooks, and downloads",
+    "Current font stack and CSS token names"
+  ],
+  "introduce": [
+    "Real-time communication app classification and safer profile behavior",
+    "Motion preservation on ws.ryuo.to",
+    "More accurate profile and scroll-demo copy"
+  ]
+}

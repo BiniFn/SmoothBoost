@@ -10,13 +10,13 @@
       name: 'Smart Auto',
       badge: 'AUTO',
       badgeClass: 'badge-auto',
-      description: 'Idle heuristics classify page structure to protect interactive editors while accelerating general web browsing.',
+      description: 'Detects page type before applying heavier rules. Live communication apps keep their calls, canvas content, and interface motion active.',
       metrics: {
-        passive: 42,
-        videos: 4,
-        blurs: 18,
-        canvas: 'Active (Exempts Docs/Figma)',
-        fonts: 8,
+        passive: 'Safe targets only',
+        videos: 'Offscreen previews',
+        blurs: 'Profile controlled',
+        canvas: 'Offscreen only',
+        fonts: 'Optional',
         powerSavings: 'Adaptive'
       },
       rules: [
@@ -26,20 +26,21 @@
         { label: 'Backdrop blur opacity bypass', active: true },
         { label: 'Offscreen CSS animation pausing', active: true },
         { label: 'Offscreen DOM content-visibility', active: false },
-        { label: 'CSSOM font-display swap', active: true }
+        { label: 'CSSOM font-display swap', active: true },
+        { label: 'Live chat, calls, and app motion preserved', active: true, note: 'Discord and voice apps' }
       ]
     },
     ultra: {
       name: 'Turbo (Maximum)',
       badge: 'MAX',
       badgeClass: 'badge-ultra',
-      description: 'Maximum acceleration profile. Enforces full offscreen canvas draw-skipping, video pausing, and blur bypass.',
+      description: 'Maximum profile for ordinary pages. Real-time communication apps keep calls, interface motion, and canvas content intact.',
       metrics: {
-        passive: 68,
-        videos: 8,
-        blurs: 32,
-        canvas: 'Full Acceleration',
-        fonts: 14,
+        passive: 'Safe targets only',
+        videos: 'Offscreen previews',
+        blurs: 'Profile controlled',
+        canvas: 'Offscreen only',
+        fonts: 'Optional',
         powerSavings: 'High'
       },
       rules: [
@@ -49,7 +50,8 @@
         { label: 'Backdrop blur opacity bypass', active: true },
         { label: 'Offscreen CSS animation pausing', active: true },
         { label: 'Offscreen DOM content-visibility', active: false },
-        { label: 'CSSOM font-display swap', active: true }
+        { label: 'CSSOM font-display swap', active: true },
+        { label: 'Live chat and calls protected', active: true, note: 'real-time app safeguard' }
       ]
     },
     balanced: {
@@ -58,11 +60,11 @@
       badgeClass: 'badge-balanced',
       description: 'Conservative acceleration. Leaves page styling and media behavior untouched while keeping scrolling light.',
       metrics: {
-        passive: 16,
-        videos: 0,
-        blurs: 0,
+        passive: 'Native behavior',
+        videos: 'Unchanged',
+        blurs: 'Unchanged',
         canvas: 'Standard',
-        fonts: 0,
+        fonts: 'Unchanged',
         powerSavings: 'Moderate'
       },
       rules: [
@@ -79,13 +81,13 @@
       name: 'Battery Saver',
       badge: 'BATT',
       badgeClass: 'badge-battery',
-      description: 'Cuts CPU and GPU draw on mobile devices and laptops on battery power. Applies offscreen DOM content-visibility.',
+      description: 'Cuts background work on battery. Live communication apps keep their calls, motion, and canvas content active.',
       metrics: {
-        passive: 54,
-        videos: 6,
-        blurs: 22,
-        canvas: 'Throttled (30 FPS Cap)',
-        fonts: 10,
+        passive: 'Safe targets only',
+        videos: 'Offscreen previews',
+        blurs: 'Profile controlled',
+        canvas: 'Offscreen only',
+        fonts: 'Optional',
         powerSavings: 'Extreme'
       },
       rules: [
@@ -95,7 +97,8 @@
         { label: 'Backdrop blur opacity bypass', active: true },
         { label: 'Offscreen CSS animation pausing', active: true },
         { label: 'Offscreen DOM content-visibility', active: true, note: 'Frees offscreen DOM layout' },
-        { label: 'CSSOM font-display swap', active: true }
+        { label: 'CSSOM font-display swap', active: true },
+        { label: 'Real-time app motion preserved', active: true, note: 'including Discord' }
       ]
     },
     custom: {
@@ -104,11 +107,11 @@
       badgeClass: 'badge-custom',
       description: 'Independent tuning drawer allowing manual control over every single optimization flag and frame cap.',
       metrics: {
-        passive: 35,
-        videos: 3,
-        blurs: 15,
+        passive: 'Choose in settings',
+        videos: 'Choose in settings',
+        blurs: 'Choose in settings',
         canvas: 'Configurable',
-        fonts: 6,
+        fonts: 'Optional',
         powerSavings: 'Custom'
       },
       rules: [
@@ -155,11 +158,11 @@
       if (descEl) descEl.textContent = data.description;
 
       // Update metrics
-      if (metricPassiveEl) metricPassiveEl.textContent = `${data.metrics.passive} listeners`;
-      if (metricVideosEl) metricVideosEl.textContent = `${data.metrics.videos} paused`;
-      if (metricBlursEl) metricBlursEl.textContent = `${data.metrics.blurs} bypassed`;
+      if (metricPassiveEl) metricPassiveEl.textContent = data.metrics.passive;
+      if (metricVideosEl) metricVideosEl.textContent = data.metrics.videos;
+      if (metricBlursEl) metricBlursEl.textContent = data.metrics.blurs;
       if (metricCanvasEl) metricCanvasEl.textContent = data.metrics.canvas;
-      if (metricFontsEl) metricFontsEl.textContent = `${data.metrics.fonts} swapped`;
+      if (metricFontsEl) metricFontsEl.textContent = data.metrics.fonts;
 
       // Update rules checklist
       if (rulesListEl) {
@@ -195,7 +198,7 @@
     selectProfile('auto');
   }
 
-  // --- Scroll Benchmark & Compositor Simulator ---
+  // --- Local Scroll Illustration ---
   function initScrollBenchmark() {
     const unoptBox = document.getElementById('bench-unoptimized');
     const optBox = document.getElementById('bench-optimized');
@@ -206,35 +209,20 @@
 
     if (!unoptBox || !optBox) return;
 
-    // Simulate unoptimized scroll jank on the left pane
-    let lastUnoptScroll = Date.now();
+    // The left pane adds a fixed synthetic main-thread pause for illustration.
     unoptBox.addEventListener('scroll', () => {
-      const now = Date.now();
-      const delta = now - lastUnoptScroll;
-      lastUnoptScroll = now;
-
-      // Small simulated main-thread calculation blocking UI
       const start = performance.now();
-      while (performance.now() - start < 14) {} // 14ms block
-      const elapsed = Math.round(performance.now() - start);
+      while (performance.now() - start < 14) {}
+      const elapsed = performance.now() - start;
+      if (unoptFps) unoptFps.textContent = 'Deliberate pause';
+      if (unoptTime) unoptTime.textContent = `${elapsed.toFixed(1)} ms synthetic task`;
+    });
 
-      const fps = Math.max(24, Math.min(38, Math.round(1000 / (delta + 14))));
-      if (unoptFps) unoptFps.textContent = `${fps} FPS`;
-      if (unoptTime) unoptTime.textContent = `${14 + Math.round(Math.random() * 8)}ms / frame`;
-    }, { passive: false }); // Non-passive listener blocks compositor
-
-    // Optimized scroll uses native hardware compositor with passive listener
-    let optFrames = 0;
-    let lastOptTime = performance.now();
+    // The right pane keeps its handler light; it is not a device benchmark.
     optBox.addEventListener('scroll', () => {
-      optFrames++;
-      const now = performance.now();
-      if (now - lastOptTime >= 300) {
-        if (optFps) optFps.textContent = '60 FPS (Hardware Composited)';
-        if (optTime) optTime.textContent = '4.2ms / frame';
-        lastOptTime = now;
-      }
-    }, { passive: true }); // True passive listener!
+      if (optFps) optFps.textContent = 'No synthetic pause';
+      if (optTime) optTime.textContent = 'Native scroll';
+    });
   }
 
   // --- Platform Installation Tabs ---

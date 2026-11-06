@@ -1,4 +1,4 @@
-// SmoothBoost - popup controller (v2.2.0)
+// SmoothBoost - popup controller (v2.3.0)
 
 const DEFAULT_SETTINGS = {
   settingsVersion: 5,
@@ -527,13 +527,21 @@ function requestPageStatus(attempt = 0) {
 
     statusDot.className = response.enabled ? 'status-dot is-active' : 'status-dot is-muted';
     statusPage.textContent = response.enabled ? 'Active' : 'Off for this site';
-    statusDetail.textContent = response.enabled
-      ? (response.mode === 'auto'
-          ? (response.archetype === 'interactive-canvas'
-              ? 'Smart Auto: Interactive canvas app detected. Bypassing canvas throttling to ensure full input responsiveness.'
-              : 'Smart Auto: Running verified heuristics for responsive browsing.')
-          : 'SmoothBoost is running in this tab.')
-      : 'SmoothBoost is loaded, but paused for this site.';
+    if (!response.enabled) {
+      statusDetail.textContent = 'SmoothBoost is loaded, but paused for this site.';
+    } else if (response.motionPreserved) {
+      statusDetail.textContent = 'Page animations are preserved here. The site’s Reduce motion setting controls their visibility.';
+    } else if (response.archetype === 'realtime-app') {
+      statusDetail.textContent = response.mode === 'custom'
+        ? 'Live communication app detected. Calls stay protected; Custom animation settings apply.'
+        : 'Live communication app detected. Chat, calls, and interface motion stay active while safe scroll handling remains on.';
+    } else if (response.mode === 'auto' && response.archetype === 'interactive-canvas') {
+      statusDetail.textContent = 'Smart Auto: Interactive canvas app detected. Bypassing canvas throttling to ensure full input responsiveness.';
+    } else if (response.mode === 'auto') {
+      statusDetail.textContent = 'Smart Auto: Running verified heuristics for responsive browsing.';
+    } else {
+      statusDetail.textContent = 'SmoothBoost is running in this tab.';
+    }
 
     const modeLabels = { auto: 'Smart Auto', ultra: 'Maximum', balanced: 'Balanced', battery: 'Battery Saver', custom: 'Custom' };
     statusProfile.textContent = response.enabled ? (modeLabels[response.mode] || 'Custom') : 'Off';
