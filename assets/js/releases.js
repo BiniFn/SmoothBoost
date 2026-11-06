@@ -7,13 +7,13 @@
   const GITHUB_REPO = 'BiniFn/SmoothBoost';
   const API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
   const RELEASES_PAGE_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
-  const CACHE_KEY = 'smoothboost_release_cache_v3';
+  const CACHE_KEY = 'smoothboost_release_cache_v4';
   const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
   const DEFAULT_RELEASE = {
     version: 'v2.3.0',
     publishedAt: 'November 6, 2026',
-    releaseUrl: RELEASES_PAGE_URL,
+    releaseUrl: `https://github.com/${GITHUB_REPO}/tree/v2.3.0`,
     body: `### SmoothBoost v2.3.0 — Adaptive Responsiveness & Live App Safeguards
 
 - **Real-Time App Detection**: Discord, Google Meet, Teams, Zoom, and WhatsApp are recognized before heavier page scans. Automatic profiles preserve calls, canvas content, and interface motion.
@@ -24,22 +24,22 @@
     downloads: {
       chrome: {
         name: 'SmoothBoost-Chrome-2.3.0.zip',
-        url: `https://github.com/${GITHUB_REPO}/releases/download/v2.3.0/SmoothBoost-Chrome-2.3.0.zip`,
+        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Chrome-2.3.0.zip`,
         size: '42.4 KB'
       },
       titanium: {
         name: 'SmoothBoost-Titanium-Android-2.3.0.zip',
-        url: `https://github.com/${GITHUB_REPO}/releases/download/v2.3.0/SmoothBoost-Titanium-Android-2.3.0.zip`,
+        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Titanium-Android-2.3.0.zip`,
         size: '42.4 KB'
       },
       firefox: {
         name: 'SmoothBoost-Firefox-2.3.0.zip',
-        url: `https://github.com/${GITHUB_REPO}/releases/download/v2.3.0/SmoothBoost-Firefox-2.3.0.zip`,
+        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Firefox-2.3.0.zip`,
         size: '42.5 KB'
       },
       firefoxAndroid: {
         name: 'SmoothBoost-Firefox-Android-2.3.0.zip',
-        url: `https://github.com/${GITHUB_REPO}/releases/download/v2.3.0/SmoothBoost-Firefox-Android-2.3.0.zip`,
+        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Firefox-Android-2.3.0.zip`,
         size: '42.5 KB'
       }
     }
@@ -136,6 +136,18 @@
     }
   }
 
+  function compareVersions(left, right) {
+    const parts = (value) => String(value || '').replace(/^v/i, '').split('.').slice(0, 3)
+      .map((part) => /^\d+$/.test(part) ? Number(part) : 0);
+    const a = parts(left);
+    const b = parts(right);
+    for (let index = 0; index < 3; index += 1) {
+      const difference = (a[index] || 0) - (b[index] || 0);
+      if (difference) return Math.sign(difference);
+    }
+    return 0;
+  }
+
   function parseReleasePayload(data) {
     const rawTag = String(data.tag_name || data.name || DEFAULT_RELEASE.version);
     const version = rawTag.startsWith('v') ? rawTag : `v${rawTag}`;
@@ -220,7 +232,10 @@
       });
       if (!res.ok) throw new Error(`GitHub API HTTP ${res.status}`);
       const data = await res.json();
-      const parsed = parseReleasePayload(data);
+      const candidate = parseReleasePayload(data);
+      const parsed = compareVersions(candidate.version, DEFAULT_RELEASE.version) < 0
+        ? DEFAULT_RELEASE
+        : candidate;
       setCachedRelease(parsed);
       return parsed;
     } catch (_e) {

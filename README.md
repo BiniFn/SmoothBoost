@@ -58,19 +58,19 @@ Supported across **Chrome & Helium Desktop**, **Titanium Browser on Android**, *
 For detailed, platform-specific walkthroughs with screenshots and troubleshooting steps, read the [Device Setup Tutorial](https://binifn.github.io/SmoothBoost/tutorial.html).
 
 ### 1. Chrome & Helium Desktop
-1. Download `SmoothBoost-Chrome-2.3.0.zip` from [Releases](https://github.com/BiniFn/SmoothBoost/releases/latest) and unzip it.
+1. Download [SmoothBoost-Chrome-2.3.0.zip](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Chrome-2.3.0.zip) and unzip it.
 2. Navigate to `chrome://extensions` and toggle **Developer mode** in the top right.
 3. Click **Load unpacked** and select the extracted folder.
 4. Pin SmoothBoost to the toolbar for quick access.
 
 ### 2. Titanium Browser on Android (Google Play)
-1. Download `SmoothBoost-Titanium-Android-2.3.0.zip` on your Android device.
+1. Download [SmoothBoost-Titanium-Android-2.3.0.zip](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Titanium-Android-2.3.0.zip) on your Android device.
 2. In Titanium Browser, navigate to `chrome://extensions` (or open the Extensions menu).
 3. Enable Developer Mode and install the extension via **Load unpacked** or via the Titanium Extension Manager.
 4. SmoothBoost opens in mobile-optimized portrait mode with large touch targets.
 
 ### 3. Firefox Desktop
-1. Download `SmoothBoost-Firefox-2.3.0.zip` from [Releases](https://github.com/BiniFn/SmoothBoost/releases/latest) and unzip it.
+1. Download [SmoothBoost-Firefox-2.3.0.zip](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-2.3.0.zip) and unzip it.
 2. Navigate to `about:debugging#/runtime/this-firefox`.
 3. Click **Load Temporary Add-on…** and select `manifest.json` from the unzipped directory.
 4. SmoothBoost will appear in the Firefox extension toolbar.
