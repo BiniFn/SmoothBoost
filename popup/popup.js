@@ -530,7 +530,9 @@ function requestPageStatus(attempt = 0) {
     if (!response.enabled) {
       statusDetail.textContent = 'SmoothBoost is loaded, but paused for this site.';
     } else if (response.motionPreserved) {
-      statusDetail.textContent = 'Page animations are preserved here. The site’s Reduce motion setting controls their visibility.';
+      statusDetail.textContent = response.offscreenAnimationsPaused
+        ? 'Visible animations stay active; offscreen loops pause to save work. The site’s Reduce motion setting remains in control.'
+        : 'Page animations stay under the site’s Reduce motion setting.';
     } else if (response.archetype === 'realtime-app') {
       statusDetail.textContent = response.mode === 'custom'
         ? 'Live communication app detected. Calls stay protected; Custom animation settings apply.'

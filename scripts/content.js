@@ -14,6 +14,7 @@
   const ARCHETYPE_CACHE_KEY = 'smoothBoostArchetypes';
   const ARCHETYPE_MAX_ENTRIES = 500;
   const ARCHETYPE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+  const RYUO_HOST = 'ws.ryuo.to';
   const REALTIME_APP_HOSTS = [
     'discord.com',
     'discordapp.com',
@@ -68,6 +69,8 @@
   let carouselMutationObserver = null;
   let canvasObserver = null;
   let observedCanvases = new Set();
+  let resourceMutationObserver = null;
+  let contentVisibilityMutationObserver = null;
   let blurSelectors = [];
   let styleRootObserver = null;
   let diagnosticsObserver = null;
@@ -98,6 +101,10 @@
     return MOTION_PRESERVATION_HOSTS.some((domain) => hostMatches(hostname, domain));
   }
 
+  function isRyuoHomePage(hostname = window.location.hostname.toLowerCase(), pathname = window.location.pathname) {
+    return hostMatches(hostname, RYUO_HOST) && (pathname === '/' || pathname === '/home');
+  }
+
   function getReanimeRule() {
     const path = window.location.pathname;
     return siteRules.siteRules?.find((rule) =>
@@ -117,6 +124,7 @@
     const mode = site.mode || source.mode || 'auto';
     const realtimeApp = isRealtimeAppHost(hostname) || currentArchetype === 'realtime-app';
     const keepMotion = preservesPageMotion(hostname);
+    const ryuoHome = isRyuoHomePage(hostname);
     const custom = {
       ...DEFAULT_CONFIG.customSettings,
       ...(source.customSettings || {}),
@@ -132,13 +140,13 @@
         killTransitions: false,
         killBlurFilters: !realtimeApp,
         killScrollHijack: false,
-        pauseBackgroundMedia: !realtimeApp && !keepMotion,
-        pauseOffscreenAnimations: !realtimeApp && !keepMotion,
+        pauseBackgroundMedia: !realtimeApp && (!keepMotion || ryuoHome),
+        pauseOffscreenAnimations: !realtimeApp && (!keepMotion || ryuoHome),
         pauseOffscreenCanvas: !isInteractiveCanvas && !realtimeApp && !keepMotion,
         passiveScroll: true,
         asyncImageDecoding: !realtimeApp,
         fontDisplaySwap: !realtimeApp,
-        contentVisibility: false,
+        contentVisibility: ryuoHome,
         throttleCanvasFps: false,
         fpsLimit: 30
       };
@@ -153,13 +161,13 @@
         killTransitions: false,
         killBlurFilters: !realtimeApp,
         killScrollHijack: false,
-        pauseBackgroundMedia: !realtimeApp && !keepMotion,
-        pauseOffscreenAnimations: !realtimeApp && !keepMotion,
+        pauseBackgroundMedia: !realtimeApp && (!keepMotion || ryuoHome),
+        pauseOffscreenAnimations: !realtimeApp && (!keepMotion || ryuoHome),
         pauseOffscreenCanvas: !isInteractiveCanvas && !realtimeApp && !keepMotion,
         passiveScroll: true,
         asyncImageDecoding: !realtimeApp,
         fontDisplaySwap: !realtimeApp,
-        contentVisibility: false,
+        contentVisibility: ryuoHome,
         throttleCanvasFps: false,
         fpsLimit: 30
       };
@@ -194,13 +202,13 @@
         killTransitions: false,
         killBlurFilters: !realtimeApp,
         killScrollHijack: false,
-        pauseBackgroundMedia: !realtimeApp && !keepMotion,
-        pauseOffscreenAnimations: !realtimeApp && !keepMotion,
+        pauseBackgroundMedia: !realtimeApp && (!keepMotion || ryuoHome),
+        pauseOffscreenAnimations: !realtimeApp && (!keepMotion || ryuoHome),
         pauseOffscreenCanvas: !isInteractiveCanvas && !realtimeApp && !keepMotion,
         passiveScroll: true,
         asyncImageDecoding: !realtimeApp,
         fontDisplaySwap: !realtimeApp,
-        contentVisibility: !realtimeApp && !keepMotion,
+        contentVisibility: !realtimeApp && (!keepMotion || ryuoHome),
         throttleCanvasFps: !isInteractiveCanvas && !realtimeApp && !keepMotion,
         fpsLimit: 30
       };
@@ -236,7 +244,7 @@
       css += 'canvas[data-smoothboost-offscreen-canvas="true"] { visibility: hidden !important; }\n';
     }
     if (settings.contentVisibility) {
-      css += 'main, [role="main"], [role="feed"] > *, article.post, .feed-item { content-visibility: auto !important; contain-intrinsic-size: auto 500px !important; }\n';
+      css += '[data-smoothboost-content-visibility="true"] { content-visibility: auto !important; contain-intrinsic-size: auto 480px !important; }\n';
     }
     return css;
   }
@@ -477,23 +485,86 @@
   }
 
   function optimizeImagesAndIframes() {
-    const shouldOptimize = currentSettings.enabled && currentSettings.asyncImageDecoding;
-    if (!shouldOptimize) return;
-    const images = document.querySelectorAll('img:not([data-smoothboost-decoded])');
+    optimizeAddedResources(document);
+  }
+
+  function optimizeAddedResources(root) {
+    if (!currentSettings.enabled || !currentSettings.asyncImageDecoding) return;
+    const images = [];
+    if (root?.nodeType === 1 && root.matches?.('img:not([data-smoothboost-decoded])')) images.push(root);
+    root?.querySelectorAll?.('img:not([data-smoothboost-decoded])').forEach((img) => images.push(img));
     images.forEach((img, idx) => {
       img.setAttribute('data-smoothboost-decoded', 'true');
       if (!img.decoding || img.decoding === 'auto') img.decoding = 'async';
-      // Guard against layout thrashing: avoid getBoundingClientRect() loop.
-      // Protect first 3 images (likely hero/above-the-fold) and explicit eager images.
-      if (idx > 2 && !img.loading && img.getAttribute('loading') !== 'eager' && img.getAttribute('fetchpriority') !== 'high') {
+      // Keep the initial hero/logo images eager; lazy-load later and dynamically added feed art.
+      // Browser lazy loading still fetches images near the viewport, without layout reads here.
+      const isInitialHeroImage = root === document && idx < 3;
+      const loading = img.getAttribute('loading');
+      const fetchPriority = img.getAttribute('fetchpriority')?.toLowerCase();
+      if (!isInitialHeroImage && loading !== 'eager' && loading !== 'lazy' && fetchPriority !== 'high') {
         img.loading = 'lazy';
       }
     });
-    const iframes = document.querySelectorAll('iframe:not([data-smoothboost-lazy])');
+    const iframes = [];
+    if (root?.nodeType === 1 && root.matches?.('iframe:not([data-smoothboost-lazy])')) iframes.push(root);
+    root?.querySelectorAll?.('iframe:not([data-smoothboost-lazy])').forEach((iframe) => iframes.push(iframe));
     iframes.forEach((iframe) => {
       iframe.setAttribute('data-smoothboost-lazy', 'true');
-      if (!iframe.loading) iframe.loading = 'lazy';
+      const loading = iframe.getAttribute('loading');
+      if (loading !== 'eager' && loading !== 'lazy') iframe.loading = 'lazy';
     });
+  }
+
+  function updateResourceObserver() {
+    resourceMutationObserver?.disconnect();
+    resourceMutationObserver = null;
+    if (!currentSettings.enabled || !currentSettings.asyncImageDecoding || typeof MutationObserver !== 'function' || !document.documentElement) return;
+    resourceMutationObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        mutation.addedNodes?.forEach((node) => {
+          if (node.nodeType === 1) optimizeAddedResources(node);
+        });
+      }
+    });
+    resourceMutationObserver.observe(document.documentElement, { childList: true, subtree: true });
+  }
+
+  function isContentVisibilityCandidate(element) {
+    if (!element || element.nodeType !== 1 || element.closest?.('nav, header, footer, [role="dialog"], [role="alertdialog"]')) return false;
+    if (element.matches?.('main, [role="main"], [role="feed"]')) return false;
+    // Never skip a page hero or embedded media surface.
+    if (element.querySelector?.('h1, video, iframe, canvas, form, input, select, textarea, [contenteditable="true"], [role="dialog"], [role="alertdialog"]')) return false;
+    return true;
+  }
+
+  function markContentVisibilityTarget(element) {
+    if (isContentVisibilityCandidate(element)) element.setAttribute('data-smoothboost-content-visibility', 'true');
+  }
+
+  function markContentVisibilityIn(root) {
+    if (!root) return;
+    const selectors = 'main section, [role="main"] section, [role="feed"] > *, main article, [role="main"] article, article.post, .feed-item';
+    if (root.nodeType === 1 && root.matches?.(selectors)) markContentVisibilityTarget(root);
+    root.querySelectorAll?.(selectors).forEach(markContentVisibilityTarget);
+  }
+
+  function updateContentVisibilityTargets() {
+    contentVisibilityMutationObserver?.disconnect();
+    contentVisibilityMutationObserver = null;
+    document.querySelectorAll('[data-smoothboost-content-visibility="true"]').forEach((element) => {
+      element.removeAttribute('data-smoothboost-content-visibility');
+    });
+    if (!currentSettings.enabled || !currentSettings.contentVisibility) return;
+    markContentVisibilityIn(document);
+    if (typeof MutationObserver !== 'function' || !document.documentElement) return;
+    contentVisibilityMutationObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        mutation.addedNodes?.forEach((node) => {
+          if (node.nodeType === 1) markContentVisibilityIn(node);
+        });
+      }
+    });
+    contentVisibilityMutationObserver.observe(document.documentElement, { childList: true, subtree: true });
   }
 
   function patchFontFaceDescriptors() {
@@ -604,7 +675,7 @@
     });
     const shouldObserve = currentSettings.enabled
       && currentSettings.pauseOffscreenAnimations
-      && (currentSettings.mode === 'custom' || (!isRealtimeAppHost() && !preservesPageMotion()));
+      && (currentSettings.mode === 'custom' || !isRealtimeAppHost());
     if (!shouldObserve || typeof IntersectionObserver !== 'function') return;
 
     animationObserver = new IntersectionObserver((entries) => {
@@ -673,8 +744,7 @@
     markedCarousels.clear();
     const shouldMark = currentSettings.enabled
       && (currentSettings.mode === 'auto' || currentSettings.mode === 'ultra' || currentSettings.pauseBackgroundMedia)
-      && !isRealtimeAppHost()
-      && !preservesPageMotion();
+      && !isRealtimeAppHost();
     if (!shouldMark) {
       document.querySelectorAll('[data-smoothboost-carousel="true"]').forEach((element) => {
         element.removeAttribute('data-smoothboost-carousel');
@@ -699,12 +769,14 @@
     updateAnimationObserver();
     updateCarouselMarkers();
     updateCanvasObserver();
+    updateContentVisibilityTargets();
     if (currentSettings.enabled && currentSettings.killBlurFilters) {
       scanBackdropBlurTargets();
     } else {
       restoreBlurElements();
     }
     optimizeImagesAndIframes();
+    updateResourceObserver();
     patchFontFaceDescriptors();
   }
 
@@ -1052,7 +1124,8 @@
         enabled: currentSettings.enabled,
         mode: currentSettings.mode || 'off',
         archetype: currentArchetype,
-        motionPreserved: preservesPageMotion() && !currentSettings.killAnimations && !currentSettings.killTransitions && !currentSettings.pauseOffscreenAnimations,
+        motionPreserved: preservesPageMotion() && !currentSettings.killAnimations && !currentSettings.killTransitions,
+        offscreenAnimationsPaused: !!currentSettings.pauseOffscreenAnimations,
         siteRule: isReanimeHomePage() ? reanimeRuleState : 'not-applicable'
       } : { status: 'initializing' });
       return false;
@@ -1066,7 +1139,8 @@
         enabled: currentSettings.enabled,
         mode: currentSettings.mode || 'off',
         archetype: currentArchetype,
-        motionPreserved: preservesPageMotion() && !currentSettings.killAnimations && !currentSettings.killTransitions && !currentSettings.pauseOffscreenAnimations,
+        motionPreserved: preservesPageMotion() && !currentSettings.killAnimations && !currentSettings.killTransitions,
+        offscreenAnimationsPaused: !!currentSettings.pauseOffscreenAnimations,
         metrics: {
           passiveListeners: hookPassiveCount,
           pausedVideos: pausedVideos.size,
