@@ -2,6 +2,10 @@
 
 SmoothBoost is a universal cross-browser performance extension and userscript for smoother scrolling, reduced background work, and instant frame pacing. It detects page archetypes before applying optimizations, while preserving live calls, interactive apps, and user-controlled animation preferences.
 
+[![Install with Tampermonkey](https://img.shields.io/badge/Install%20with%20Tampermonkey-SmoothBoost.user.js-06b6d4?style=for-the-badge&logo=tampermonkey&logoColor=white)](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost.user.js)
+[![Download Chrome ZIP](https://img.shields.io/badge/Download-Chrome%20Extension%20v2.4.0-38bdf8?style=for-the-badge&logo=googlechrome&logoColor=white)](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Chrome-2.4.0.zip)
+[![Release](https://img.shields.io/badge/Release-v2.4.0-emerald?style=for-the-badge)](https://github.com/BiniFn/SmoothBoost/releases)
+
 Supported across **Tampermonkey & Violentmonkey Userscript**, **Chrome & Helium Desktop**, **Titanium Browser on Android**, **Firefox Desktop**, and **Firefox for Android**.
 
 ---
@@ -60,9 +64,13 @@ Supported across **Tampermonkey & Violentmonkey Userscript**, **Chrome & Helium 
 For detailed, platform-specific walkthroughs with screenshots and troubleshooting steps, read the [Device Setup Tutorial](https://binifn.github.io/SmoothBoost/tutorial.html).
 
 ### 1. Tampermonkey & Violentmonkey Userscript (Recommended)
+
+[![Install with Tampermonkey](https://img.shields.io/badge/⚡%20Install%20with%20Tampermonkey-SmoothBoost.user.js-06b6d4?style=for-the-badge&logo=tampermonkey&logoColor=white)](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost.user.js)
+
 1. Install [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/) in your browser.
-2. Click to install [SmoothBoost.user.js](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost.user.js).
+2. Click the **[Install with Tampermonkey](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost.user.js)** button above to trigger 1-click installation.
 3. Confirm installation in your userscript manager prompt.
+4. SmoothBoost is instantly active on every website! Access settings via your userscript extension menu or the on-page **⚡ SB** status pill.
 
 ### 2. Chrome & Helium Desktop Extension
 1. Download [SmoothBoost-Chrome-2.4.0.zip](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Chrome-2.4.0.zip) and unzip it.
