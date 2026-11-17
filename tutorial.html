@@ -176,9 +176,10 @@
         <nav class="tutorial-tabs" aria-label="Device selection">
           <a href="#userscript" class="tutorial-tab-btn active">Userscript</a>
           <a href="#titanium" class="tutorial-tab-btn">Titanium Android</a>
-          <a href="#chrome" class="tutorial-tab-btn">Chrome &amp; Helium</a>
-          <a href="#firefox" class="tutorial-tab-btn">Firefox Desktop</a>
-          <a href="#firefox-android" class="tutorial-tab-btn">Firefox Android</a>
+          <a href="#chrome" class="tutorial-tab-btn">Chrome &amp; Brave</a>
+          <a href="#edge" class="tutorial-tab-btn">Microsoft Edge</a>
+          <a href="#firefox" class="tutorial-tab-btn">Firefox (Desktop &amp; Android)</a>
+          <a href="#safari" class="tutorial-tab-btn">Apple Safari</a>
           <a href="#kiwi" class="tutorial-tab-btn">Kiwi Browser</a>
         </nav>
       </div>
@@ -308,71 +309,116 @@
           </div>
         </article>
 
-        <!-- 3. Firefox Desktop -->
-        <article id="firefox" class="section-card device-card">
+        <!-- 4. Microsoft Edge -->
+        <article id="edge" class="section-card device-card">
           <div class="section-head" style="text-align: left; margin-bottom: 20px;">
-            <div class="section-eyebrow">Desktop Gecko</div>
-            <h2 class="section-title" style="font-size: 1.5rem;">Mozilla Firefox Desktop</h2>
+            <div class="section-eyebrow">Microsoft Edge Add-ons</div>
+            <h2 class="section-title" style="font-size: 1.5rem;">Microsoft Edge (Store Ready)</h2>
             <p class="section-desc" style="text-align: left;">
-              Tailored Gecko Manifest V3 with background event pages and isolated script execution.
+              Dedicated Chromium Manifest V3 release built for Microsoft Edge and ready for direct submission to the Microsoft Edge Partner Center.
             </p>
           </div>
 
           <div class="callout-box">
-            <strong>Package:</strong> <code data-asset-name="firefox">SmoothBoost-Firefox-2.4.0.zip</code> (<span data-asset-size="firefox">47.3 KB</span>). Validated against Firefox 109+ and Firefox 128+ standard Gecko MV3 specifications.
+            <strong>Package:</strong> <code data-asset-name="edge">SmoothBoost-Edge-2.4.0.zip</code> (<span data-asset-size="edge">47.2 KB</span>). Includes high-contrast support, sleeping tabs awareness, and full Edge Add-ons compliance.
           </div>
 
           <div class="step-box">
             <h4><span class="step-badge">1</span> Download &amp; Extract</h4>
-            <p>Download the Firefox package and extract its contents:</p>
+            <p>Download the Edge release package:</p>
+            <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Edge-2.4.0.zip" class="btn btn-primary" style="margin-top: 6px;" data-download="edge" download="SmoothBoost-Edge-2.4.0.zip">
+              Download <span data-asset-name="edge">SmoothBoost-Edge-2.4.0.zip</span>
+            </a>
+          </div>
+
+          <div class="step-box">
+            <h4><span class="step-badge">2</span> Open Edge Extensions</h4>
+            <p>Navigate to <span class="code-pill">edge://extensions</span> in the Microsoft Edge address bar.</p>
+          </div>
+
+          <div class="step-box">
+            <h4><span class="step-badge">3</span> Enable Developer Mode &amp; Load Unpacked</h4>
+            <p>In the bottom-left sidebar, switch on <strong>Developer mode</strong>, then click <strong>Load unpacked</strong> and select the extracted folder.</p>
+          </div>
+
+          <div class="step-box">
+            <h4><span class="step-badge">4</span> Edge Add-ons Store Submission</h4>
+            <p>To publish on the Microsoft Edge Add-ons catalog, simply upload <code>SmoothBoost-Edge-2.4.0.zip</code> directly to the Partner Center dashboard.</p>
+          </div>
+        </article>
+
+        <!-- 5. Mozilla Firefox (Desktop & Android Unified) -->
+        <article id="firefox" class="section-card device-card">
+          <div class="section-head" style="text-align: left; margin-bottom: 20px;">
+            <div class="section-eyebrow">AMO Store Ready &bull; Unified Package</div>
+            <h2 class="section-title" style="font-size: 1.5rem;">Mozilla Firefox (Desktop &amp; Android)</h2>
+            <p class="section-desc" style="text-align: left;">
+              Unified Gecko Manifest V3 package ready for Mozilla Add-ons (AMO) submission. Zero data collection declared, no innerHTML warnings, and full Android Gecko support.
+            </p>
+          </div>
+
+          <div class="callout-box">
+            <strong>Package:</strong> <code data-asset-name="firefox">SmoothBoost-Firefox-2.4.0.zip</code> (<span data-asset-size="firefox">47.3 KB</span>). Compatible with Firefox 140+ Desktop and Firefox 142+ for Android.
+          </div>
+
+          <div class="step-box">
+            <h4><span class="step-badge">1</span> Download the Unified Package</h4>
+            <p>Download the single unified Firefox package for both Desktop and Android:</p>
             <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-2.4.0.zip" class="btn btn-primary" style="margin-top: 6px;" data-download="firefox" download="SmoothBoost-Firefox-2.4.0.zip">
               Download <span data-asset-name="firefox">SmoothBoost-Firefox-2.4.0.zip</span>
             </a>
           </div>
 
           <div class="step-box">
-            <h4><span class="step-badge">2</span> Open Debugging</h4>
-            <p>Type <span class="code-pill">about:debugging#/runtime/this-firefox</span> into the Firefox address bar and press Enter.</p>
+            <h4><span class="step-badge">2</span> Testing on Firefox Desktop</h4>
+            <p>Type <span class="code-pill">about:debugging#/runtime/this-firefox</span> into the address bar. Click <strong>Load Temporary Add-on…</strong> and select the downloaded ZIP file or its extracted <code>manifest.json</code>.</p>
           </div>
 
           <div class="step-box">
-            <h4><span class="step-badge">3</span> Load Temporary Add-on</h4>
-            <p>Click <strong>Load Temporary Add-on…</strong> and select the <code>manifest.json</code> file located inside the extracted directory.</p>
-            <p>SmoothBoost will instantly load and activate on all open tabs.</p>
+            <h4><span class="step-badge">3</span> Testing on Firefox Android</h4>
+            <p>Install via Firefox Nightly with custom add-on collections or run via web-ext: <span class="code-pill">web-ext run --target=firefox-android</span>.</p>
+          </div>
+
+          <div class="step-box">
+            <h4><span class="step-badge">4</span> AMO Store Publication</h4>
+            <p>Log in to <a href="https://addons.mozilla.org/developers/" target="_blank" rel="noopener noreferrer" style="color: var(--accent-cyan);">addons.mozilla.org</a>, click <strong>Submit a New Add-on</strong>, and upload <code>SmoothBoost-Firefox-2.4.0.zip</code>. The package passes all automated linter validation with 0 errors.</p>
           </div>
         </article>
 
-        <!-- 4. Firefox for Android -->
-        <article id="firefox-android" class="section-card device-card">
+        <!-- 6. Apple Safari (macOS & iOS) -->
+        <article id="safari" class="section-card device-card">
           <div class="section-head" style="text-align: left; margin-bottom: 20px;">
-            <div class="section-eyebrow">Mobile Gecko</div>
-            <h2 class="section-title" style="font-size: 1.5rem;">Firefox for Android</h2>
+            <div class="section-eyebrow">Apple Ecosystem</div>
+            <h2 class="section-title" style="font-size: 1.5rem;">Apple Safari (macOS &amp; iOS)</h2>
             <p class="section-desc" style="text-align: left;">
-              Installation on Android via Firefox Nightly or developer add-on collections.
+              Run SmoothBoost on Safari using the standalone Userscript edition or convert the WebKit MV3 package with Xcode safari-web-extension-converter.
             </p>
           </div>
 
           <div class="callout-box">
-            <strong>Package:</strong> <code data-asset-name="firefox-android">SmoothBoost-Firefox-Android-2.4.0.zip</code> (<span data-asset-size="firefox-android">47.3 KB</span>). Equipped with mobile layout adaptations.
+            <strong>Package:</strong> <code data-asset-name="safari">SmoothBoost-Safari-2.4.0.zip</code> (<span data-asset-size="safari">47.2 KB</span>) or <code>SmoothBoost.user.js</code> (32.5 KB).
           </div>
 
           <div class="step-box">
-            <h4><span class="step-badge">1</span> Download Android ZIP</h4>
-            <p>Download the Firefox Android package directly to your phone:</p>
-            <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-Android-2.4.0.zip" class="btn btn-primary" style="margin-top: 6px;" data-download="firefox-android" download="SmoothBoost-Firefox-Android-2.4.0.zip">
-              Download <span data-asset-name="firefox-android">SmoothBoost-Firefox-Android-2.4.0.zip</span>
+            <h4><span class="step-badge">1</span> Recommended: 1-Click via Userscripts Extension</h4>
+            <p>Install the free and open-source <strong>Userscripts</strong> app from the Mac App Store or iOS App Store, then click:</p>
+            <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost.user.js" class="btn btn-primary" style="margin-top: 6px;" data-download="userscript">
+              Install via Userscripts: <span>SmoothBoost.user.js</span>
             </a>
           </div>
 
           <div class="step-box">
-            <h4><span class="step-badge">2</span> Enable Developer Menu in Firefox Nightly</h4>
-            <p>Open <strong>Firefox Nightly for Android</strong>. Go to <strong>Settings &rarr; About Firefox Nightly</strong>. Tap the Firefox logo 5 times until the "Debug menu enabled" toast notification appears.</p>
+            <h4><span class="step-badge">2</span> Native WebKit MV3 Extension</h4>
+            <p>Download the Safari extension package:</p>
+            <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Safari-2.4.0.zip" class="btn btn-secondary" style="margin-top: 6px;" data-download="safari" download="SmoothBoost-Safari-2.4.0.zip">
+              Download <span data-asset-name="safari">SmoothBoost-Safari-2.4.0.zip</span>
+            </a>
+            <p style="margin-top: 8px;">To convert into an Xcode macOS/iOS app wrapper: <span class="code-pill">xcrun safari-web-extension-converter /path/to/extracted</span>.</p>
           </div>
 
           <div class="step-box">
-            <h4><span class="step-badge">3</span> Install via Custom Add-on Collection or USB</h4>
-            <p>Create a custom collection on addons.mozilla.org or deploy the ZIP via USB debugging using web-ext:</p>
-            <p><span class="code-pill">web-ext run --target=firefox-android</span></p>
+            <h4><span class="step-badge">3</span> Orion Browser for Mac &amp; iOS</h4>
+            <p>In Orion Browser, open <strong>Settings &rarr; Extensions</strong>, enable Developer Mode, and load the unpacked Safari ZIP directly.</p>
           </div>
         </article>
 
@@ -459,9 +505,10 @@
           <ul class="footer-links-list">
             <li><a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost.user.js" data-download="userscript">SmoothBoost.user.js</a></li>
             <li><a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Chrome-2.4.0.zip" data-download="chrome">Chrome / Helium</a></li>
+            <li><a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Edge-2.4.0.zip" data-download="edge">Microsoft Edge</a></li>
+            <li><a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-2.4.0.zip" data-download="firefox">Firefox (Unified AMO)</a></li>
+            <li><a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Safari-2.4.0.zip" data-download="safari">Apple Safari</a></li>
             <li><a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Titanium-Android-2.4.0.zip" data-download="titanium">Titanium Android</a></li>
-            <li><a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-2.4.0.zip" data-download="firefox">Firefox Desktop</a></li>
-            <li><a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-Android-2.4.0.zip" data-download="firefox-android">Firefox Android</a></li>
           </ul>
         </div>
       </div>

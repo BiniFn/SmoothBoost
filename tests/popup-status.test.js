@@ -16,6 +16,7 @@ class FakeElement {
     this.listeners = new Map();
     this.classes = new Set();
     this.attributes = new Map();
+    this.children = [];
     this.tabIndex = 0;
     this.classList = {
       add: (name) => this.classes.add(name),
@@ -27,6 +28,16 @@ class FakeElement {
         return shouldAdd;
       }
     };
+  }
+
+  replaceChildren(...children) {
+    this.children = children || [];
+    this.textContent = '';
+  }
+
+  appendChild(child) {
+    this.children.push(child);
+    return child;
   }
 
   addEventListener(type, listener) {
@@ -56,6 +67,14 @@ async function renderPopup({ url, response, hasReceiver = true, storedConfig = n
     getElementById(id) {
       if (!elements.has(id)) elements.set(id, new FakeElement());
       return elements.get(id);
+    },
+    createElement(tag) {
+      return new FakeElement();
+    },
+    createTextNode(text) {
+      const el = new FakeElement();
+      el.textContent = text;
+      return el;
     }
   };
 

@@ -16,14 +16,15 @@ test('packager builds and verifies all release targets', () => {
   });
 
   assert.ok(output.includes('Building SmoothBoost release targets'), 'packager reported build start');
-  assert.ok(output.includes('Successfully built 5 release package(s)'), 'built all 5 targets');
+  assert.ok(output.includes('Successfully built 6 release package(s)'), 'built all 6 targets');
 
   const expectedArchives = [
     'SmoothBoost-Chrome-2.4.0.zip',
     'SmoothBoost-2.4.0.zip',
     'SmoothBoost-Titanium-Android-2.4.0.zip',
     'SmoothBoost-Firefox-2.4.0.zip',
-    'SmoothBoost-Firefox-Android-2.4.0.zip'
+    'SmoothBoost-Safari-2.4.0.zip',
+    'SmoothBoost-Edge-2.4.0.zip'
   ];
 
   for (const name of expectedArchives) {
@@ -48,9 +49,23 @@ test('Firefox package contains Gecko manifest and event page scripts', () => {
 
   assert.equal(manifest.version, '2.4.0');
   assert.equal(manifest.browser_specific_settings?.gecko?.id, 'smoothboost@binifn.github.io');
+  assert.deepEqual(manifest.browser_specific_settings?.gecko?.data_collection_permissions, { required: ['none'] });
   assert.ok(Array.isArray(manifest.background?.scripts));
   assert.ok(manifest.background.scripts.includes('scripts/compat.js'));
   assert.ok(manifest.background.scripts.includes('scripts/background.js'));
+});
+
+test('Safari package contains WebKit MV3 manifest', () => {
+  const manifestRaw = execFileSync('unzip', ['-p', path.join(DIST, 'SmoothBoost-Safari-2.4.0.zip'), 'manifest.json'], {
+    cwd: ROOT,
+    encoding: 'utf8'
+  });
+  const manifest = JSON.parse(manifestRaw);
+
+  assert.equal(manifest.version, '2.4.0');
+  assert.equal(manifest.manifest_version, 3);
+  assert.equal(manifest.background?.service_worker, 'scripts/background.js');
+  assert.ok(manifest.action?.default_popup);
 });
 
 test('Titanium Android package contains Chromium MV3 manifest', () => {
@@ -64,4 +79,17 @@ test('Titanium Android package contains Chromium MV3 manifest', () => {
   assert.equal(manifest.manifest_version, 3);
   assert.equal(manifest.background?.service_worker, 'scripts/background.js');
   assert.ok(manifest.web_accessible_resources[0].resources.includes('scripts/compat.js'));
+});
+
+test('Edge package contains Chromium MV3 manifest', () => {
+  const manifestRaw = execFileSync('unzip', ['-p', path.join(DIST, 'SmoothBoost-Edge-2.4.0.zip'), 'manifest.json'], {
+    cwd: ROOT,
+    encoding: 'utf8'
+  });
+  const manifest = JSON.parse(manifestRaw);
+
+  assert.equal(manifest.version, '2.4.0');
+  assert.equal(manifest.manifest_version, 3);
+  assert.equal(manifest.background?.service_worker, 'scripts/background.js');
+  assert.ok(manifest.action?.default_popup);
 });

@@ -43,13 +43,19 @@ TARGET_CONFIGS = {
     "firefox": {
         "manifest_source": "manifest.firefox.json",
         "archive_name": "SmoothBoost-Firefox-{version}.zip",
-        "description": "Firefox Desktop (Gecko MV3 Event Pages)",
+        "description": "Firefox Desktop & Android (Gecko MV3 Unified)",
         "create_legacy_alias": False,
     },
-    "firefox-android": {
-        "manifest_source": "manifest.firefox.json",
-        "archive_name": "SmoothBoost-Firefox-Android-{version}.zip",
-        "description": "Firefox for Android (Gecko MV3 Mobile)",
+    "safari": {
+        "manifest_source": "manifest.safari.json",
+        "archive_name": "SmoothBoost-Safari-{version}.zip",
+        "description": "Safari Desktop & iOS (WebKit WebExtensions MV3)",
+        "create_legacy_alias": False,
+    },
+    "edge": {
+        "manifest_source": "manifest.json",
+        "archive_name": "SmoothBoost-Edge-{version}.zip",
+        "description": "Microsoft Edge Add-ons (Chromium MV3)",
         "create_legacy_alias": False,
     },
 }
@@ -146,7 +152,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--target",
-        choices=["all", "chrome", "titanium-android", "firefox", "firefox-android"],
+        choices=["all", *TARGET_CONFIGS.keys()],
         default="all",
         help="Target platform to package (default: all)",
     )

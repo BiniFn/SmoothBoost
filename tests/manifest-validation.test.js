@@ -59,8 +59,9 @@ test('Firefox manifest.firefox.json is fully valid Gecko MV3 and all assets exis
   const bss = manifest.browser_specific_settings;
   assert.ok(bss?.gecko?.id, 'has gecko id');
   assert.equal(bss.gecko.id, 'smoothboost@binifn.github.io');
-  assert.ok(bss.gecko.strict_min_version, 'has gecko strict_min_version');
-  assert.ok(bss.gecko_android?.strict_min_version, 'has gecko_android strict_min_version');
+  assert.equal(bss.gecko.strict_min_version, '140.0', 'has gecko strict_min_version 140.0');
+  assert.equal(bss.gecko_android?.strict_min_version, '142.0', 'has gecko_android strict_min_version 142.0');
+  assert.deepEqual(bss.gecko.data_collection_permissions, { required: ['none'] }, 'declares no data collection for AMO');
 
   // Verify event page scripts
   assert.ok(Array.isArray(manifest.background?.scripts), 'background is an array of scripts');
@@ -77,4 +78,29 @@ test('Firefox manifest.firefox.json is fully valid Gecko MV3 and all assets exis
 
   // Verify popup
   assert.ok(fs.existsSync(path.join(ROOT, manifest.action.default_popup)), 'popup html exists');
+});
+
+test('Safari manifest.safari.json is fully valid WebKit MV3 and all assets exist', () => {
+  const manifestPath = path.join(ROOT, 'manifest.safari.json');
+  assert.ok(fs.existsSync(manifestPath), 'manifest.safari.json exists');
+
+  const content = fs.readFileSync(manifestPath, 'utf8');
+  const manifest = JSON.parse(content);
+
+  assert.equal(manifest.manifest_version, 3, 'is MV3');
+  assert.equal(manifest.version, '2.4.0', 'version is 2.4.0');
+  assert.ok(manifest.name, 'has name');
+  assert.ok(manifest.description, 'has description');
+
+  for (const [size, iconPath] of Object.entries(manifest.icons || {})) {
+    assert.ok(fs.existsSync(path.join(ROOT, iconPath)), `icon${size} exists: ${iconPath}`);
+  }
+
+  assert.ok(fs.existsSync(path.join(ROOT, manifest.action.default_popup)), 'popup html exists');
+  assert.ok(fs.existsSync(path.join(ROOT, manifest.background.service_worker)), 'background service worker exists');
+
+  const warResources = (manifest.web_accessible_resources || []).flatMap((r) => r.resources || []);
+  for (const res of warResources) {
+    assert.ok(fs.existsSync(path.join(ROOT, res)), `war resource exists: ${res}`);
+  }
 });

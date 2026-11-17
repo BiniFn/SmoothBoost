@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Apple Safari Support (macOS & iOS)**: Dedicated `SmoothBoost-Safari-2.4.0.zip` WebKit Manifest V3 package and 1-click userscript installation via the Userscripts Safari extension or Orion Browser.
+- **Microsoft Edge Store Ready Package**: Dedicated `SmoothBoost-Edge-2.4.0.zip` package fully compliant with Microsoft Edge Partner Center submission standards and developer mode.
+- **Unified Mozilla Firefox Package (AMO Store Ready)**: Consolidated Firefox Desktop and Firefox for Android into a single archive (`SmoothBoost-Firefox-2.4.0.zip`).
+- **Mozilla Data Collection Consent Compliance**: Added mandatory `browser_specific_settings.gecko.data_collection_permissions: { required: ["none"] }` in `manifest.firefox.json` and bumped `strict_min_version` to `140.0` (Desktop) and `142.0` (Android) to eliminate all AMO validation errors and `declarativeNetRequest` minimum version warnings.
 - **Tampermonkey & Violentmonkey Support**: Dedicated standalone `SmoothBoost.user.js` edition supporting direct installation via userscript managers without unpacked extension files. Features auto-updates via `@updateURL`/`@downloadURL`, persistent settings via GM storage, and an on-page Shadow DOM configuration HUD.
 - **Scroll Boost**: Temporarily reduces expensive visual rendering effects and suppresses canvas drawing during active scrolling, restoring full fidelity within 160ms of scrolling idle.
 - **Smart Resource Loading**: Defers offscreen iframes, heavy media embeds (YouTube, Vimeo, Twitter, Instagram, Spotify, SoundCloud, TikTok), and third-party widgets using `IntersectionObserver` with 400px pre-hydration margins.
@@ -15,8 +19,9 @@
 
 ### Improved
 
+- **Zero-innerHTML Security Refactoring**: Eliminated all `.innerHTML` string assignments in `popup/popup.js`, replacing them with programmatic `document.createElement()`, `textContent`, and safe DOM node creation, resolving AMO security review warnings.
 - Upgraded settings validation, presets, and UI controls in the popup with FPS selector pills, auto-recovery banners, and userscript quick-links.
-- Expanded automated test suite to 69 test suites covering userscript integrity, Scroll Boost debounce, embed hydration, dynamic FPS pacing, and auto-recovery.
+- Expanded automated test suite to 75 test suites covering Safari WebKit MV3, Edge Chromium MV3, Firefox AMO Gecko MV3, userscript integrity, Scroll Boost debounce, embed hydration, dynamic FPS pacing, and auto-recovery.
 
 ## [2.3.1] - 2026-11-07
 

@@ -138,7 +138,7 @@
           </p>
 
           <p class="hero-platforms-line">
-            Detected: <strong data-detected-browser style="color: var(--accent-cyan);">Chrome</strong> • Also for <a href="#compatibility">Userscript</a>, <a href="#compatibility">Titanium Android</a>, <a href="#compatibility">Helium</a> and <a href="#compatibility">Firefox</a>
+            Detected: <strong data-detected-browser style="color: var(--accent-cyan);">Chrome</strong> • Also for <a href="#compatibility">Userscript</a>, <a href="#compatibility">Firefox</a>, <a href="#compatibility">Safari</a>, and <a href="#compatibility">Titanium Android</a>
             <br>
             <a href="tutorial.html" style="color: var(--accent-cyan); text-decoration: underline; font-size: 13.5px; font-weight: 500; display: inline-block; margin-top: 6px;">View Device Installation Guide &rarr;</a>
           </p>
@@ -675,14 +675,14 @@
             <button class="platform-tab-btn" data-platform-tab="userscript" role="tab" aria-selected="false" id="tab-plat-userscript">
               <span>Userscript (Tampermonkey)</span>
             </button>
+            <button class="platform-tab-btn" data-platform-tab="firefox" role="tab" aria-selected="false" id="tab-plat-firefox">
+              <span>Firefox (Desktop &amp; Android)</span>
+            </button>
+            <button class="platform-tab-btn" data-platform-tab="safari" role="tab" aria-selected="false" id="tab-plat-safari">
+              <span>Safari (macOS &amp; iOS)</span>
+            </button>
             <button class="platform-tab-btn" data-platform-tab="titanium" role="tab" aria-selected="false" id="tab-plat-titanium">
               <span>Titanium Browser (Android)</span>
-            </button>
-            <button class="platform-tab-btn" data-platform-tab="firefox" role="tab" aria-selected="false" id="tab-plat-firefox">
-              <span>Firefox Desktop</span>
-            </button>
-            <button class="platform-tab-btn" data-platform-tab="firefox-android" role="tab" aria-selected="false" id="tab-plat-firefox-android">
-              <span>Firefox for Android</span>
             </button>
           </div>
 
@@ -839,40 +839,40 @@
             </div>
           </div>
 
-          <!-- Platform Panel: Firefox Desktop -->
+          <!-- Platform Panel: Firefox (Desktop & Android) -->
           <div class="platform-panel" data-platform-panel="firefox" role="tabpanel" aria-labelledby="tab-plat-firefox" hidden>
             <div class="platform-grid">
               <div>
-                <h3 style="font-size: 1.25rem; margin-bottom: 12px;">Firefox Desktop</h3>
+                <h3 style="font-size: 1.25rem; margin-bottom: 12px;">Mozilla Firefox (Desktop &amp; Android)</h3>
                 <p style="color: rgba(255, 255, 255, 0.65); font-size: 13.5px; margin-bottom: 24px;">
-                  Gecko MV3 compliant build utilizing background event pages and Firefox 128+ execution models.
+                  Unified Gecko Manifest V3 package compliant with Mozilla Add-ons (AMO) store standards. One single ZIP runs on both desktop Firefox and Firefox for Android.
                 </p>
                 <ul class="step-list">
                   <li class="step-item">
                     <div class="step-num">1</div>
                     <div class="step-text">
-                      <h4>Download Firefox ZIP</h4>
-                      <p>Download the Firefox distribution archive below and unpack it.</p>
+                      <h4>Download Universal Package</h4>
+                      <p>Download the unified Firefox distribution archive below.</p>
                     </div>
                   </li>
                   <li class="step-item">
                     <div class="step-num">2</div>
                     <div class="step-text">
-                      <h4>Open Debug Add-ons</h4>
-                      <p>Navigate to <code>about:debugging#/runtime/this-firefox</code> in Firefox.</p>
+                      <h4>Desktop Firefox Testing</h4>
+                      <p>Navigate to <code>about:debugging#/runtime/this-firefox</code>, click <strong>Load Temporary Add-on...</strong> and select <code>manifest.json</code>.</p>
                     </div>
                   </li>
                   <li class="step-item">
                     <div class="step-num">3</div>
                     <div class="step-text">
-                      <h4>Load Temporary Add-on</h4>
-                      <p>Click <strong>Load Temporary Add-on...</strong> and select the <code>manifest.json</code> inside the unzipped folder.</p>
+                      <h4>AMO Store &amp; Android Support</h4>
+                      <p>Passed for AMO submission with Mozilla's mandatory <code>data_collection_permissions</code> declaration and Android compatibility.</p>
                     </div>
                   </li>
                 </ul>
               </div>
               <div class="platform-download-card">
-                <span class="asset-badge" data-asset-size="firefox">47.3 KB</span>
+                <span class="asset-badge" data-asset-size="firefox">47.6 KB</span>
                 <h4 style="font-size: 1.1rem; color: #ffffff;" data-asset-name="firefox">SmoothBoost-Firefox-2.4.0.zip</h4>
                 <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-2.4.0.zip" class="btn btn-primary" data-download="firefox" download="SmoothBoost-Firefox-2.4.0.zip">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -884,58 +884,60 @@
                 </a>
                 <a href="tutorial.html#firefox" class="btn btn-secondary" style="height: 36px; font-size: 12.5px; width: 100%;">Step-by-Step Tutorial &rarr;</a>
                 <span style="font-size: 12px; color: var(--text-muted);">
-                  Gecko MV3 • Event Pages • Firefox 128+
+                  Gecko MV3 • Desktop &amp; Android • AMO Ready
                 </span>
               </div>
             </div>
           </div>
 
-          <!-- Platform Panel: Firefox for Android -->
-          <div class="platform-panel" data-platform-panel="firefox-android" role="tabpanel" aria-labelledby="tab-plat-firefox-android" hidden>
+          <!-- Platform Panel: Safari (macOS & iOS) -->
+          <div class="platform-panel" data-platform-panel="safari" role="tabpanel" aria-labelledby="tab-plat-safari" hidden>
             <div class="platform-grid">
               <div>
-                <h3 style="font-size: 1.25rem; margin-bottom: 12px;">Firefox for Android</h3>
+                <h3 style="font-size: 1.25rem; margin-bottom: 12px;">Apple Safari (macOS &amp; iOS)</h3>
                 <p style="color: rgba(255, 255, 255, 0.65); font-size: 13.5px; margin-bottom: 24px;">
-                  GeckoView mobile extension target configured for Firefox Nightly or developer collections with mobile touch guards.
+                  WebKit Manifest V3 extension package and 1-click Userscript support for macOS Safari, iOS Safari, and Orion Browser.
                 </p>
                 <ul class="step-list">
                   <li class="step-item">
                     <div class="step-num">1</div>
                     <div class="step-text">
-                      <h4>Enable Developer Add-ons</h4>
-                      <p>In Firefox Nightly for Android, navigate to Settings &rarr; About Firefox Nightly and tap the logo 5 times.</p>
+                      <h4>Option A: 1-Click Userscript (Easiest)</h4>
+                      <p>Install via <strong>Userscripts for Safari</strong>, <strong>Tampermonkey</strong>, or <strong>Stay</strong> from the Mac/iOS App Store.</p>
                     </div>
                   </li>
                   <li class="step-item">
                     <div class="step-num">2</div>
                     <div class="step-text">
-                      <h4>Download Android Package</h4>
-                      <p>Download the Firefox Android ZIP package below.</p>
+                      <h4>Option B: Safari Developer Mode</h4>
+                      <p>In Safari macOS: Settings &rarr; Advanced &rarr; <em>Show features for web developers</em>, then Develop &rarr; <em>Allow Unsigned Extensions</em>.</p>
                     </div>
                   </li>
                   <li class="step-item">
                     <div class="step-num">3</div>
                     <div class="step-text">
-                      <h4>Install via WebIDE or Collection</h4>
-                      <p>Deploy using USB debugging via <code>web-ext run --target=firefox-android</code> or your Custom Add-on Collection.</p>
+                      <h4>Option C: Orion Browser (WebKit)</h4>
+                      <p>Orion runs Apple's WebKit engine on macOS &amp; iOS with native WebExtension loading directly from the ZIP file.</p>
                     </div>
                   </li>
                 </ul>
               </div>
               <div class="platform-download-card">
-                <span class="asset-badge" data-asset-size="firefox-android">47.3 KB</span>
-                <h4 style="font-size: 1.1rem; color: #ffffff;" data-asset-name="firefox-android">SmoothBoost-Firefox-Android-2.4.0.zip</h4>
-                <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-Android-2.4.0.zip" class="btn btn-primary" data-download="firefox-android" download="SmoothBoost-Firefox-Android-2.4.0.zip">
+                <span class="asset-badge" data-asset-size="safari">47.3 KB</span>
+                <h4 style="font-size: 1.1rem; color: #ffffff;" data-asset-name="safari">SmoothBoost-Safari-2.4.0.zip</h4>
+                <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Safari-2.4.0.zip" class="btn btn-primary" data-download="safari" download="SmoothBoost-Safari-2.4.0.zip">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 17V3"/>
                     <path d="m6 11 6 6 6-6"/>
                     <path d="M19 21H5"/>
                   </svg>
-                  <span>Download Firefox Android ZIP</span>
+                  <span>Download Safari ZIP</span>
                 </a>
-                <a href="tutorial.html#firefox-android" class="btn btn-secondary" style="height: 36px; font-size: 12.5px; width: 100%;">Step-by-Step Tutorial &rarr;</a>
-                <span style="font-size: 12px; color: var(--text-muted);">
-                  GeckoView MV3 • Mobile optimized
+                <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost.user.js" class="btn btn-secondary" style="height: 36px; font-size: 12.5px; width: 100%; margin-top: 6px;" data-download="userscript">
+                  <span>1-Click Userscript for Safari &rarr;</span>
+                </a>
+                <span style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                  WebKit MV3 • macOS &bull; iOS &bull; Orion
                 </span>
               </div>
             </div>

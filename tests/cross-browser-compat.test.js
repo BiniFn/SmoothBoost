@@ -99,6 +99,59 @@ test('compat detects Firefox Android and guards mobile restrictions', () => {
   assert.equal(compat.hasCommands, false, 'commands guarded on mobile firefox');
 });
 
+test('compat detects Safari Desktop and guards tabs.discard while enabling desktop commands', () => {
+  const compat = loadCompat({
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+    browser: {
+      runtime: {},
+      commands: { onCommand: { addListener: () => {} } }
+    }
+  });
+
+  assert.equal(compat.isSafari, true, 'is safari');
+  assert.equal(compat.isFirefox, false, 'is not firefox');
+  assert.equal(compat.isMobile, false, 'is not mobile');
+  assert.equal(compat.hasTabsDiscard, false, 'tabs.discard is guarded on Safari (not supported in WebKit)');
+  assert.equal(compat.hasCommands, true, 'commands enabled on desktop safari');
+  assert.equal(compat.getPlatformKey(), 'safari', 'platform key is safari');
+});
+
+test('compat detects Safari on iOS and guards mobile restrictions', () => {
+  const compat = loadCompat({
+    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+    browser: {
+      runtime: {}
+    }
+  });
+
+  assert.equal(compat.isSafari, true, 'is safari');
+  assert.equal(compat.isMobile, true, 'is mobile');
+  assert.equal(compat.isIOS, true, 'is ios');
+  assert.equal(compat.hasTabsDiscard, false, 'tabs discard guarded on iOS');
+  assert.equal(compat.hasCommands, false, 'commands guarded on iOS');
+  assert.equal(compat.getPlatformKey(), 'safari-ios', 'platform key is safari-ios');
+});
+
+test('compat detects Microsoft Edge Desktop and enables desktop features with edge key', () => {
+  const compat = loadCompat({
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0',
+    chrome: {
+      runtime: {},
+      tabs: { discard: async () => {} },
+      commands: { onCommand: { addListener: () => {} } },
+      declarativeNetRequest: { updateDynamicRules: async () => {} },
+      scripting: { registerContentScripts: async () => {} }
+    }
+  });
+
+  assert.equal(compat.isEdge, true, 'is edge');
+  assert.equal(compat.isSafari, false, 'is not safari');
+  assert.equal(compat.isFirefox, false, 'is not firefox');
+  assert.equal(compat.isMobile, false, 'is not mobile');
+  assert.equal(compat.hasTabsDiscard, true, 'tabs discard enabled on Edge desktop');
+  assert.equal(compat.getPlatformKey(), 'edge', 'platform key is edge');
+});
+
 test('compat getStorage / setStorage handles callback and promise APIs reliably', async () => {
   let stored = { smoothBoostConfig: { mode: 'ultra' } };
   const mockStorage = {

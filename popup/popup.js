@@ -474,6 +474,15 @@ function renderRuleStatus(status) {
   else statusSiteRule.textContent = 'Off';
 }
 
+function clearMetricsContainer() {
+  if (!metricsContainer) return;
+  if (typeof metricsContainer.replaceChildren === 'function') {
+    metricsContainer.replaceChildren();
+  } else {
+    metricsContainer.textContent = '';
+  }
+}
+
 function renderReloadStatus() {
   statusDot.className = 'status-dot is-warning';
   statusPage.textContent = 'Reload tab to activate';
@@ -483,7 +492,7 @@ function renderReloadStatus() {
     siteRuleRow.hidden = true;
     if (siteRuleRow.style) siteRuleRow.style.display = 'none';
   }
-  if (metricsContainer) metricsContainer.innerHTML = '';
+  clearMetricsContainer();
 }
 
 function renderUnsupportedStatus() {
@@ -495,7 +504,7 @@ function renderUnsupportedStatus() {
     siteRuleRow.hidden = true;
     if (siteRuleRow.style) siteRuleRow.style.display = 'none';
   }
-  if (metricsContainer) metricsContainer.innerHTML = '';
+  clearMetricsContainer();
 }
 
 function renderSiteOffStatus() {
@@ -507,12 +516,25 @@ function renderSiteOffStatus() {
     siteRuleRow.hidden = true;
     if (siteRuleRow.style) siteRuleRow.style.display = 'none';
   }
-  if (metricsContainer) metricsContainer.innerHTML = '';
+  clearMetricsContainer();
+}
+
+function createMetricPillElement(label, iconText) {
+  const pill = document.createElement('span');
+  pill.className = 'metric-pill';
+  if (iconText) {
+    const icon = document.createElement('span');
+    icon.style.marginRight = '4px';
+    icon.textContent = iconText;
+    pill.appendChild(icon);
+  }
+  pill.appendChild(document.createTextNode(label));
+  return pill;
 }
 
 function renderMetricsPills(metrics) {
   if (!metricsContainer || !metrics) return;
-  const pills = [];
+  clearMetricsContainer();
 
   const passive = Math.max(0, Math.floor(Number(metrics.passiveListeners) || 0));
   const videos = Math.max(0, Math.floor(Number(metrics.pausedVideos) || 0));
@@ -522,83 +544,32 @@ function renderMetricsPills(metrics) {
   const fonts = Math.max(0, Math.floor(Number(metrics.patchedFonts) || 0));
 
   if (passive > 0) {
-    pills.push(`
-      <span class="metric-pill">
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 7l-5-5-5 5M17 17l-5 5-5-5"/></svg>
-        ${passive} scroll listeners passive
-      </span>
-    `);
+    metricsContainer.appendChild(createMetricPillElement(`${passive} scroll listeners passive`, '↕️'));
   }
-
   if (videos > 0) {
-    pills.push(`
-      <span class="metric-pill">
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="4" height="16" x="6" y="4" rx="1"/><rect width="4" height="16" x="14" y="4" rx="1"/></svg>
-        ${videos} background videos paused
-      </span>
-    `);
+    metricsContainer.appendChild(createMetricPillElement(`${videos} background videos paused`, '⏸️'));
   }
-
   if (blurs > 0) {
-    pills.push(`
-      <span class="metric-pill">
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        ${blurs} blur panels bypassed
-      </span>
-    `);
+    metricsContainer.appendChild(createMetricPillElement(`${blurs} blur panels bypassed`, '🛡️'));
   }
-
   if (canvases > 0 || draws > 0) {
-    pills.push(`
-      <span class="metric-pill">
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-        Canvas draw-skipping active
-      </span>
-    `);
+    metricsContainer.appendChild(createMetricPillElement('Canvas draw-skipping active', '🎨'));
   }
-
   if (fonts > 0) {
-    pills.push(`
-      <span class="metric-pill">
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>
-        ${fonts} fonts swapped
-      </span>
-    `);
+    metricsContainer.appendChild(createMetricPillElement(`${fonts} fonts swapped`, '🔤'));
   }
-
   if (metrics.scrollBoostActive) {
-    pills.push(`
-      <span class="metric-pill">
-        ⚡ Scroll Boost active
-      </span>
-    `);
+    metricsContainer.appendChild(createMetricPillElement('Scroll Boost active', '⚡'));
   }
-
   if (metrics.smartResourcesDeferred > 0) {
-    pills.push(`
-      <span class="metric-pill">
-        📦 ${metrics.smartResourcesDeferred} embeds deferred
-      </span>
-    `);
+    metricsContainer.appendChild(createMetricPillElement(`${metrics.smartResourcesDeferred} embeds deferred`, '📦'));
   }
-
   if (metrics.memoryGuard?.active) {
-    pills.push(`
-      <span class="metric-pill">
-        🛡️ Memory Guard (${metrics.memoryGuard.pressure})
-      </span>
-    `);
+    metricsContainer.appendChild(createMetricPillElement(`Memory Guard (${metrics.memoryGuard.pressure})`, '🛡️'));
   }
-
   if (metrics.spaNavigations > 0) {
-    pills.push(`
-      <span class="metric-pill">
-        🔄 SPA route active
-      </span>
-    `);
+    metricsContainer.appendChild(createMetricPillElement('SPA route active', '🔄'));
   }
-
-  metricsContainer.innerHTML = pills.join('');
 }
 
 function requestPageStatus(attempt = 0) {

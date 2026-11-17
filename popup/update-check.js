@@ -73,13 +73,20 @@
 
     // 1. Direct browser platform match
     if (cleanKey === 'firefox-android') {
-      const match = assets.find((a) => a && typeof a.name === 'string' && /firefox-android/i.test(a.name));
+      const match = assets.find((a) => a && typeof a.name === 'string' && /firefox-android/i.test(a.name))
+        || assets.find((a) => a && typeof a.name === 'string' && /firefox/i.test(a.name));
       if (match) return match;
     } else if (cleanKey === 'firefox') {
-      const match = assets.find((a) => a && typeof a.name === 'string' && /firefox/i.test(a.name) && !/android/i.test(a.name));
+      const match = assets.find((a) => a && typeof a.name === 'string' && /firefox/i.test(a.name));
       if (match) return match;
     } else if (cleanKey === 'titanium') {
       const match = assets.find((a) => a && typeof a.name === 'string' && /titanium/i.test(a.name));
+      if (match) return match;
+    } else if (cleanKey === 'safari' || cleanKey === 'safari-ios') {
+      const match = assets.find((a) => a && typeof a.name === 'string' && /safari/i.test(a.name));
+      if (match) return match;
+    } else if (cleanKey === 'edge') {
+      const match = assets.find((a) => a && typeof a.name === 'string' && /edge/i.test(a.name));
       if (match) return match;
     } else if (cleanKey === 'chrome') {
       const match = assets.find((a) => a && typeof a.name === 'string' && /chrome/i.test(a.name));
@@ -192,6 +199,12 @@
                 } else if (key === 'titanium' && lower.includes('titanium')) {
                   bestZip = zipCandidate;
                   break;
+                } else if ((key === 'safari' || key === 'safari-ios') && lower.includes('safari')) {
+                  bestZip = zipCandidate;
+                  break;
+                } else if (key === 'edge' && lower.includes('edge')) {
+                  bestZip = zipCandidate;
+                  break;
                 } else if (key === 'chrome' && lower.includes('chrome')) {
                   bestZip = zipCandidate;
                   break;
@@ -234,9 +247,10 @@
           const latestVersion = parsed.join('.');
           let zipName = `SmoothBoost-${latestVersion}.zip`;
           const key = String(platformKey || '').toLowerCase();
-          if (key === 'firefox') zipName = `SmoothBoost-Firefox-${latestVersion}.zip`;
-          else if (key === 'firefox-android') zipName = `SmoothBoost-Firefox-Android-${latestVersion}.zip`;
+          if (key === 'firefox' || key === 'firefox-android') zipName = `SmoothBoost-Firefox-${latestVersion}.zip`;
           else if (key === 'titanium') zipName = `SmoothBoost-Titanium-Android-${latestVersion}.zip`;
+          else if (key === 'safari' || key === 'safari-ios') zipName = `SmoothBoost-Safari-${latestVersion}.zip`;
+          else if (key === 'edge') zipName = `SmoothBoost-Edge-${latestVersion}.zip`;
           else if (key === 'chrome') zipName = `SmoothBoost-Chrome-${latestVersion}.zip`;
 
           const result = createResult(currentVersion, latestVersion, true, {

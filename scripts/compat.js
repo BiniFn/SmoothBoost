@@ -14,17 +14,19 @@
 
   const userAgent = typeof navigator !== 'undefined' ? (navigator.userAgent || '') : '';
   const isFirefox = /firefox|fxios/i.test(userAgent);
+  const isEdge = /edg\//i.test(userAgent);
+  const isSafari = (/^((?!chrome|android).)*safari/i.test(userAgent) || (/applewebkit/i.test(userAgent) && !/chrome|chromium|edg|android/i.test(userAgent))) && !isEdge;
   const isAndroid = /android/i.test(userAgent);
-  const isMobile = isAndroid || /iphone|ipad|ipod|mobile/i.test(userAgent);
+  const isIOS = /iphone|ipad|ipod/i.test(userAgent) || (typeof navigator !== 'undefined' && navigator.platform === 'MacIntel' && Number(navigator.maxTouchPoints) > 1);
+  const isMobile = isAndroid || isIOS || /mobile/i.test(userAgent);
 
   // Titanium Browser on Android is Chromium-based (built on Vanadium / GrapheneOS upstream).
   // It provides standard Chromium extension APIs but runs in an Android lifecycle.
   const isTitaniumAndroid = isAndroid && !isFirefox;
 
   // Tab discarding: Chrome & Firefox Desktop support chrome.tabs.discard / browser.tabs.discard.
-  // On Android, the OS Low Memory Killer (LMK) manages process memory natively, and tabs.discard
-  // is either missing or non-functional.
-  const hasTabsDiscard = Boolean(!isMobile && ext.tabs?.discard);
+  // On Android and Safari, tabs.discard is either missing, non-functional, or managed by OS LMK.
+  const hasTabsDiscard = Boolean(!isMobile && !isSafari && ext.tabs?.discard);
 
   // Keyboard commands: physical keyboard shortcuts are only meaningful on desktop form factors.
   const hasCommands = Boolean(!isMobile && ext.commands?.onCommand);
@@ -72,6 +74,12 @@
   }
 
   function getPlatformKey() {
+    if (isEdge) {
+      return 'edge';
+    }
+    if (isSafari) {
+      return isMobile ? 'safari-ios' : 'safari';
+    }
     if (isFirefox) {
       return isAndroid ? 'firefox-android' : 'firefox';
     }
@@ -84,6 +92,9 @@
   return {
     ext,
     isFirefox,
+    isSafari,
+    isEdge,
+    isIOS,
     isAndroid,
     isMobile,
     isTitaniumAndroid,

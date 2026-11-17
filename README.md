@@ -4,9 +4,12 @@ SmoothBoost is a universal cross-browser performance extension and userscript fo
 
 [![Install with Tampermonkey](https://img.shields.io/badge/Install%20with%20Tampermonkey-SmoothBoost.user.js-06b6d4?style=for-the-badge&logo=tampermonkey&logoColor=white)](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost.user.js)
 [![Download Chrome ZIP](https://img.shields.io/badge/Download-Chrome%20Extension%20v2.4.0-38bdf8?style=for-the-badge&logo=googlechrome&logoColor=white)](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Chrome-2.4.0.zip)
+[![Download Edge ZIP](https://img.shields.io/badge/Download-Edge%20Extension%20v2.4.0-0078d7?style=for-the-badge&logo=microsoftedge&logoColor=white)](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Edge-2.4.0.zip)
+[![Download Firefox ZIP](https://img.shields.io/badge/Download-Firefox%20AMO%20v2.4.0-ff7139?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-2.4.0.zip)
+[![Download Safari ZIP](https://img.shields.io/badge/Download-Safari%20Extension%20v2.4.0-000000?style=for-the-badge&logo=safari&logoColor=white)](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Safari-2.4.0.zip)
 [![Release](https://img.shields.io/badge/Release-v2.4.0-emerald?style=for-the-badge)](https://github.com/BiniFn/SmoothBoost/releases)
 
-Supported across **Tampermonkey & Violentmonkey Userscript**, **Chrome & Helium Desktop**, **Titanium Browser on Android**, **Firefox Desktop**, and **Firefox for Android**.
+Supported across **Tampermonkey & Violentmonkey Userscript**, **Google Chrome & Helium**, **Microsoft Edge**, **Mozilla Firefox (Desktop & Android Unified)**, **Apple Safari (macOS & iOS)**, and **Titanium Browser on Android**.
 
 ---
 
@@ -15,15 +18,14 @@ Supported across **Tampermonkey & Violentmonkey Userscript**, **Chrome & Helium 
 | Platform / Environment | Engine / Distribution | Minimum Version | Scroll Boost & Smart Loading | Dynamic FPS (30/60/90/120) | Tab Discard | Settings UI |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
 | **Userscript (Tampermonkey / Violentmonkey)** | Userscript Manager | Tampermonkey 4.14+ / Violentmonkey 2.13+ | ✓ | ✓ | — *(extension only)* | Shadow DOM HUD & GM Menu |
-| **Chrome / Chromium** | Chromium MV3 | Chrome 116+ | ✓ | ✓ | ✓ | Extension Popup (`Alt+Shift+S`) |
-| **Helium Browser** | Chromium MV3 | Current | ✓ | ✓ | ✓ | Extension Popup (`Alt+Shift+S`) |
+| **Chrome / Chromium / Brave** | Chromium MV3 | Chrome 116+ | ✓ | ✓ | ✓ | Extension Popup (`Alt+Shift+S`) |
+| **Microsoft Edge** | Chromium MV3 | Edge 116+ | ✓ | ✓ | ✓ | Extension Popup (`Alt+Shift+S`) |
+| **Mozilla Firefox (Desktop & Android)** | Gecko MV3 Event Pages | Firefox 140+ (Android 142+) | ✓ | ✓ | ✓ *(desktop only)* | Extension Popup & Touch UI |
+| **Apple Safari (macOS & iOS)** | WebKit MV3 / Userscript | Safari 16+ / iOS 15+ | ✓ | ✓ | Guarded (WebKit) | Extension Popup / Shadow HUD |
 | **Titanium Browser (Android)** | Chromium MV3 (Vanadium) | Current | ✓ | ✓ | Guarded (OS LMK) | Touch UI (>=44px targets) |
-| **Firefox Desktop** | Gecko MV3 Event Pages | Firefox 109+ (128+ recommended) | ✓ | ✓ | ✓ | Extension Popup (`Alt+Shift+S`) |
-| **Firefox for Android** | Gecko MV3 Mobile | Firefox 120+ | ✓ | ✓ | Guarded (OS LMK) | Touch UI (>=44px targets) |
-| **iOS / Safari** | WebKit (Userscript via Orion/Userscripts) | iOS 15+ | ✓ | ✓ | — | Shadow DOM HUD |
 
 > [!NOTE]
-> On Android (Titanium Browser and Firefox for Android), operating system Low Memory Killer (LMK) manages application memory natively. SmoothBoost automatically detects mobile environments and guards unsupported desktop APIs (`tabs.discard`, physical keyboard shortcuts) to prevent crashes and unwanted wakeups.
+> On mobile operating systems (Android and iOS), the OS Low Memory Killer (LMK) manages application memory natively. SmoothBoost automatically detects mobile environments and WebKit engines, safely guarding unsupported APIs (`tabs.discard`, desktop keyboard shortcuts) to prevent crashes and ensure rock-solid stability.
 
 ---
 
@@ -72,25 +74,32 @@ For detailed, platform-specific walkthroughs with screenshots and troubleshootin
 3. Confirm installation in your userscript manager prompt.
 4. SmoothBoost is instantly active on every website! Access settings via your userscript extension menu or the on-page **⚡ SB** status pill.
 
-### 2. Chrome & Helium Desktop Extension
+### 2. Chrome & Brave Desktop Extension
 1. Download [SmoothBoost-Chrome-2.4.0.zip](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Chrome-2.4.0.zip) and unzip it.
 2. Navigate to `chrome://extensions` and toggle **Developer mode** in the top right.
 3. Click **Load unpacked** and select the extracted folder.
 4. Pin SmoothBoost to the toolbar for quick access.
 
-### 3. Titanium Browser on Android (Google Play)
+### 3. Microsoft Edge (Store Ready & Unpacked)
+1. Download [SmoothBoost-Edge-2.4.0.zip](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Edge-2.4.0.zip) and unzip it.
+2. Navigate to `edge://extensions` and enable **Developer mode** in the left sidebar.
+3. Click **Load unpacked** and select the extracted folder.
+4. *Store distribution:* Upload `SmoothBoost-Edge-2.4.0.zip` directly to Microsoft Partner Center.
+
+### 4. Mozilla Firefox Desktop & Android (AMO Store Ready)
+1. Download the unified [SmoothBoost-Firefox-2.4.0.zip](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-2.4.0.zip) package.
+2. **Desktop Debugging:** Open `about:debugging#/runtime/this-firefox`, click **Load Temporary Add-on…**, and choose the ZIP file.
+3. **AMO Submission:** Ready for direct upload to addons.mozilla.org with zero data collection declared and 0 linter errors.
+4. **Firefox Android:** Fully compatible with Gecko Android (v142+) via custom add-on collection or web-ext.
+
+### 5. Apple Safari (macOS & iOS)
+1. **Userscripts App (Recommended):** Install the free *Userscripts* extension on macOS or iOS, then 1-click install [SmoothBoost.user.js](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost.user.js).
+2. **Native WebKit MV3:** Download [SmoothBoost-Safari-2.4.0.zip](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Safari-2.4.0.zip) for Orion Browser or convert to an Xcode app wrapper with `xcrun safari-web-extension-converter`.
+
+### 6. Titanium Browser on Android (Google Play)
 1. Download [SmoothBoost-Titanium-Android-2.4.0.zip](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Titanium-Android-2.4.0.zip) on your Android device.
 2. In Titanium Browser, open menu &rarr; **Extensions** (or navigate to `chrome://extensions`).
 3. Enable Developer Mode and install via **Load unpacked** or **+ (from .zip)**.
-
-### 4. Firefox Desktop
-1. Download [SmoothBoost-Firefox-2.4.0.zip](https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-2.4.0.zip) and unzip it.
-2. Navigate to `about:debugging#/runtime/this-firefox`.
-3. Click **Load Temporary Add-on…** and select `manifest.json` from the unzipped directory.
-
-### 5. Firefox for Android
-1. In Firefox Nightly / Developer Edition for Android, enable the Debug menu in Settings.
-2. Install via web-ext or load via your Custom Add-on Collection using ID `smoothboost@binifn.github.io`.
 
 ---
 
@@ -105,23 +114,25 @@ python3 scripts/package_extension.py --target all
 # Or build a specific target:
 python3 scripts/package_extension.py --target userscript
 python3 scripts/package_extension.py --target chrome
-python3 scripts/package_extension.py --target titanium-android
+python3 scripts/package_extension.py --target edge
 python3 scripts/package_extension.py --target firefox
-python3 scripts/package_extension.py --target firefox-android
+python3 scripts/package_extension.py --target safari
+python3 scripts/package_extension.py --target titanium-android
 ```
 
 Generated packages:
-- `dist/SmoothBoost.user.js` (Tampermonkey / Violentmonkey edition)
+- `dist/SmoothBoost.user.js` (Tampermonkey / Violentmonkey / Userscripts edition)
 - `dist/SmoothBoost-Chrome-2.4.0.zip` (and backwards-compatible `SmoothBoost-2.4.0.zip`)
-- `dist/SmoothBoost-Titanium-Android-2.4.0.zip`
-- `dist/SmoothBoost-Firefox-2.4.0.zip`
-- `dist/SmoothBoost-Firefox-Android-2.4.0.zip`
+- `dist/SmoothBoost-Edge-2.4.0.zip` (Microsoft Edge Add-ons ready)
+- `dist/SmoothBoost-Firefox-2.4.0.zip` (Unified AMO ready for Desktop & Android)
+- `dist/SmoothBoost-Safari-2.4.0.zip` (WebKit MV3 extension)
+- `dist/SmoothBoost-Titanium-Android-2.4.0.zip` (Optimized for Chromium mobile)
 
 ---
 
 ## Automated Test Suite
 
-SmoothBoost has 69 automated regression and feature test suites covering cross-browser adapters, Scroll Boost, Smart Resource Loading, Dynamic FPS Profiles, Automatic Recovery, userscript integrity, settings persistence, and packaging:
+SmoothBoost has 75 automated regression and feature test suites covering cross-browser adapters, Scroll Boost, Smart Resource Loading, Dynamic FPS Profiles, Automatic Recovery, userscript integrity, settings persistence, and packaging:
 
 ```sh
 node --test tests/*.test.js
@@ -134,6 +145,7 @@ node --test tests/*.test.js
 ```text
 ├── manifest.json                  # Chromium MV3 manifest (Chrome, Titanium Android)
 ├── manifest.firefox.json          # Gecko MV3 manifest (Firefox Desktop & Android)
+├── manifest.safari.json           # WebKit MV3 manifest (Safari macOS & iOS)
 ├── popup/
 │   ├── popup.html                 # Responsive dark glass UI (320px–420px fluid)
 │   ├── popup.css                  # Responsive styles & coarse pointer touch targets
@@ -150,6 +162,6 @@ node --test tests/*.test.js
 │   └── site-rules.json            # Dynamic site optimization rules (Schema v2)
 ├── dist/                          # Packaged ZIP archives & SmoothBoost.user.js
 ├── icons/                         # 16px, 48px, 128px high-DPI icons
-├── tests/                         # 69 automated node:test suites
+├── tests/                         # 75 automated node:test suites
 └── test-fixtures/                 # Real DOM & canvas smoke test pages
 ```
