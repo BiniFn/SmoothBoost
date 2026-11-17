@@ -46,10 +46,9 @@
         <a href="#features" class="nav-link">Features</a>
         <a href="#profiles" class="nav-link">Profiles</a>
         <a href="#benchmark" class="nav-link">Benchmark</a>
-        <a href="#safeguards" class="nav-link">Safeguards</a>
-        <a href="#compatibility" class="nav-link">Platforms</a>
+        <a href="#compatibility" class="nav-link">Downloads</a>
         <a href="tutorial.html" class="nav-link">Device Guide</a>
-        <a href="#faq" class="nav-link">FAQ</a>
+        <a href="privacy.html" class="nav-link">Privacy Policy</a>
       </nav>
 
       <div class="header-actions">
@@ -138,7 +137,7 @@
           </p>
 
           <p class="hero-platforms-line">
-            Detected: <strong data-detected-browser style="color: var(--accent-cyan);">Chrome</strong> • Also for <a href="#compatibility">Userscript</a>, <a href="#compatibility">Firefox</a>, <a href="#compatibility">Safari</a>, and <a href="#compatibility">Titanium Android</a>
+            Detected: <strong data-detected-browser style="color: var(--accent-cyan);">Chrome</strong> • Universal support for <a href="#compatibility">Chrome</a>, <a href="#compatibility">Edge</a>, <a href="#compatibility">Firefox</a>, <a href="#compatibility">Safari</a>, <a href="#compatibility">Userscript</a>, and <a href="#compatibility">Android</a>
             <br>
             <a href="tutorial.html" style="color: var(--accent-cyan); text-decoration: underline; font-size: 13.5px; font-weight: 500; display: inline-block; margin-top: 6px;">View Device Installation Guide &rarr;</a>
           </p>
@@ -670,10 +669,10 @@
           <!-- Platform Tabs -->
           <div class="platform-tabs-nav" role="tablist" aria-label="Supported Platforms">
             <button class="platform-tab-btn is-active" data-platform-tab="chrome" role="tab" aria-selected="true" id="tab-plat-chrome">
-              <span>Chrome &amp; Helium</span>
+              <span>Chrome &amp; Brave</span>
             </button>
-            <button class="platform-tab-btn" data-platform-tab="userscript" role="tab" aria-selected="false" id="tab-plat-userscript">
-              <span>Userscript (Tampermonkey)</span>
+            <button class="platform-tab-btn" data-platform-tab="edge" role="tab" aria-selected="false" id="tab-plat-edge">
+              <span>Microsoft Edge</span>
             </button>
             <button class="platform-tab-btn" data-platform-tab="firefox" role="tab" aria-selected="false" id="tab-plat-firefox">
               <span>Firefox (Desktop &amp; Android)</span>
@@ -681,8 +680,14 @@
             <button class="platform-tab-btn" data-platform-tab="safari" role="tab" aria-selected="false" id="tab-plat-safari">
               <span>Safari (macOS &amp; iOS)</span>
             </button>
+            <button class="platform-tab-btn" data-platform-tab="userscript" role="tab" aria-selected="false" id="tab-plat-userscript">
+              <span>Userscript (Tampermonkey)</span>
+            </button>
             <button class="platform-tab-btn" data-platform-tab="titanium" role="tab" aria-selected="false" id="tab-plat-titanium">
-              <span>Titanium Browser (Android)</span>
+              <span>Titanium (Android)</span>
+            </button>
+            <button class="platform-tab-btn" data-platform-tab="webstores" role="tab" aria-selected="false" id="tab-plat-webstores" style="border-color: var(--accent-cyan); color: var(--accent-cyan);">
+              <span>🏪 Upcoming in Webstores</span>
             </button>
           </div>
 
@@ -939,6 +944,137 @@
                 <span style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
                   WebKit MV3 • macOS &bull; iOS &bull; Orion
                 </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Platform Panel: Microsoft Edge -->
+          <div class="platform-panel" data-platform-panel="edge" role="tabpanel" aria-labelledby="tab-plat-edge" hidden>
+            <div class="platform-grid">
+              <div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 12px;">Microsoft Edge Desktop</h3>
+                <p style="color: rgba(255, 255, 255, 0.65); font-size: 13.5px; margin-bottom: 24px;">
+                  Built for Chromium MV3 and optimized for Microsoft Edge. Works seamlessly with Edge Sleeping Tabs, high-contrast themes, and memory saver policies.
+                </p>
+                <ul class="step-list">
+                  <li class="step-item">
+                    <div class="step-num">1</div>
+                    <div class="step-text">
+                      <h4>Download Edge Package</h4>
+                      <p>Download the Edge distribution package below and extract it to a permanent folder.</p>
+                    </div>
+                  </li>
+                  <li class="step-item">
+                    <div class="step-num">2</div>
+                    <div class="step-text">
+                      <h4>Open Edge Extensions</h4>
+                      <p>Navigate to <code>edge://extensions</code> and turn on <strong>Developer mode</strong> in the left sidebar.</p>
+                    </div>
+                  </li>
+                  <li class="step-item">
+                    <div class="step-num">3</div>
+                    <div class="step-text">
+                      <h4>Load Unpacked</h4>
+                      <p>Click <strong>Load unpacked</strong> and select the unzipped directory containing <code>manifest.json</code>.</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              <div class="platform-download-card">
+                <span class="asset-badge" data-asset-size="edge">47.3 KB</span>
+                <h4 style="font-size: 1.1rem; color: #ffffff;" data-asset-name="edge">SmoothBoost-Edge-2.4.0.zip</h4>
+                <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Edge-2.4.0.zip" class="btn btn-primary" data-download="edge" download="SmoothBoost-Edge-2.4.0.zip">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 17V3"/>
+                    <path d="m6 11 6 6 6-6"/>
+                    <path d="M19 21H5"/>
+                  </svg>
+                  <span>Download Edge ZIP</span>
+                </a>
+                <a href="tutorial.html#edge" class="btn btn-secondary" style="height: 36px; font-size: 12.5px; width: 100%;">Edge Setup Guide &rarr;</a>
+                <span style="font-size: 12px; color: var(--text-muted);">
+                  Chromium MV3 • Edge 116+ • Store Package
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Platform Panel: Upcoming in Webstores -->
+          <div class="platform-panel" data-platform-panel="webstores" role="tabpanel" aria-labelledby="tab-plat-webstores" hidden>
+            <div style="margin-bottom: 24px;">
+              <h3 style="font-size: 1.35rem; margin-bottom: 8px;">Official Store Availability &amp; Review Status</h3>
+              <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px;">
+                SmoothBoost is actively being published across major browser web stores. You can install all editions right now using the direct release packages below, or install the 1-click Userscript.
+              </p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+              <!-- Store Card: Firefox AMO -->
+              <div class="step-box" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <span style="font-size: 1.25rem;">🦊 Firefox Add-ons</span>
+                    <span style="font-size: 11px; padding: 3px 8px; border-radius: 9999px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 600;">Submitted • In Review</span>
+                  </div>
+                  <h4 style="font-size: 14px; margin-bottom: 6px;">addons.mozilla.org (AMO)</h4>
+                  <p style="font-size: 12.5px; color: rgba(255, 255, 255, 0.65); margin-bottom: 14px;">
+                    Unified package for Firefox Desktop &amp; Firefox for Android. Declares zero data collection with 100% automated linter pass.
+                  </p>
+                </div>
+                <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-2.4.0.zip" class="btn btn-secondary" style="height: 36px; font-size: 12px; width: 100%;" download="SmoothBoost-Firefox-2.4.0.zip">
+                  Get Firefox Package (.zip) &rarr;
+                </a>
+              </div>
+
+              <!-- Store Card: Edge Add-ons -->
+              <div class="step-box" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <span style="font-size: 1.25rem;">🌊 Microsoft Edge</span>
+                    <span style="font-size: 11px; padding: 3px 8px; border-radius: 9999px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-weight: 600;">Submitted • In Review</span>
+                  </div>
+                  <h4 style="font-size: 14px; margin-bottom: 6px;">Edge Add-ons Catalog</h4>
+                  <p style="font-size: 12.5px; color: rgba(255, 255, 255, 0.65); margin-bottom: 14px;">
+                    Submitted to Microsoft Partner Center with high-res promo tiles and verified permissions disclosures.
+                  </p>
+                </div>
+                <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Edge-2.4.0.zip" class="btn btn-secondary" style="height: 36px; font-size: 12px; width: 100%;" download="SmoothBoost-Edge-2.4.0.zip">
+                  Get Edge Package (.zip) &rarr;
+                </a>
+              </div>
+
+              <!-- Store Card: Chrome Web Store -->
+              <div class="step-box" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <span style="font-size: 1.25rem;">🌐 Google Chrome</span>
+                    <span style="font-size: 11px; padding: 3px 8px; border-radius: 9999px; background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); font-weight: 600;">Developer Mode Active</span>
+                  </div>
+                  <h4 style="font-size: 14px; margin-bottom: 6px;">Chrome Web Store Listing</h4>
+                  <p style="font-size: 12.5px; color: rgba(255, 255, 255, 0.65); margin-bottom: 14px;">
+                    Fully operational right now via Developer Mode unpacked loading or via 1-click Tampermonkey userscript.
+                  </p>
+                </div>
+                <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Chrome-2.4.0.zip" class="btn btn-secondary" style="height: 36px; font-size: 12px; width: 100%;" download="SmoothBoost-Chrome-2.4.0.zip">
+                  Get Chrome Package (.zip) &rarr;
+                </a>
+              </div>
+
+              <!-- Store Card: Safari / App Store -->
+              <div class="step-box" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <span style="font-size: 1.25rem;">🧭 Apple Safari</span>
+                    <span style="font-size: 11px; padding: 3px 8px; border-radius: 9999px; background: rgba(139, 92, 246, 0.15); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.3); font-weight: 600;">Userscript &amp; MV3</span>
+                  </div>
+                  <h4 style="font-size: 14px; margin-bottom: 6px;">Mac App Store &bull; Orion</h4>
+                  <p style="font-size: 12.5px; color: rgba(255, 255, 255, 0.65); margin-bottom: 14px;">
+                    Instant 1-click install in Safari via Userscripts app or Tampermonkey; native Xcode WebKit extension bundle ready.
+                  </p>
+                </div>
+                <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost.user.js" class="btn btn-primary" style="height: 36px; font-size: 12px; width: 100%;" data-download="userscript">
+                  ⚡ 1-Click Userscript Install &rarr;
+                </a>
               </div>
             </div>
           </div>

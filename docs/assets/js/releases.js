@@ -7,7 +7,7 @@
   const GITHUB_REPO = 'BiniFn/SmoothBoost';
   const API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
   const RELEASES_PAGE_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
-  const CACHE_KEY = 'smoothboost_release_cache_v6';
+  const CACHE_KEY = 'smoothboost_release_cache_v7';
   const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
   const DEFAULT_RELEASE = {
@@ -43,6 +43,11 @@
       safari: {
         name: 'SmoothBoost-Safari-2.4.0.zip',
         url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Safari-2.4.0.zip`,
+        size: '47.3 KB'
+      },
+      edge: {
+        name: 'SmoothBoost-Edge-2.4.0.zip',
+        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Edge-2.4.0.zip`,
         size: '47.3 KB'
       },
       userscript: {
@@ -100,14 +105,23 @@
       };
     }
 
+    if (isEdge) {
+      return {
+        key: 'edge',
+        downloadKey: 'edge',
+        tabId: 'edge',
+        tutorialHash: '#edge',
+        name: 'Microsoft Edge',
+        shortName: 'Edge',
+        isMobile: false
+      };
+    }
+
     let browserName = 'Chrome & Helium';
     let shortName = 'Chrome';
     if (isBrave) {
       browserName = 'Brave Desktop';
       shortName = 'Brave';
-    } else if (isEdge) {
-      browserName = 'Microsoft Edge';
-      shortName = 'Edge';
     } else if (isHelium) {
       browserName = 'Helium Browser';
       shortName = 'Helium';
@@ -189,6 +203,11 @@
         url: `https://github.com/${GITHUB_REPO}/releases/download/${version}/SmoothBoost-Safari-${cleanVer}.zip`,
         size: '47.3 KB'
       },
+      edge: {
+        name: `SmoothBoost-Edge-${cleanVer}.zip`,
+        url: `https://github.com/${GITHUB_REPO}/releases/download/${version}/SmoothBoost-Edge-${cleanVer}.zip`,
+        size: '47.3 KB'
+      },
       userscript: {
         name: 'SmoothBoost.user.js',
         url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost.user.js`,
@@ -202,7 +221,9 @@
       const sizeStr = formatBytes(asset.size);
       const downloadUrl = asset.browser_download_url;
 
-      if (/safari/i.test(name)) {
+      if (/edge/i.test(name)) {
+        downloads.edge = { name, url: downloadUrl, size: sizeStr || '47.3 KB' };
+      } else if (/safari/i.test(name)) {
         downloads.safari = { name, url: downloadUrl, size: sizeStr || '47.3 KB' };
       } else if (/user\.js/i.test(name)) {
         downloads.userscript = { name, url: downloadUrl, size: sizeStr || '32.3 KB' };

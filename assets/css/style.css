@@ -192,17 +192,18 @@ code, pre {
   left: 0;
   right: 0;
   z-index: 100;
-  padding: 18px 0;
-  transition: background-color 0.3s ease, border-color 0.3s ease, padding 0.3s ease, backdrop-filter 0.3s ease;
-  border-bottom: 1px solid transparent;
+  padding: 14px 0;
+  background-color: rgba(6, 5, 4, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background-color 0.3s ease, border-color 0.3s ease, padding 0.3s ease;
 }
 
 .site-header.is-scrolled {
-  background-color: rgba(6, 5, 4, 0.88);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom-color: var(--border-subtle);
-  padding: 12px 0;
+  background-color: rgba(6, 5, 4, 0.97);
+  border-bottom-color: var(--border-subtle-strong);
+  padding: 10px 0;
 }
 
 .nav-wrapper {
@@ -231,11 +232,11 @@ code, pre {
 .nav-menu {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 24px;
 }
 
 .nav-link {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.65);
   font-size: 13.5px;
   font-weight: 500;
   transition: color 0.2s ease;
@@ -248,7 +249,15 @@ code, pre {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+}
+
+.btn-text-full {
+  display: inline;
+}
+
+.btn-text-mobile {
+  display: none;
 }
 
 .mobile-menu-btn {
