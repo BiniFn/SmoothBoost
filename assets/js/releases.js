@@ -7,40 +7,47 @@
   const GITHUB_REPO = 'BiniFn/SmoothBoost';
   const API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
   const RELEASES_PAGE_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
-  const CACHE_KEY = 'smoothboost_release_cache_v4';
+  const CACHE_KEY = 'smoothboost_release_cache_v5';
   const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
   const DEFAULT_RELEASE = {
-    version: 'v2.3.0',
-    publishedAt: 'November 6, 2026',
-    releaseUrl: `https://github.com/${GITHUB_REPO}/tree/v2.3.0`,
-    body: `### SmoothBoost v2.3.0 — Adaptive Responsiveness & Live App Safeguards
+    version: 'v2.4.0',
+    publishedAt: 'November 17, 2026',
+    releaseUrl: `https://github.com/${GITHUB_REPO}/tree/v2.4.0`,
+    body: `### SmoothBoost v2.4.0 — Universal Performance Update
 
-- **Real-Time App Detection**: Discord, Google Meet, Teams, Zoom, and WhatsApp are recognized before heavier page scans. Automatic profiles preserve calls, canvas content, and interface motion.
-- **Motion Preference Respect**: Automatic profiles on ws.ryuo.to leave animation playback to the site's Reduce motion setting.
-- **Adaptive Frame Pressure Control**: The optional Custom limiter responds to sustained frame pressure with recovery windows and backs off around user input and live media.
-- **Clearer Status & Demos**: The popup explains which protections are active, and the site uses descriptive examples instead of unmeasured performance figures.
-- **Browser-Aware Scanning**: Expensive animation, canvas, blur, and font scans are skipped on real-time communication pages.`,
+- **Tampermonkey & Violentmonkey Support**: Dedicated SmoothBoost.user.js edition with automatic updates, persistent GM storage, and on-page HUD.
+- **Scroll Boost**: Temporarily reduces expensive rendering effects and canvas paints while scrolling, restoring them instantaneously on idle.
+- **Smart Resource Loading**: Defers offscreen iframes, heavy media embeds, and third-party widgets until scrolled into view.
+- **Memory Guard**: Continuously monitors memory pressure and DOM counts (>3,500 nodes) to unload paused background media preloads and prune caches.
+- **Dynamic FPS Profiles**: Configurable 30, 60, 90, and 120 FPS frame limiter targets with high-precision frame pacing.
+- **SPA Navigation Optimization**: Seamlessly intercepts Single-Page Application route changes (History API & hashchange) and re-evaluates page archetypes without reload.
+- **Universal Site Engine**: Expanded 8-archetype site classifier, v2 community site-rules schema, and automatic Safe Mode recovery watchdog.`,
     downloads: {
       chrome: {
-        name: 'SmoothBoost-Chrome-2.3.0.zip',
-        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Chrome-2.3.0.zip`,
-        size: '42.4 KB'
+        name: 'SmoothBoost-Chrome-2.4.0.zip',
+        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Chrome-2.4.0.zip`,
+        size: '47.2 KB'
       },
       titanium: {
-        name: 'SmoothBoost-Titanium-Android-2.3.0.zip',
-        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Titanium-Android-2.3.0.zip`,
-        size: '42.4 KB'
+        name: 'SmoothBoost-Titanium-Android-2.4.0.zip',
+        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Titanium-Android-2.4.0.zip`,
+        size: '47.2 KB'
       },
       firefox: {
-        name: 'SmoothBoost-Firefox-2.3.0.zip',
-        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Firefox-2.3.0.zip`,
-        size: '42.5 KB'
+        name: 'SmoothBoost-Firefox-2.4.0.zip',
+        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Firefox-2.4.0.zip`,
+        size: '47.3 KB'
       },
       firefoxAndroid: {
-        name: 'SmoothBoost-Firefox-Android-2.3.0.zip',
-        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Firefox-Android-2.3.0.zip`,
-        size: '42.5 KB'
+        name: 'SmoothBoost-Firefox-Android-2.4.0.zip',
+        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Firefox-Android-2.4.0.zip`,
+        size: '47.3 KB'
+      },
+      userscript: {
+        name: 'SmoothBoost.user.js',
+        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost.user.js`,
+        size: '32.5 KB'
       }
     }
   };
@@ -161,22 +168,27 @@
       chrome: {
         name: `SmoothBoost-Chrome-${cleanVer}.zip`,
         url: `https://github.com/${GITHUB_REPO}/releases/download/${version}/SmoothBoost-Chrome-${cleanVer}.zip`,
-        size: '42.4 KB'
+        size: '47.2 KB'
       },
       titanium: {
         name: `SmoothBoost-Titanium-Android-${cleanVer}.zip`,
         url: `https://github.com/${GITHUB_REPO}/releases/download/${version}/SmoothBoost-Titanium-Android-${cleanVer}.zip`,
-        size: '42.4 KB'
+        size: '47.2 KB'
       },
       firefox: {
         name: `SmoothBoost-Firefox-${cleanVer}.zip`,
         url: `https://github.com/${GITHUB_REPO}/releases/download/${version}/SmoothBoost-Firefox-${cleanVer}.zip`,
-        size: '42.5 KB'
+        size: '47.3 KB'
       },
       firefoxAndroid: {
         name: `SmoothBoost-Firefox-Android-${cleanVer}.zip`,
         url: `https://github.com/${GITHUB_REPO}/releases/download/${version}/SmoothBoost-Firefox-Android-${cleanVer}.zip`,
-        size: '42.5 KB'
+        size: '47.3 KB'
+      },
+      userscript: {
+        name: 'SmoothBoost.user.js',
+        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost.user.js`,
+        size: '32.5 KB'
       }
     };
 
@@ -186,14 +198,16 @@
       const sizeStr = formatBytes(asset.size);
       const downloadUrl = asset.browser_download_url;
 
-      if (/titanium/i.test(name)) {
-        downloads.titanium = { name, url: downloadUrl, size: sizeStr || '42.4 KB' };
+      if (/user\.js/i.test(name)) {
+        downloads.userscript = { name, url: downloadUrl, size: sizeStr || '32.5 KB' };
+      } else if (/titanium/i.test(name)) {
+        downloads.titanium = { name, url: downloadUrl, size: sizeStr || '47.2 KB' };
       } else if (/firefox-android/i.test(name)) {
-        downloads.firefoxAndroid = { name, url: downloadUrl, size: sizeStr || '42.5 KB' };
+        downloads.firefoxAndroid = { name, url: downloadUrl, size: sizeStr || '47.3 KB' };
       } else if (/firefox/i.test(name)) {
-        downloads.firefox = { name, url: downloadUrl, size: sizeStr || '42.5 KB' };
+        downloads.firefox = { name, url: downloadUrl, size: sizeStr || '47.3 KB' };
       } else if (/chrome/i.test(name) || name === `SmoothBoost-${cleanVer}.zip`) {
-        downloads.chrome = { name, url: downloadUrl, size: sizeStr || '42.4 KB' };
+        downloads.chrome = { name, url: downloadUrl, size: sizeStr || '47.2 KB' };
       }
     }
 
@@ -279,14 +293,17 @@
       chrome: release.downloads.chrome,
       titanium: release.downloads.titanium,
       firefox: release.downloads.firefox,
-      'firefox-android': release.downloads.firefoxAndroid
+      'firefox-android': release.downloads.firefoxAndroid,
+      userscript: release.downloads.userscript
     };
 
     for (const [key, asset] of Object.entries(map)) {
       if (!asset) continue;
       document.querySelectorAll(`[data-download="${key}"]`).forEach((btn) => {
         btn.setAttribute('href', asset.url);
-        btn.setAttribute('download', asset.name);
+        if (key !== 'userscript') {
+          btn.setAttribute('download', asset.name);
+        }
       });
       document.querySelectorAll(`[data-asset-size="${key}"]`).forEach((badge) => {
         badge.textContent = asset.size;

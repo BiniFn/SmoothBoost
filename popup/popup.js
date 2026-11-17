@@ -1,4 +1,4 @@
-// SmoothBoost - popup controller (v2.3.0)
+// SmoothBoost - popup controller (v2.4.0)
 
 const DEFAULT_SETTINGS = {
   settingsVersion: 5,
@@ -19,7 +19,12 @@ const DEFAULT_SETTINGS = {
     asyncImageDecoding: false,
     discardIdleTabs: false,
     fontDisplaySwap: false,
-    fpsLimit: 30
+    fpsLimit: 30,
+    scrollBoost: false,
+    smartResourceLoading: false,
+    memoryGuard: false,
+    spaOptimization: true,
+    autoRecovery: true
   },
   siteOverrides: {}
 };
@@ -76,6 +81,19 @@ const toggleContentVisibility = document.getElementById('toggle-content-visibili
 const toggleOffscreenCanvas = document.getElementById('toggle-offscreen-canvas');
 const togglePassiveScroll = document.getElementById('toggle-passive-scroll');
 const toggleAsyncImages = document.getElementById('toggle-async-images');
+const toggleScrollBoost = document.getElementById('toggle-scroll-boost');
+const toggleSmartResources = document.getElementById('toggle-smart-resources');
+const toggleMemoryGuard = document.getElementById('toggle-memory-guard');
+const toggleSpaOptimization = document.getElementById('toggle-spa-optimization');
+const toggleAutoRecovery = document.getElementById('toggle-auto-recovery');
+const autoRecoveryBanner = document.getElementById('auto-recovery-banner');
+const btnResetRecovery = document.getElementById('btn-reset-recovery');
+const fpsButtons = {
+  30: document.getElementById('btn-fps-30'),
+  60: document.getElementById('btn-fps-60'),
+  90: document.getElementById('btn-fps-90'),
+  120: document.getElementById('btn-fps-120')
+};
 const siteBrokenButton = document.getElementById('site-broken');
 const bugReportLink = document.getElementById('bug-report-link');
 const updateStatus = document.getElementById('update-status');
@@ -96,7 +114,13 @@ const PRESET_CONFIGS = {
     pauseOffscreenCanvas: true,
     passiveScroll: true,
     asyncImageDecoding: true,
-    fontDisplaySwap: true
+    fontDisplaySwap: true,
+    scrollBoost: true,
+    smartResourceLoading: true,
+    memoryGuard: true,
+    spaOptimization: true,
+    autoRecovery: true,
+    fpsLimit: 60
   },
   ultra: {
     killAnimations: false,
@@ -110,7 +134,13 @@ const PRESET_CONFIGS = {
     pauseOffscreenCanvas: true,
     passiveScroll: true,
     asyncImageDecoding: true,
-    fontDisplaySwap: true
+    fontDisplaySwap: true,
+    scrollBoost: true,
+    smartResourceLoading: true,
+    memoryGuard: true,
+    spaOptimization: true,
+    autoRecovery: true,
+    fpsLimit: 60
   },
   balanced: {
     killAnimations: false,
@@ -124,7 +154,13 @@ const PRESET_CONFIGS = {
     pauseOffscreenCanvas: false,
     passiveScroll: false,
     asyncImageDecoding: false,
-    fontDisplaySwap: false
+    fontDisplaySwap: false,
+    scrollBoost: false,
+    smartResourceLoading: false,
+    memoryGuard: false,
+    spaOptimization: true,
+    autoRecovery: true,
+    fpsLimit: 60
   },
   battery: {
     killAnimations: false,
@@ -138,7 +174,13 @@ const PRESET_CONFIGS = {
     pauseOffscreenCanvas: true,
     passiveScroll: true,
     asyncImageDecoding: true,
-    fontDisplaySwap: true
+    fontDisplaySwap: true,
+    scrollBoost: true,
+    smartResourceLoading: true,
+    memoryGuard: true,
+    spaOptimization: true,
+    autoRecovery: true,
+    fpsLimit: 30
   }
 };
 
@@ -359,6 +401,28 @@ function renderUI() {
   if (toggleOffscreenCanvas) toggleOffscreenCanvas.checked = custom.pauseOffscreenCanvas;
   if (togglePassiveScroll) togglePassiveScroll.checked = custom.passiveScroll;
   if (toggleAsyncImages) toggleAsyncImages.checked = custom.asyncImageDecoding;
+  if (toggleScrollBoost) toggleScrollBoost.checked = !!custom.scrollBoost;
+  if (toggleSmartResources) toggleSmartResources.checked = !!custom.smartResourceLoading;
+  if (toggleMemoryGuard) toggleMemoryGuard.checked = !!custom.memoryGuard;
+  if (toggleSpaOptimization) toggleSpaOptimization.checked = custom.spaOptimization !== false;
+  if (toggleAutoRecovery) toggleAutoRecovery.checked = custom.autoRecovery !== false;
+
+  const currentFps = custom.fpsLimit || (mode === 'battery' ? 30 : 60);
+  Object.entries(fpsButtons).forEach(([fps, btn]) => {
+    if (btn) btn.classList.toggle('is-active', Number(fps) === Number(currentFps));
+  });
+}
+
+function setFpsLimit(fps) {
+  if (!config.customSettings) {
+    config.customSettings = { ...DEFAULT_SETTINGS.customSettings };
+  }
+  config.customSettings.fpsLimit = fps;
+  if (currentHostname && config.siteOverrides?.[currentHostname]?.customSettings) {
+    config.siteOverrides[currentHostname].customSettings.fpsLimit = fps;
+  }
+  renderUI();
+  saveAndBroadcast();
 }
 
 function updateSiteOverride(patch) {
@@ -502,6 +566,38 @@ function renderMetricsPills(metrics) {
     `);
   }
 
+  if (metrics.scrollBoostActive) {
+    pills.push(`
+      <span class="metric-pill">
+        ⚡ Scroll Boost active
+      </span>
+    `);
+  }
+
+  if (metrics.smartResourcesDeferred > 0) {
+    pills.push(`
+      <span class="metric-pill">
+        📦 ${metrics.smartResourcesDeferred} embeds deferred
+      </span>
+    `);
+  }
+
+  if (metrics.memoryGuard?.active) {
+    pills.push(`
+      <span class="metric-pill">
+        🛡️ Memory Guard (${metrics.memoryGuard.pressure})
+      </span>
+    `);
+  }
+
+  if (metrics.spaNavigations > 0) {
+    pills.push(`
+      <span class="metric-pill">
+        🔄 SPA route active
+      </span>
+    `);
+  }
+
   metricsContainer.innerHTML = pills.join('');
 }
 
@@ -553,6 +649,12 @@ function requestPageStatus(attempt = 0) {
       siteRuleRow.hidden = !onReanime;
       if (siteRuleRow.style) siteRuleRow.style.display = onReanime ? 'flex' : 'none';
       if (onReanime) renderRuleStatus(response.siteRule);
+    }
+
+    if (autoRecoveryBanner) {
+      const showRecovery = Boolean(response.autoRecovery?.active);
+      autoRecoveryBanner.hidden = !showRecovery;
+      if (autoRecoveryBanner.style) autoRecoveryBanner.style.display = showRecovery ? 'flex' : 'none';
     }
 
     // Request actual optimizer metrics
@@ -670,6 +772,23 @@ function bindEvents() {
     });
   }
 
+  if (btnResetRecovery) {
+    btnResetRecovery.addEventListener('click', async () => {
+      if (currentTab?.id) {
+        await sendTabMessage(currentTab.id, { type: 'RESET_AUTO_RECOVERY' });
+        if (autoRecoveryBanner) {
+          autoRecoveryBanner.hidden = true;
+          if (autoRecoveryBanner.style) autoRecoveryBanner.style.display = 'none';
+        }
+        requestPageStatus();
+      }
+    });
+  }
+
+  Object.entries(fpsButtons).forEach(([fps, btn]) => {
+    if (btn) btn.addEventListener('click', () => setFpsLimit(Number(fps)));
+  });
+
   [
     [toggleAnim, 'killAnimations'],
     [toggleTrans, 'killTransitions'],
@@ -681,7 +800,12 @@ function bindEvents() {
     [toggleContentVisibility, 'contentVisibility'],
     [toggleOffscreenCanvas, 'pauseOffscreenCanvas'],
     [togglePassiveScroll, 'passiveScroll'],
-    [toggleAsyncImages, 'asyncImageDecoding']
+    [toggleAsyncImages, 'asyncImageDecoding'],
+    [toggleScrollBoost, 'scrollBoost'],
+    [toggleSmartResources, 'smartResourceLoading'],
+    [toggleMemoryGuard, 'memoryGuard'],
+    [toggleSpaOptimization, 'spaOptimization'],
+    [toggleAutoRecovery, 'autoRecovery']
   ].forEach(([input, key]) => {
     if (input) input.addEventListener('change', () => setCustomSetting(key, input.checked));
   });

@@ -1,8 +1,14 @@
 {
-  "version": 1,
+  "version": 2,
+  "packName": "SmoothBoost Universal Community Rules",
+  "updatedAt": "2026-11-17",
   "genericCarouselSelectors": [
     ".swiper",
-    "[data-swiper]"
+    "[data-swiper]",
+    ".slick-slider",
+    ".splide",
+    ".embla",
+    ".flickity-enabled"
   ],
   "siteRules": [
     {
@@ -15,6 +21,27 @@
         "[data-testid*=\"hero-carousel\" i]"
       ],
       "behavior": "pause-autoplay-preserve-manual-controls"
+    },
+    {
+      "id": "youtube-feed-optimizer",
+      "hosts": ["youtube.com", "m.youtube.com"],
+      "paths": ["/", "/feed/subscriptions", "/feed/trending"],
+      "behavior": "defer-offscreen-comments-and-ambient",
+      "deferSelectors": ["#comments", "ytd-comments", "#related", "ytd-watch-next-secondary-results-renderer"]
+    },
+    {
+      "id": "reddit-feed-optimizer",
+      "hosts": ["reddit.com"],
+      "paths": ["/", "/r/*"],
+      "behavior": "pause-offscreen-media-and-embeds",
+      "deferSelectors": ["shreddit-async-loader", "[data-testid=\"post-container\"] iframe"]
+    },
+    {
+      "id": "twitter-x-optimizer",
+      "hosts": ["x.com", "twitter.com"],
+      "paths": ["/home", "/explore", "/notifications"],
+      "behavior": "spa-feed-content-visibility",
+      "feedSelectors": ["[data-testid=\"primaryColumn\"] section", "div[aria-label=\"Timeline: Your Home Timeline\"] > div"]
     }
   ]
 }

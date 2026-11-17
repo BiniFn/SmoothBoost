@@ -19,7 +19,7 @@
         <div>
             <div class="title-row">
             <h1 class="title">SmoothBoost</h1>
-            <span class="version-badge">v2.3.0</span>
+            <span class="version-badge">v2.4.0</span>
           </div>
           <p class="subtitle" id="domain-label">Scanning site...</p>
         </div>
@@ -43,6 +43,19 @@
       <div class="update-notification-actions">
         <a class="update-notification-btn primary" id="update-notification-action" href="#" target="_blank" rel="noopener noreferrer">Update</a>
         <button class="update-notification-btn dismiss" id="update-notification-dismiss" type="button" aria-label="Dismiss update notification">✕</button>
+      </div>
+    </div>
+
+    <!-- Auto Recovery Banner -->
+    <div class="update-notification-banner auto-recovery-banner" id="auto-recovery-banner" hidden style="display: none;">
+      <div class="update-notification-content">
+        <svg class="update-notification-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+        </svg>
+        <span id="auto-recovery-text">Safe Mode active: Page errors auto-recovered</span>
+      </div>
+      <div class="update-notification-actions">
+        <button class="update-notification-btn primary" id="btn-reset-recovery" type="button">Reset</button>
       </div>
     </div>
 
@@ -132,6 +145,14 @@
               <span class="preset-title">Custom</span>
               <span class="preset-desc">Tweak</span>
             </button>
+          </div>
+
+          <div class="section-label" style="margin-top: 10px;">FPS TARGET</div>
+          <div class="fps-group" id="fps-target-group">
+            <button class="fps-btn is-active" data-fps="30" id="btn-fps-30" type="button">30 FPS</button>
+            <button class="fps-btn" data-fps="60" id="btn-fps-60" type="button">60 FPS</button>
+            <button class="fps-btn" data-fps="90" id="btn-fps-90" type="button">90 FPS</button>
+            <button class="fps-btn" data-fps="120" id="btn-fps-120" type="button">120 FPS</button>
           </div>
         </section>
 
@@ -283,6 +304,61 @@
               <span class="slider-sm"></span>
             </label>
           </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">Scroll Boost</span>
+              <span class="toggle-sub">Temporarily reduces heavy effects during active scrolling</span>
+            </div>
+            <label class="switch-sm">
+              <input type="checkbox" id="toggle-scroll-boost">
+              <span class="slider-sm"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">Smart Resource Loading</span>
+              <span class="toggle-sub">Defers offscreen iframes, embeds, and third-party widgets</span>
+            </div>
+            <label class="switch-sm">
+              <input type="checkbox" id="toggle-smart-resources">
+              <span class="slider-sm"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">Memory Guard</span>
+              <span class="toggle-sub">Detects memory pressure and trims background buffers</span>
+            </div>
+            <label class="switch-sm">
+              <input type="checkbox" id="toggle-memory-guard">
+              <span class="slider-sm"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">SPA Optimization</span>
+              <span class="toggle-sub">Detects single-page route changes without page reloading</span>
+            </div>
+            <label class="switch-sm">
+              <input type="checkbox" id="toggle-spa-optimization" checked>
+              <span class="slider-sm"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-name">Automatic Crash Recovery</span>
+              <span class="toggle-sub">Drops into Safe Mode if exceptions or render errors occur</span>
+            </div>
+            <label class="switch-sm">
+              <input type="checkbox" id="toggle-auto-recovery" checked>
+              <span class="slider-sm"></span>
+            </label>
+          </div>
         </section>
 
         <!-- One-Click Broken Site Fix -->
@@ -324,13 +400,14 @@
           </div>
         </section>
 
+        <a class="action-link secondary-action" href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost.user.js" target="_blank" rel="noopener noreferrer">Install SmoothBoost Userscript (Tampermonkey &amp; Violentmonkey)</a>
         <a class="action-link secondary-action" href="https://binifn.github.io/SmoothBoost/tutorial.html" target="_blank" rel="noopener noreferrer">Device Setup &amp; Installation Guide</a>
         <a class="action-link secondary-action" id="bug-report-link" href="https://github.com/BiniFn/SmoothBoost/issues/new" target="_blank" rel="noopener noreferrer">Submit a bug report on GitHub</a>
         <a class="action-link secondary-action" href="https://github.com/BiniFn/SmoothBoost/issues" target="_blank" rel="noopener noreferrer">View GitHub issues</a>
 
         <div class="credit-card">
-          <span class="credit-label">SMOOTHBOOST v2.3.0</span>
-          <span>Engineered for responsive, hardware-accelerated, and unbloated web browsing across Chrome, Titanium Browser, and Firefox.</span>
+          <span class="credit-label">SMOOTHBOOST v2.4.0</span>
+          <span>Engineered for universal, hardware-accelerated, and unbloated web browsing across Chrome, Titanium Browser, Firefox, and Userscripts.</span>
         </div>
       </section>
     </main>

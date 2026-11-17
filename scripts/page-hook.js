@@ -15,10 +15,13 @@
   const nativeClearInterval = window.clearInterval;
   const nativeSetTimeout = window.setTimeout;
   const nativeClearTimeout = window.clearTimeout;
-  let optimizationsEnabled = false;
-  let passiveScrollEnabled = false;
+  let optimizationsEnabled = true;
+  let passiveScrollEnabled = true;
   let adaptiveLimitEnabled = false;
   let throttling = false;
+  let targetFps = 30;
+  let scrollBoostActive = false;
+  let spaNavigationsCount = 0;
   let carouselObserver = null;
   let carouselMutationObserver = null;
   let pausedCarouselInstances = new Map();
@@ -265,7 +268,7 @@
             restoreFrameHooks();
             return;
           }
-          const interval = 1000 / 30;
+          const interval = 1000 / (targetFps || 30);
           const elapsed = now - lastFrameTime;
           if (elapsed >= interval) {
             lastFrameTime = now - (elapsed % interval);
@@ -550,11 +553,13 @@
   }
 
   function shouldSkipCanvasDraw(ctx) {
-    if (!canvasGuardArmed || !optimizationsEnabled) return false;
+    if (!canvasGuardArmed && !scrollBoostActive) return false;
+    if (!optimizationsEnabled && !scrollBoostActive) return false;
     const canvas = ctx?.canvas;
     // Never skip draws on explicitly detached buffer canvases
     if (!canvas || canvas.isConnected === false) return false;
     if (canvas.style && (canvas.style.position === 'fixed' || canvas.style.position === 'sticky')) return false;
+    if (scrollBoostActive) return true;
     return canvas.getAttribute?.('data-smoothboost-offscreen-canvas') === 'true';
   }
 
@@ -610,9 +615,35 @@
     hookWebGL(typeof WebGL2RenderingContext !== 'undefined' ? WebGL2RenderingContext : undefined);
   }
 
+  function installSpaNavigationHook() {
+    const history = window.history;
+    if (!history || typeof history.pushState !== 'function' || typeof history.replaceState !== 'function') return;
+    const nativePushState = history.pushState;
+    const nativeReplaceState = history.replaceState;
+    function notifySpaNav(navType) {
+      spaNavigationsCount += 1;
+      try {
+        window.dispatchEvent(new CustomEvent(channelName, {
+          detail: { action: 'spa-nav', navType, url: window.location?.href }
+        }));
+      } catch (_e) {}
+    }
+    history.pushState = function (...args) {
+      const result = nativePushState.apply(this, args);
+      notifySpaNav('pushState');
+      return result;
+    };
+    history.replaceState = function (...args) {
+      const result = nativeReplaceState.apply(this, args);
+      notifySpaNav('replaceState');
+      return result;
+    };
+  }
+
   installReanimeTimerGuard();
   installPassiveScrollGuard();
   installCanvasGuard();
+  installSpaNavigationHook();
   if (isReanime) publishCarouselStatus('waiting');
   startOffscreenCarousels();
 
@@ -626,12 +657,29 @@
     else if (action === 'adaptive-limit-off') stopAdaptiveThrottle();
     else if (action === 'enable-canvas-guard') canvasGuardArmed = true;
     else if (action === 'disable-canvas-guard') canvasGuardArmed = false;
+    else if (action === 'set-fps-limit') {
+      const fps = Number(event.detail?.fps);
+      if (Number.isFinite(fps) && [30, 60, 90, 120].includes(fps)) {
+        targetFps = fps;
+        if (throttling) syncFrameHooks();
+      }
+    }
+    else if (action === 'scroll-boost-active') scrollBoostActive = true;
+    else if (action === 'scroll-boost-idle') scrollBoostActive = false;
+    else if (action === 'memory-guard-trim') {
+      pausedCarouselInstances.clear();
+      adaptivePressureTimes = [];
+      adaptiveLastPressureAt = 0;
+    }
     else if (action === 'get-hook-metrics') {
       window.dispatchEvent(new CustomEvent(channelName, {
         detail: {
           action: 'hook-metrics',
           passiveListenersIntercepted,
-          canvasDrawCallsSkipped
+          canvasDrawCallsSkipped,
+          targetFps,
+          scrollBoostActive,
+          spaNavigationsCount
         }
       }));
     }

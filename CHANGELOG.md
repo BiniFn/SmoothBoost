@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.4.0] - 2026-11-17
+
+### Added
+
+- **Tampermonkey & Violentmonkey Support**: Dedicated standalone `SmoothBoost.user.js` edition supporting direct installation via userscript managers without unpacked extension files. Features auto-updates via `@updateURL`/`@downloadURL`, persistent settings via GM storage, and an on-page Shadow DOM configuration HUD.
+- **Scroll Boost**: Temporarily reduces expensive visual rendering effects and suppresses canvas drawing during active scrolling, restoring full fidelity within 160ms of scrolling idle.
+- **Smart Resource Loading**: Defers offscreen iframes, heavy media embeds (YouTube, Vimeo, Twitter, Instagram, Spotify, SoundCloud, TikTok), and third-party widgets using `IntersectionObserver` with 400px pre-hydration margins.
+- **Memory Guard**: Continuously checks heap allocation (`performance.memory`) and high DOM node counts (>3,500 elements) to unload paused background media preloads and prune canvas caches.
+- **Dynamic FPS Profiles**: Added selectable target framerates (30, 60, 90, 120 FPS) with high-precision timestamp pacing in `page-hook.js`.
+- **SPA Navigation Optimization**: Intercepts Single-Page Application route changes (`pushState`, `replaceState`, `popstate`, `hashchange`) and re-evaluates page archetypes without page reload.
+- **Automatic Recovery Watchdog**: Detects repeated script or DOM errors (&ge;4 in 3 seconds) and automatically demotes optimizations into Safe Mode with one-click restore banner.
+- **Universal Site Engine**: Upgraded `site-rules.json` to schema v2 with support for custom host overrides, downloadable rule packs, and 8 page archetypes.
+
+### Improved
+
+- Upgraded settings validation, presets, and UI controls in the popup with FPS selector pills, auto-recovery banners, and userscript quick-links.
+- Expanded automated test suite to 69 test suites covering userscript integrity, Scroll Boost debounce, embed hydration, dynamic FPS pacing, and auto-recovery.
+
+## [2.3.1] - 2026-11-07
+
+### Improved
+
+- Added homepage-specific offscreen rendering, animation, carousel, and muted preview optimizations for ws.ryuo.to while keeping visible animations active and respecting the site's Reduce motion preference.
+- Applied async image decoding and native lazy loading to images and iframes added by dynamic feeds.
+- Corrected lazy-loading detection to use the HTML attribute, since the browser's default `loading` property is `auto` rather than empty.
+- Updated popup status copy to explain when visible motion stays active and offscreen loops are paused.
+
 ## [2.3.0] - 2026-11-06
 
 ### Added

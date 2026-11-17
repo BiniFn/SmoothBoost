@@ -784,6 +784,45 @@ body.site-disabled .toggles-section {
   pointer-events: none;
 }
 
+/* Dynamic FPS Selector */
+.fps-group {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  margin-bottom: 8px;
+}
+
+.fps-btn {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  padding: 6px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.fps-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.fps-btn.is-active {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: var(--border-active);
+  color: var(--accent);
+}
+
+.auto-recovery-banner {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
 /* Touch & Mobile View Responsive Adaptations */
 @media (pointer: coarse), (max-width: 380px) {
   .container {

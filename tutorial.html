@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Device Installation & Setup Guide — SmoothBoost</title>
-  <meta name="description" content="Step-by-step guide to installing SmoothBoost v2.3.0 across Titanium Android, Chrome, Helium, and Firefox.">
+  <meta name="description" content="Step-by-step guide to installing SmoothBoost v2.4.0 across Tampermonkey Userscript, Titanium Android, Chrome, Helium, and Firefox.">
   <link rel="icon" type="image/png" href="icons/icon48.png">
   <link rel="stylesheet" href="assets/css/style.css">
   <style>
@@ -163,18 +163,19 @@
       <div class="container">
         <div class="hero-tag">
           <span class="tag-dot"></span>
-          <span>Version <strong data-release-version>v2.3.0</strong> Installation Manual</span>
+          <span>Version <strong data-release-version>v2.4.0</strong> Installation Manual</span>
         </div>
         <h1 class="hero-title" style="font-size: clamp(28px, 5vw, 44px); margin-bottom: 12px;">
           Device Setup <span class="gradient-text">&amp; Installation Guide</span>
         </h1>
         <p class="hero-lead" style="max-width: 680px; margin: 0 auto 30px;">
-          Direct, reproducible instructions to install SmoothBoost on Android, Chrome, Helium, and Firefox without build tools or command-line steps.
+          Direct, reproducible instructions to install SmoothBoost on Tampermonkey, Android, Chrome, Helium, and Firefox without build tools or command-line steps.
         </p>
 
         <!-- Quick Jump Bar -->
         <nav class="tutorial-tabs" aria-label="Device selection">
-          <a href="#titanium" class="tutorial-tab-btn active">Titanium Android</a>
+          <a href="#userscript" class="tutorial-tab-btn active">Userscript</a>
+          <a href="#titanium" class="tutorial-tab-btn">Titanium Android</a>
           <a href="#chrome" class="tutorial-tab-btn">Chrome &amp; Helium</a>
           <a href="#firefox" class="tutorial-tab-btn">Firefox Desktop</a>
           <a href="#firefox-android" class="tutorial-tab-btn">Firefox Android</a>
@@ -186,7 +187,46 @@
     <section class="section-padding" style="padding-top: 10px;">
       <div class="container" style="max-width: 860px;">
 
-        <!-- 1. Titanium Browser for Android -->
+        <!-- 1. Userscript Edition (Tampermonkey & Violentmonkey) -->
+        <article id="userscript" class="section-card device-card">
+          <div class="section-head" style="text-align: left; margin-bottom: 20px;">
+            <div class="section-eyebrow">Headline Feature in 2.4.0</div>
+            <h2 class="section-title" style="font-size: 1.5rem;">Tampermonkey &amp; Violentmonkey Userscript</h2>
+            <p class="section-desc" style="text-align: left;">
+              Run SmoothBoost on any browser supporting Tampermonkey, Violentmonkey, or Greasemonkey — without installing or unpacking browser extension files.
+            </p>
+          </div>
+
+          <div class="callout-box">
+            <strong>Package:</strong> <code data-asset-name="userscript">SmoothBoost.user.js</code> (<span data-asset-size="userscript">32.5 KB</span>). Standalone userscript edition with auto-updates, GM persistent storage, and an on-page Shadow DOM settings HUD.
+          </div>
+
+          <div class="step-box">
+            <h4><span class="step-badge">1</span> Install a Userscript Manager</h4>
+            <p>Ensure you have a modern userscript manager installed in your browser:</p>
+            <p>• <a href="https://www.tampermonkey.net/" target="_blank" rel="noopener noreferrer" style="color: var(--accent-cyan);">Get Tampermonkey</a> &bull; <a href="https://violentmonkey.github.io/" target="_blank" rel="noopener noreferrer" style="color: var(--accent-cyan);">Get Violentmonkey</a></p>
+          </div>
+
+          <div class="step-box">
+            <h4><span class="step-badge">2</span> One-Click Install</h4>
+            <p>Click the install button below. Your userscript manager will automatically open a confirmation tab:</p>
+            <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost.user.js" class="btn btn-primary" style="margin-top: 6px;" data-download="userscript">
+              Install <span data-asset-name="userscript">SmoothBoost.user.js</span>
+            </a>
+          </div>
+
+          <div class="step-box">
+            <h4><span class="step-badge">3</span> Confirm Installation</h4>
+            <p>Click <strong>Install</strong> or <strong>Confirm Installation</strong> in the manager prompt. SmoothBoost is instantly active across all websites.</p>
+          </div>
+
+          <div class="step-box">
+            <h4><span class="step-badge">4</span> Open Settings Anytime</h4>
+            <p>Access controls via your userscript manager icon &rarr; <strong>SmoothBoost Settings</strong>, or click the subtle <strong>⚡ SB</strong> badge in the bottom corner of any page.</p>
+          </div>
+        </article>
+
+        <!-- 2. Titanium Browser for Android -->
         <article id="titanium" class="section-card device-card">
           <div class="section-head" style="text-align: left; margin-bottom: 20px;">
             <div class="section-eyebrow">Android Target</div>
@@ -197,14 +237,14 @@
           </div>
 
           <div class="callout-box">
-            <strong>Package:</strong> <code data-asset-name="titanium">SmoothBoost-Titanium-Android-2.3.0.zip</code> (<span data-asset-size="titanium">42.4 KB</span>). Manifest V3 with mobile touch optimizations and guarded desktop APIs.
+            <strong>Package:</strong> <code data-asset-name="titanium">SmoothBoost-Titanium-Android-2.4.0.zip</code> (<span data-asset-size="titanium">47.2 KB</span>). Manifest V3 with mobile touch optimizations and guarded desktop APIs.
           </div>
 
           <div class="step-box">
             <h4><span class="step-badge">1</span> Download the Package</h4>
             <p>Download the Titanium build directly on your Android phone or tablet:</p>
-            <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Titanium-Android-2.3.0.zip" class="btn btn-primary" style="margin-top: 6px;" data-download="titanium" download="SmoothBoost-Titanium-Android-2.3.0.zip">
-              Download <span data-asset-name="titanium">SmoothBoost-Titanium-Android-2.3.0.zip</span>
+            <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Titanium-Android-2.4.0.zip" class="btn btn-primary" style="margin-top: 6px;" data-download="titanium" download="SmoothBoost-Titanium-Android-2.4.0.zip">
+              Download <span data-asset-name="titanium">SmoothBoost-Titanium-Android-2.4.0.zip</span>
             </a>
           </div>
 
@@ -216,7 +256,7 @@
           <div class="step-box">
             <h4><span class="step-badge">3</span> Enable Developer Mode &amp; Load</h4>
             <p>Turn on the <strong>Developer mode</strong> switch in the upper corner.</p>
-            <p>Tap <strong>+ (from .zip / .crx / user dir)</strong> or <strong>Load unpacked</strong>. Use your file manager to pick the downloaded <code>SmoothBoost-Titanium-Android-2.3.0.zip</code> file.</p>
+            <p>Tap <strong>+ (from .zip / .crx / user dir)</strong> or <strong>Load unpacked</strong>. Use your file manager to pick the downloaded <code>SmoothBoost-Titanium-Android-2.4.0.zip</code> file.</p>
           </div>
 
           <div class="step-box">
@@ -225,7 +265,7 @@
           </div>
         </article>
 
-        <!-- 2. Chrome & Helium Desktop -->
+        <!-- 3. Chrome & Helium Desktop -->
         <article id="chrome" class="section-card device-card">
           <div class="section-head" style="text-align: left; margin-bottom: 20px;">
             <div class="section-eyebrow">Desktop Chromium</div>
@@ -236,14 +276,14 @@
           </div>
 
           <div class="callout-box">
-            <strong>Package:</strong> <code data-asset-name="chrome">SmoothBoost-Chrome-2.3.0.zip</code> (<span data-asset-size="chrome">42.4 KB</span>). Compatible with Chrome 114+, Helium Browser, Brave, and Edge.
+            <strong>Package:</strong> <code data-asset-name="chrome">SmoothBoost-Chrome-2.4.0.zip</code> (<span data-asset-size="chrome">47.2 KB</span>). Compatible with Chrome 114+, Helium Browser, Brave, and Edge.
           </div>
 
           <div class="step-box">
             <h4><span class="step-badge">1</span> Download &amp; Extract the ZIP</h4>
             <p>Download the release archive and extract it to a permanent folder on your computer (e.g. <code>Downloads/SmoothBoost</code> or <code>Documents/Extensions</code>):</p>
-            <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Chrome-2.3.0.zip" class="btn btn-primary" style="margin-top: 6px;" data-download="chrome" download="SmoothBoost-Chrome-2.3.0.zip">
-              Download <span data-asset-name="chrome">SmoothBoost-Chrome-2.3.0.zip</span>
+            <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Chrome-2.4.0.zip" class="btn btn-primary" style="margin-top: 6px;" data-download="chrome" download="SmoothBoost-Chrome-2.4.0.zip">
+              Download <span data-asset-name="chrome">SmoothBoost-Chrome-2.4.0.zip</span>
             </a>
           </div>
 
@@ -279,14 +319,14 @@
           </div>
 
           <div class="callout-box">
-            <strong>Package:</strong> <code data-asset-name="firefox">SmoothBoost-Firefox-2.3.0.zip</code> (<span data-asset-size="firefox">42.5 KB</span>). Validated against Firefox 109+ and Firefox 128+ standard Gecko MV3 specifications.
+            <strong>Package:</strong> <code data-asset-name="firefox">SmoothBoost-Firefox-2.4.0.zip</code> (<span data-asset-size="firefox">47.3 KB</span>). Validated against Firefox 109+ and Firefox 128+ standard Gecko MV3 specifications.
           </div>
 
           <div class="step-box">
             <h4><span class="step-badge">1</span> Download &amp; Extract</h4>
             <p>Download the Firefox package and extract its contents:</p>
-            <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-2.3.0.zip" class="btn btn-primary" style="margin-top: 6px;" data-download="firefox" download="SmoothBoost-Firefox-2.3.0.zip">
-              Download <span data-asset-name="firefox">SmoothBoost-Firefox-2.3.0.zip</span>
+            <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-2.4.0.zip" class="btn btn-primary" style="margin-top: 6px;" data-download="firefox" download="SmoothBoost-Firefox-2.4.0.zip">
+              Download <span data-asset-name="firefox">SmoothBoost-Firefox-2.4.0.zip</span>
             </a>
           </div>
 
@@ -313,14 +353,14 @@
           </div>
 
           <div class="callout-box">
-            <strong>Package:</strong> <code data-asset-name="firefox-android">SmoothBoost-Firefox-Android-2.3.0.zip</code> (<span data-asset-size="firefox-android">42.5 KB</span>). Equipped with mobile layout adaptations.
+            <strong>Package:</strong> <code data-asset-name="firefox-android">SmoothBoost-Firefox-Android-2.4.0.zip</code> (<span data-asset-size="firefox-android">47.3 KB</span>). Equipped with mobile layout adaptations.
           </div>
 
           <div class="step-box">
             <h4><span class="step-badge">1</span> Download Android ZIP</h4>
             <p>Download the Firefox Android package directly to your phone:</p>
-            <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-Android-2.3.0.zip" class="btn btn-primary" style="margin-top: 6px;" data-download="firefox-android" download="SmoothBoost-Firefox-Android-2.3.0.zip">
-              Download <span data-asset-name="firefox-android">SmoothBoost-Firefox-Android-2.3.0.zip</span>
+            <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-Android-2.4.0.zip" class="btn btn-primary" style="margin-top: 6px;" data-download="firefox-android" download="SmoothBoost-Firefox-Android-2.4.0.zip">
+              Download <span data-asset-name="firefox-android">SmoothBoost-Firefox-Android-2.4.0.zip</span>
             </a>
           </div>
 
@@ -349,8 +389,8 @@
           <div class="step-box">
             <h4><span class="step-badge">1</span> Download Chrome or Titanium ZIP</h4>
             <p>Download the package to your device storage:</p>
-            <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Chrome-2.3.0.zip" class="btn btn-primary" style="margin-top: 6px;" data-download="chrome" download="SmoothBoost-Chrome-2.3.0.zip">
-              Download <span data-asset-name="chrome">SmoothBoost-Chrome-2.3.0.zip</span>
+            <a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Chrome-2.4.0.zip" class="btn btn-primary" style="margin-top: 6px;" data-download="chrome" download="SmoothBoost-Chrome-2.4.0.zip">
+              Download <span data-asset-name="chrome">SmoothBoost-Chrome-2.4.0.zip</span>
             </a>
           </div>
 
@@ -417,10 +457,11 @@
         <div class="footer-links-col">
           <h4>Downloads</h4>
           <ul class="footer-links-list">
-            <li><a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Chrome-2.3.0.zip" data-download="chrome">Chrome / Helium</a></li>
-            <li><a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Titanium-Android-2.3.0.zip" data-download="titanium">Titanium Android</a></li>
-            <li><a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-2.3.0.zip" data-download="firefox">Firefox Desktop</a></li>
-            <li><a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-Android-2.3.0.zip" data-download="firefox-android">Firefox Android</a></li>
+            <li><a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost.user.js" data-download="userscript">SmoothBoost.user.js</a></li>
+            <li><a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Chrome-2.4.0.zip" data-download="chrome">Chrome / Helium</a></li>
+            <li><a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Titanium-Android-2.4.0.zip" data-download="titanium">Titanium Android</a></li>
+            <li><a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-2.4.0.zip" data-download="firefox">Firefox Desktop</a></li>
+            <li><a href="https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost-Firefox-Android-2.4.0.zip" data-download="firefox-android">Firefox Android</a></li>
           </ul>
         </div>
       </div>

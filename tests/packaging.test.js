@@ -19,11 +19,11 @@ test('packager builds and verifies all release targets', () => {
   assert.ok(output.includes('Successfully built 5 release package(s)'), 'built all 5 targets');
 
   const expectedArchives = [
-    'SmoothBoost-Chrome-2.3.0.zip',
-    'SmoothBoost-2.3.0.zip',
-    'SmoothBoost-Titanium-Android-2.3.0.zip',
-    'SmoothBoost-Firefox-2.3.0.zip',
-    'SmoothBoost-Firefox-Android-2.3.0.zip'
+    'SmoothBoost-Chrome-2.4.0.zip',
+    'SmoothBoost-2.4.0.zip',
+    'SmoothBoost-Titanium-Android-2.4.0.zip',
+    'SmoothBoost-Firefox-2.4.0.zip',
+    'SmoothBoost-Firefox-Android-2.4.0.zip'
   ];
 
   for (const name of expectedArchives) {
@@ -32,17 +32,21 @@ test('packager builds and verifies all release targets', () => {
     const stats = fs.statSync(archivePath);
     assert.ok(stats.size > 10000, `archive ${name} is substantial (${stats.size} bytes)`);
   }
+
+  const userscriptPath = path.join(DIST, 'SmoothBoost.user.js');
+  assert.ok(fs.existsSync(userscriptPath), 'userscript exists in dist');
+  assert.ok(fs.statSync(userscriptPath).size > 5000, 'userscript is substantial');
 });
 
 test('Firefox package contains Gecko manifest and event page scripts', () => {
   // Verify using unzip -p to inspect manifest.json inside Firefox zip
-  const manifestRaw = execFileSync('unzip', ['-p', path.join(DIST, 'SmoothBoost-Firefox-2.3.0.zip'), 'manifest.json'], {
+  const manifestRaw = execFileSync('unzip', ['-p', path.join(DIST, 'SmoothBoost-Firefox-2.4.0.zip'), 'manifest.json'], {
     cwd: ROOT,
     encoding: 'utf8'
   });
   const manifest = JSON.parse(manifestRaw);
 
-  assert.equal(manifest.version, '2.3.0');
+  assert.equal(manifest.version, '2.4.0');
   assert.equal(manifest.browser_specific_settings?.gecko?.id, 'smoothboost@binifn.github.io');
   assert.ok(Array.isArray(manifest.background?.scripts));
   assert.ok(manifest.background.scripts.includes('scripts/compat.js'));
@@ -50,13 +54,13 @@ test('Firefox package contains Gecko manifest and event page scripts', () => {
 });
 
 test('Titanium Android package contains Chromium MV3 manifest', () => {
-  const manifestRaw = execFileSync('unzip', ['-p', path.join(DIST, 'SmoothBoost-Titanium-Android-2.3.0.zip'), 'manifest.json'], {
+  const manifestRaw = execFileSync('unzip', ['-p', path.join(DIST, 'SmoothBoost-Titanium-Android-2.4.0.zip'), 'manifest.json'], {
     cwd: ROOT,
     encoding: 'utf8'
   });
   const manifest = JSON.parse(manifestRaw);
 
-  assert.equal(manifest.version, '2.3.0');
+  assert.equal(manifest.version, '2.4.0');
   assert.equal(manifest.manifest_version, 3);
   assert.equal(manifest.background?.service_worker, 'scripts/background.js');
   assert.ok(manifest.web_accessible_resources[0].resources.includes('scripts/compat.js'));

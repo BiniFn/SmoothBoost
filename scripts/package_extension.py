@@ -128,6 +128,20 @@ def clean_old_versions(dist_dir: Path, current_version: str) -> list[str]:
     return removed
 
 
+def package_userscript(dist_dir: Path) -> Path:
+    """Ensure the latest SmoothBoost.user.js edition is verified and placed in dist/."""
+    userscript_source = PROJECT_ROOT / "scripts" / "SmoothBoost.user.js"
+    if not userscript_source.is_file():
+        raise SystemExit(f"Missing userscript source: {userscript_source}")
+    dist_dir.mkdir(parents=True, exist_ok=True)
+    out_path = dist_dir / "SmoothBoost.user.js"
+    content = userscript_source.read_text(encoding="utf-8")
+    if "// ==UserScript==" not in content or "// ==/UserScript==" not in content:
+        raise RuntimeError("Invalid userscript metadata header")
+    out_path.write_text(content, encoding="utf-8")
+    return out_path
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -170,6 +184,11 @@ def main() -> None:
         for path in created:
             size_kb = path.stat().st_size / 1024
             print(f"  ✓ [{target}] {path.name} ({size_kb:.1f} KB)")
+
+    if args.target == "all" and not args.output:
+        userjs_path = package_userscript(dist_dir)
+        size_kb = userjs_path.stat().st_size / 1024
+        print(f"  ✓ [userscript] {userjs_path.name} ({size_kb:.1f} KB)")
 
     print(f"\nSuccessfully built {len(all_created)} release package(s) in {dist_dir}.")
 

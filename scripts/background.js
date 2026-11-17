@@ -30,7 +30,12 @@ const DEFAULT_SETTINGS = {
     asyncImageDecoding: false,
     discardIdleTabs: false,
     fontDisplaySwap: false,
-    fpsLimit: 30
+    fpsLimit: 30,
+    scrollBoost: false,
+    smartResourceLoading: false,
+    memoryGuard: false,
+    spaOptimization: true,
+    autoRecovery: true
   },
   siteOverrides: {}
 };

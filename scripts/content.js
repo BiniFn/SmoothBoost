@@ -50,7 +50,12 @@
       passiveScroll: false,
       asyncImageDecoding: false,
       fontDisplaySwap: false,
-      fpsLimit: 30
+      fpsLimit: 30,
+      scrollBoost: false,
+      smartResourceLoading: false,
+      memoryGuard: false,
+      spaOptimization: true,
+      autoRecovery: true
     },
     siteOverrides: {}
   };
@@ -88,6 +93,17 @@
   let hookCanvasDrawSkipCount = 0;
   let patchedFontsCount = 0;
   const longFrameTimes = [];
+  let smartResourceObserver = null;
+  let smartResourcesDeferredCount = 0;
+  let isScrollingActive = false;
+  let scrollBoostTimer = null;
+  let memoryGuardActive = false;
+  let memoryPressureLevel = 'normal';
+  let memoryGuardTrimsCount = 0;
+  let spaNavigationsCount = 0;
+  let autoRecoveryTriggered = false;
+  let autoRecoverySafeMode = false;
+  let recentErrorTimestamps = [];
 
   function hostMatches(hostname, domain) {
     return hostname === domain || hostname.endsWith(`.${domain}`);
@@ -131,6 +147,31 @@
       ...(site.customSettings || {})
     };
 
+    if (autoRecoverySafeMode) {
+      return {
+        enabled: true,
+        mode: 'safe-recovery',
+        killAnimations: false,
+        killTransitions: false,
+        killBlurFilters: false,
+        killScrollHijack: false,
+        pauseBackgroundMedia: false,
+        pauseOffscreenAnimations: false,
+        pauseOffscreenCanvas: false,
+        passiveScroll: true,
+        asyncImageDecoding: true,
+        fontDisplaySwap: false,
+        contentVisibility: false,
+        throttleCanvasFps: false,
+        scrollBoost: false,
+        smartResourceLoading: true,
+        memoryGuard: true,
+        spaOptimization: true,
+        autoRecovery: true,
+        fpsLimit: 60
+      };
+    }
+
     if (mode === 'auto') {
       const isInteractiveCanvas = currentArchetype === 'interactive-canvas' || currentArchetype === 'game-canvas';
       return {
@@ -148,7 +189,12 @@
         fontDisplaySwap: !realtimeApp,
         contentVisibility: ryuoHome,
         throttleCanvasFps: false,
-        fpsLimit: 30
+        fpsLimit: custom.fpsLimit || 60,
+        scrollBoost: !realtimeApp,
+        smartResourceLoading: true,
+        memoryGuard: true,
+        spaOptimization: true,
+        autoRecovery: true
       };
     }
 
@@ -169,7 +215,12 @@
         fontDisplaySwap: !realtimeApp,
         contentVisibility: ryuoHome,
         throttleCanvasFps: false,
-        fpsLimit: 30
+        fpsLimit: custom.fpsLimit || 60,
+        scrollBoost: !realtimeApp,
+        smartResourceLoading: true,
+        memoryGuard: true,
+        spaOptimization: true,
+        autoRecovery: true
       };
     }
 
@@ -189,7 +240,12 @@
         fontDisplaySwap: false,
         contentVisibility: false,
         throttleCanvasFps: false,
-        fpsLimit: 30
+        fpsLimit: custom.fpsLimit || 60,
+        scrollBoost: false,
+        smartResourceLoading: false,
+        memoryGuard: false,
+        spaOptimization: true,
+        autoRecovery: true
       };
     }
 
@@ -210,7 +266,12 @@
         fontDisplaySwap: !realtimeApp,
         contentVisibility: !realtimeApp && (!keepMotion || ryuoHome),
         throttleCanvasFps: !isInteractiveCanvas && !realtimeApp && !keepMotion,
-        fpsLimit: 30
+        fpsLimit: 30,
+        scrollBoost: true,
+        smartResourceLoading: true,
+        memoryGuard: true,
+        spaOptimization: true,
+        autoRecovery: true
       };
     }
 
@@ -218,6 +279,11 @@
       enabled: true,
       mode: 'custom',
       ...custom,
+      scrollBoost: !!custom.scrollBoost,
+      smartResourceLoading: !!custom.smartResourceLoading,
+      memoryGuard: !!custom.memoryGuard,
+      spaOptimization: custom.spaOptimization !== false,
+      autoRecovery: custom.autoRecovery !== false,
       fpsLimit: custom.fpsLimit || 30
     };
   }
@@ -245,6 +311,11 @@
     }
     if (settings.contentVisibility) {
       css += '[data-smoothboost-content-visibility="true"] { content-visibility: auto !important; contain-intrinsic-size: auto 480px !important; }\n';
+    }
+    if (settings.scrollBoost) {
+      css += '[data-smoothboost-scrolling="true"] * { pointer-events: none !important; }\n';
+      css += '[data-smoothboost-scrolling="true"] html, [data-smoothboost-scrolling="true"] body, [data-smoothboost-scrolling="true"] [data-smoothboost-scroll-container] { pointer-events: auto !important; }\n';
+      css += '[data-smoothboost-scrolling="true"] * { animation-play-state: paused !important; box-shadow: none !important; text-shadow: none !important; }\n';
     }
     return css;
   }
@@ -278,12 +349,12 @@
     style.textContent = css;
   }
 
-  function dispatchHookCommand(action) {
+  function dispatchHookCommand(action, extra = {}) {
     const root = document.documentElement;
     const channel = pageHookChannel || root?.getAttribute?.(CHANNEL_ATTRIBUTE) || '';
     if (!channel || typeof CustomEvent !== 'function') return;
     pageHookChannel = channel;
-    window.dispatchEvent(new CustomEvent(channel, { detail: { action } }));
+    window.dispatchEvent(new CustomEvent(channel, { detail: { action, ...extra } }));
   }
 
   function syncPageHook(settings) {
@@ -295,6 +366,7 @@
     dispatchHookCommand(settings.enabled && settings.mode === 'custom' && settings.throttleCanvasFps
       ? 'adaptive-limit-on'
       : 'adaptive-limit-off');
+    dispatchHookCommand('set-fps-limit', { fps: settings.fpsLimit || 30 });
 
     // Armed canvas guard safety check: never arm on interactive canvas or game apps
     if (settings.enabled && settings.pauseOffscreenCanvas) {
@@ -484,27 +556,79 @@
     }
   }
 
+  const HEAVY_EMBED_PATTERNS = [
+    /youtube(-nocookie)?\.com\/embed/i,
+    /player\.vimeo\.com/i,
+    /platform\.twitter\.com/i,
+    /instagram\.com\/embed/i,
+    /open\.spotify\.com\/embed/i,
+    /w\.soundcloud\.com\/player/i,
+    /disqus\.com\/embed/i,
+    /facebook\.com\/plugins/i,
+    /tiktok\.com\/embed/i
+  ];
+
+  function isHeavyEmbedSrc(src) {
+    if (!src || typeof src !== 'string') return false;
+    return HEAVY_EMBED_PATTERNS.some((pat) => pat.test(src));
+  }
+
+  function setupSmartResourceObserver() {
+    if (smartResourceObserver || typeof IntersectionObserver !== 'function') return;
+    smartResourceObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const target = entry.target;
+        const deferredSrc = target.getAttribute('data-smoothboost-deferred-src');
+        if (deferredSrc) {
+          target.src = deferredSrc;
+          target.removeAttribute('data-smoothboost-deferred-src');
+        }
+        smartResourceObserver?.unobserve(target);
+      }
+    }, { rootMargin: '400px 0px 400px 0px' });
+  }
+
+  function deferHeavyEmbed(element) {
+    if (!element || element.getAttribute?.('data-smoothboost-deferred-src')) return;
+    const currentSrc = element.getAttribute?.('src');
+    if (!currentSrc || currentSrc === 'about:blank' || currentSrc.startsWith('data:')) return;
+    if (!isHeavyEmbedSrc(currentSrc)) return;
+
+    setupSmartResourceObserver();
+    if (!smartResourceObserver) return;
+
+    element.setAttribute('data-smoothboost-deferred-src', currentSrc);
+    element.setAttribute('loading', 'lazy');
+    element.src = 'about:blank';
+    smartResourceObserver.observe(element);
+    smartResourcesDeferredCount += 1;
+  }
+
   function optimizeImagesAndIframes() {
     optimizeAddedResources(document);
   }
 
   function optimizeAddedResources(root) {
-    if (!currentSettings.enabled || !currentSettings.asyncImageDecoding) return;
-    const images = [];
-    if (root?.nodeType === 1 && root.matches?.('img:not([data-smoothboost-decoded])')) images.push(root);
-    root?.querySelectorAll?.('img:not([data-smoothboost-decoded])').forEach((img) => images.push(img));
-    images.forEach((img, idx) => {
-      img.setAttribute('data-smoothboost-decoded', 'true');
-      if (!img.decoding || img.decoding === 'auto') img.decoding = 'async';
-      // Keep the initial hero/logo images eager; lazy-load later and dynamically added feed art.
-      // Browser lazy loading still fetches images near the viewport, without layout reads here.
-      const isInitialHeroImage = root === document && idx < 3;
-      const loading = img.getAttribute('loading');
-      const fetchPriority = img.getAttribute('fetchpriority')?.toLowerCase();
-      if (!isInitialHeroImage && loading !== 'eager' && loading !== 'lazy' && fetchPriority !== 'high') {
-        img.loading = 'lazy';
-      }
-    });
+    if (!currentSettings.enabled) return;
+    if (currentSettings.asyncImageDecoding) {
+      const images = [];
+      if (root?.nodeType === 1 && root.matches?.('img:not([data-smoothboost-decoded])')) images.push(root);
+      root?.querySelectorAll?.('img:not([data-smoothboost-decoded])').forEach((img) => images.push(img));
+      images.forEach((img, idx) => {
+        img.setAttribute('data-smoothboost-decoded', 'true');
+        if (!img.decoding || img.decoding === 'auto') img.decoding = 'async';
+        // Keep the initial hero/logo images eager; lazy-load later and dynamically added feed art.
+        // Browser lazy loading still fetches images near the viewport, without layout reads here.
+        const isInitialHeroImage = root === document && idx < 3;
+        const loading = img.getAttribute('loading');
+        const fetchPriority = img.getAttribute('fetchpriority')?.toLowerCase();
+        if (!isInitialHeroImage && loading !== 'eager' && loading !== 'lazy' && fetchPriority !== 'high') {
+          img.loading = 'lazy';
+        }
+      });
+    }
+
     const iframes = [];
     if (root?.nodeType === 1 && root.matches?.('iframe:not([data-smoothboost-lazy])')) iframes.push(root);
     root?.querySelectorAll?.('iframe:not([data-smoothboost-lazy])').forEach((iframe) => iframes.push(iframe));
@@ -512,13 +636,23 @@
       iframe.setAttribute('data-smoothboost-lazy', 'true');
       const loading = iframe.getAttribute('loading');
       if (loading !== 'eager' && loading !== 'lazy') iframe.loading = 'lazy';
+      if (currentSettings.smartResourceLoading) {
+        deferHeavyEmbed(iframe);
+      }
     });
+
+    if (currentSettings.smartResourceLoading) {
+      const embeds = [];
+      if (root?.nodeType === 1 && root.matches?.('embed, object')) embeds.push(root);
+      root?.querySelectorAll?.('embed, object').forEach((el) => embeds.push(el));
+      embeds.forEach(deferHeavyEmbed);
+    }
   }
 
   function updateResourceObserver() {
     resourceMutationObserver?.disconnect();
     resourceMutationObserver = null;
-    if (!currentSettings.enabled || !currentSettings.asyncImageDecoding || typeof MutationObserver !== 'function' || !document.documentElement) return;
+    if (!currentSettings.enabled || (!currentSettings.asyncImageDecoding && !currentSettings.smartResourceLoading) || typeof MutationObserver !== 'function' || !document.documentElement) return;
     resourceMutationObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         mutation.addedNodes?.forEach((node) => {
@@ -837,6 +971,110 @@
     };
   }
 
+  function installScrollBoost() {
+    if (typeof window.addEventListener !== 'function') return;
+    const onScrollStart = () => {
+      if (!currentSettings.enabled || !currentSettings.scrollBoost) return;
+      if (!isScrollingActive) {
+        isScrollingActive = true;
+        document.documentElement?.setAttribute('data-smoothboost-scrolling', 'true');
+        dispatchHookCommand('scroll-boost-active');
+      }
+      if (scrollBoostTimer) window.clearTimeout(scrollBoostTimer);
+      scrollBoostTimer = window.setTimeout(() => {
+        scrollBoostTimer = null;
+        isScrollingActive = false;
+        document.documentElement?.removeAttribute('data-smoothboost-scrolling');
+        dispatchHookCommand('scroll-boost-idle');
+      }, 160);
+    };
+
+    window.addEventListener('scroll', onScrollStart, { passive: true, capture: true });
+    window.addEventListener('wheel', onScrollStart, { passive: true, capture: true });
+    window.addEventListener('touchmove', onScrollStart, { passive: true, capture: true });
+  }
+
+  function checkMemoryPressure() {
+    if (!currentSettings.enabled || !currentSettings.memoryGuard) {
+      memoryGuardActive = false;
+      memoryPressureLevel = 'normal';
+      return;
+    }
+    let isHigh = false;
+    const mem = window.performance?.memory;
+    if (mem && mem.jsHeapSizeLimit && mem.usedJSHeapSize) {
+      const ratio = mem.usedJSHeapSize / mem.jsHeapSizeLimit;
+      if (ratio > 0.72 || mem.usedJSHeapSize > 350 * 1024 * 1024) isHigh = true;
+    }
+    try {
+      const nodeCount = document.querySelectorAll?.('*')?.length || 0;
+      if (nodeCount > 3500) isHigh = true;
+    } catch (_e) {}
+
+    if (isHigh) {
+      memoryGuardActive = true;
+      memoryPressureLevel = 'high';
+      memoryGuardTrimsCount += 1;
+      blurStates.clear();
+      document.querySelectorAll?.('video').forEach((video) => {
+        if (video.paused && !video.ended) {
+          try { video.preload = 'none'; } catch (_e) {}
+        }
+      });
+      dispatchHookCommand('memory-guard-trim');
+      if (typeof window.gc === 'function') {
+        try { window.gc(); } catch (_e) {}
+      }
+    } else {
+      memoryPressureLevel = 'normal';
+    }
+  }
+
+  function handleSpaNavigation(url, navType = 'popstate') {
+    if (!currentSettings.enabled || !currentSettings.spaOptimization) return;
+    spaNavigationsCount += 1;
+    const previousArchetype = currentArchetype;
+    currentArchetype = classifyPageArchetype();
+    updatePageObservers();
+    if (isReanimeHomePage()) {
+      reanimeRuleState = 'waiting';
+      window.setTimeout(() => {
+        if (currentSettings.enabled && reanimeRuleState === 'waiting') reanimeRuleState = 'armed';
+      }, 0);
+    }
+    if (currentArchetype !== previousArchetype) {
+      syncPageHook(currentSettings);
+    }
+  }
+
+  function installSpaListeners() {
+    if (typeof window.addEventListener !== 'function') return;
+    window.addEventListener('popstate', () => handleSpaNavigation(window.location?.href, 'popstate'), { passive: true });
+    window.addEventListener('hashchange', () => handleSpaNavigation(window.location?.href, 'hashchange'), { passive: true });
+  }
+
+  function installAutoRecoveryWatchdog() {
+    if (typeof window.addEventListener !== 'function') return;
+    const onError = () => {
+      if (!currentSettings.enabled || !currentSettings.autoRecovery || autoRecoverySafeMode) return;
+      const now = performance.now ? performance.now() : Date.now();
+      recentErrorTimestamps.push(now);
+      while (recentErrorTimestamps.length && now - recentErrorTimestamps[0] > 3000) {
+        recentErrorTimestamps.shift();
+      }
+      if (recentErrorTimestamps.length >= 4) {
+        autoRecoveryTriggered = true;
+        autoRecoverySafeMode = true;
+        applyStyles('');
+        restoreBlurElements();
+        dispatchHookCommand('optimizations-off');
+        dispatchHookCommand('disable-canvas-guard');
+      }
+    };
+    window.addEventListener('error', onError);
+    window.addEventListener('unhandledrejection', onError);
+  }
+
   // Bounded LRU Cache for Archetypes
   async function saveCachedArchetype(hostname, archetype) {
     try {
@@ -869,22 +1107,22 @@
       return 'interactive-canvas';
     }
 
-    const appMeta = document.querySelector('meta[name="application-name"]');
-    if (appMeta && /figma|canva|editor|draw/i.test(appMeta.getAttribute('content') || '')) {
+    const appMeta = document.querySelector?.('meta[name="application-name"]');
+    if (appMeta && /figma|canva|editor|draw/i.test(appMeta.getAttribute?.('content') || '')) {
       return 'interactive-canvas';
     }
 
-    if (document.querySelector('.monaco-editor, .ace_editor, .cm-editor, [data-mode-id]')) {
+    if (document.querySelector?.('.monaco-editor, .ace_editor, .cm-editor, [data-mode-id]')) {
       return 'interactive-canvas';
     }
 
     // 2. Games & WebGL applications
     if (/(crazygames|poki|kongregate|itch\.io|newgrounds|shadertoy|playcanvas)\.com/i.test(hostname) ||
-        document.querySelector('#unity-canvas, .game-canvas, canvas[data-engine]')) {
+        document.querySelector?.('#unity-canvas, .game-canvas, canvas[data-engine]')) {
       return 'game-canvas';
     }
 
-    const canvases = document.querySelectorAll('canvas');
+    const canvases = document.querySelectorAll?.('canvas') || [];
     if (canvases.length > 0) {
       for (let i = 0; i < Math.min(canvases.length, 5); i++) {
         const c = canvases[i];
@@ -895,18 +1133,29 @@
     }
 
     // 3. Media Stream / Streaming platforms
-    const videos = document.querySelectorAll('video');
+    const videos = document.querySelectorAll?.('video') || [];
     if (videos.length >= 2 || /(youtube|twitch|vimeo|netflix|hulu|disneyplus|spotify)\.com/i.test(hostname)) {
       return 'media-stream';
     }
 
-    // 4. Infinite Feeds
-    if (/(twitter\.com|x\.com|reddit\.com|instagram\.com|bsky\.app|pinterest\.com)/i.test(hostname) ||
-        document.querySelector('[role="feed"], [data-testid="primaryColumn"], .feed-item, article.post, [data-infinite-scroll]')) {
+    // 4. Infinite Feeds & Heavy SPAs
+    if (/(twitter\.com|x\.com|reddit\.com|instagram\.com|bsky\.app|pinterest\.com|tiktok\.com|facebook\.com|threads\.net)/i.test(hostname) ||
+        document.querySelector?.('[role="feed"], [data-testid="primaryColumn"], .feed-item, article.post, [data-infinite-scroll]')) {
       return 'infinite-feed';
     }
 
-    // 5. Standard Content
+    // 5. E-Commerce
+    if (/(amazon\.|ebay\.|aliexpress\.com|shopify\.com|etsy\.com|walmart\.com|target\.com)/i.test(hostname)) {
+      return 'e-commerce';
+    }
+
+    // 6. Reading & Article
+    if (/(wikipedia\.org|medium\.com|substack\.com|dev\.to|github\.com)/i.test(hostname) ||
+        document.querySelector?.('article, [itemprop="articleBody"], .wiki-content, .markdown-body')) {
+      return 'reading-article';
+    }
+
+    // 7. Standard Content
     return 'standard';
   }
 
@@ -964,6 +1213,8 @@
     if (!currentSettings.enabled || !event.detail) return;
     if (event.detail.action === 'carousel-status' && isReanimeHomePage()) {
       updateReanimeRuleState(event.detail.status);
+    } else if (event.detail.action === 'spa-nav') {
+      handleSpaNavigation(event.detail.url, event.detail.navType);
     } else if (event.detail.action === 'hook-metrics') {
       const passive = Number(event.detail.passiveListenersIntercepted);
       const skipped = Number(event.detail.canvasDrawCallsSkipped);
@@ -1075,9 +1326,13 @@
       applySettings(effectiveSettings(stored?.smoothBoostConfig, hostname));
     }
     observePageHookChannel();
+    installScrollBoost();
+    installSpaListeners();
+    installAutoRecoveryWatchdog();
     initialized = true;
 
     scheduleClassification();
+    checkMemoryPressure();
 
     function onDomReady() {
       updatePageObservers();
@@ -1126,7 +1381,13 @@
         archetype: currentArchetype,
         motionPreserved: preservesPageMotion() && !currentSettings.killAnimations && !currentSettings.killTransitions,
         offscreenAnimationsPaused: !!currentSettings.pauseOffscreenAnimations,
-        siteRule: isReanimeHomePage() ? reanimeRuleState : 'not-applicable'
+        siteRule: isReanimeHomePage() ? reanimeRuleState : 'not-applicable',
+        fpsLimit: currentSettings.fpsLimit || 30,
+        scrollBoost: !!currentSettings.scrollBoost,
+        smartResourceLoading: !!currentSettings.smartResourceLoading,
+        memoryGuard: !!currentSettings.memoryGuard,
+        spaOptimization: !!currentSettings.spaOptimization,
+        autoRecovery: { active: autoRecoverySafeMode, triggered: autoRecoveryTriggered }
       } : { status: 'initializing' });
       return false;
     } else if (message.type === 'GET_DIAGNOSTICS') {
@@ -1145,12 +1406,27 @@
           passiveListeners: hookPassiveCount,
           pausedVideos: pausedVideos.size,
           bypassedBlurs: blurStates.size,
-          offscreenCanvases: document.querySelectorAll('canvas[data-smoothboost-offscreen-canvas="true"]').length,
+          offscreenCanvases: document.querySelectorAll?.('canvas[data-smoothboost-offscreen-canvas="true"]')?.length || 0,
           canvasDrawsSkipped: hookCanvasDrawSkipCount,
-          patchedFonts: patchedFontsCount
+          patchedFonts: patchedFontsCount,
+          targetFps: currentSettings.fpsLimit || 30,
+          scrollBoostActive: isScrollingActive,
+          smartResourcesDeferred: smartResourcesDeferredCount,
+          memoryGuard: { active: memoryGuardActive, pressure: memoryPressureLevel, trims: memoryGuardTrimsCount },
+          spaNavigations: spaNavigationsCount,
+          autoRecovery: { active: autoRecoverySafeMode, triggered: autoRecoveryTriggered }
         }
       });
       return false;
+    } else if (message.type === 'RESET_AUTO_RECOVERY') {
+      autoRecoveryTriggered = false;
+      autoRecoverySafeMode = false;
+      recentErrorTimestamps = [];
+      chrome.storage.local.get('smoothBoostConfig').then((stored) => {
+        applySettings(effectiveSettings(stored?.smoothBoostConfig, window.location.hostname.toLowerCase()));
+        sendResponse?.({ success: true });
+      }).catch(() => sendResponse?.({ success: false }));
+      return true;
     } else if (message.type === 'PURGE_ARCHETYPE') {
       const hostname = window.location.hostname.toLowerCase();
       chrome.storage.local.get(ARCHETYPE_CACHE_KEY).then((stored) => {
