@@ -63,7 +63,7 @@ Supported across **Tampermonkey & Violentmonkey Userscript**, **Google Chrome & 
 
 ## Installation Guides
 
-For detailed, platform-specific walkthroughs with screenshots and troubleshooting steps, read the [Device Setup Tutorial](https://binifn.github.io/SmoothBoost/tutorial.html).
+For detailed, platform-specific walkthroughs with screenshots and troubleshooting steps, read the [Device Setup Tutorial](tutorial.html).
 
 ### 1. Tampermonkey & Violentmonkey Userscript (Recommended)
 

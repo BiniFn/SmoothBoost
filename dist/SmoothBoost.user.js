@@ -13,7 +13,7 @@
 // @grant        GM_addStyle
 // @downloadURL  https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost.user.js
 // @updateURL    https://raw.githubusercontent.com/BiniFn/SmoothBoost/main/dist/SmoothBoost.user.js
-// @homepageURL  https://binifn.github.io/SmoothBoost/
+// @homepageURL  https://github.com/BiniFn/SmoothBoost
 // @supportURL   https://github.com/BiniFn/SmoothBoost/issues
 // ==/UserScript==
 
