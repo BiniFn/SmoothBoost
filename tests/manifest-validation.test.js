@@ -16,6 +16,7 @@ test('Chrome & Titanium Android manifest.json is fully valid MV3 and all assets 
   assert.equal(manifest.version, '2.5.0', 'version is 2.5.0');
   assert.ok(manifest.name, 'has name');
   assert.ok(manifest.description, 'has description');
+  assert.ok(manifest.description.length <= 132, `description <= 132 chars for Edge/Chrome stores (got ${manifest.description.length})`);
   assert.ok(manifest.icons['32'], 'has 32px icon');
 
   // Verify icons exist on disk
@@ -55,6 +56,7 @@ test('Firefox manifest.firefox.json is fully valid Gecko MV3 and all assets exis
 
   assert.equal(manifest.manifest_version, 3, 'is MV3');
   assert.equal(manifest.version, '2.5.0', 'version is 2.5.0');
+  assert.ok(manifest.description && manifest.description.length <= 132, 'firefox description <= 132 chars');
 
   // Verify Gecko BSS
   const bss = manifest.browser_specific_settings;
@@ -92,6 +94,7 @@ test('Safari manifest.safari.json is fully valid WebKit MV3 and all assets exist
   assert.equal(manifest.version, '2.5.0', 'version is 2.5.0');
   assert.ok(manifest.name, 'has name');
   assert.ok(manifest.description, 'has description');
+  assert.ok(manifest.description.length <= 132, `description <= 132 chars for Edge/Chrome stores (got ${manifest.description.length})`);
   assert.ok(manifest.icons['32'], 'has 32px icon');
 
   for (const [size, iconPath] of Object.entries(manifest.icons || {})) {

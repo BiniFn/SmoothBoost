@@ -78,6 +78,11 @@ def verify_archive(archive_path: Path, expected_version: str) -> None:
             raise RuntimeError(
                 f"{archive_path.name} manifest version mismatch: {manifest_data.get('version')} vs {expected_version}"
             )
+        desc = manifest_data.get("description", "")
+        if not desc or len(desc) > 132:
+            raise RuntimeError(
+                f"{archive_path.name} manifest description length {len(desc)} exceeds store limit of 132 characters"
+            )
 
         for required in COMMON_PACKAGE_FILES:
             if required not in names:

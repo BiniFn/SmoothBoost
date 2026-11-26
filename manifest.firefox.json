@@ -3,7 +3,7 @@
   "name": "SmoothBoost: Web Performance Optimizer",
   "short_name": "SmoothBoost",
   "version": "2.5.0",
-  "description": "Universal performance optimizer with Scroll Boost v2, Shadow DOM Boost, Smart Resource Loading, Memory Guard, and Dynamic FPS profiles.",
+  "description": "Web performance booster with Scroll Boost v2, Shadow DOM boost, Smart Resource Loading, Memory Guard, and Dynamic FPS profiles.",
   "homepage_url": "https://github.com/BiniFn/SmoothBoost",
   "browser_specific_settings": {
     "gecko": {
