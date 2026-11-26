@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.5.0] - 2026-11-26
+
+### Added
+
+- **Official Store Availability**: Live on **Firefox Add-ons (AMO)** and **Microsoft Edge Add-ons** alongside updated v2.5.0 builds for Chrome, Safari, Titanium Android, and Tampermonkey/Violentmonkey.
+- **Shadow DOM Boost (`attachShadow` & Web Components)**: Automatically applies offscreen containment and blur bypass inside open Shadow DOM trees (`shreddit-*` on Reddit, `ytd-*` on YouTube).
+- **Site Rules Engine v3 Execution**: Wires up host and path rules in `data/site-rules.json` for YouTube, Reddit, X/Twitter, Twitch, Kick, TikTok, Instagram, Facebook, Fandom wikis, ChatGPT, and Claude.
+- **Background Tab Timer & rAF Throttling**: Throttles rapid background timers and animation loops when `document.hidden` is true (preserving live calls and media).
+- **Native FPS Option & Redesigned UI**: Added `Native` (uncapped) alongside `30 / 60 / 90 / 120 FPS`, redesigned the popup and Userscript Shadow HUD with SVG metric chips, archetype pills, grouped Custom toggles, mobile/Edge High Contrast ergonomics, and a non-intrusive **Donate / Support SmoothBoost** link (100% free core, zero telemetry).
+- **32px Toolbar Icon & 300px Store Icon**: Added `icons/icon32.png` and `assets/store/store_icon_300x300.png` plus universal store promotional graphics.
+
+### Improved
+
+- **Scroll Boost v2 (Zero-Reflow)**: Eliminated the wildcard `*` `box-shadow`/`pointer-events` repaint storm on scroll start/stop and fixed nested scroll container behavior.
+- **Differentiated Profiles**: Distinct **Smart Auto**, **Turbo (Maximum)** (full containment, tighter Memory Guard, WebGL2 instanced skipping, background-tab throttling), and **Balanced** (lightweight passive scroll + async image decoding) presets.
+- **Reduced Extension Overhead**: Coalesced `MutationObserver` batches into a 4ms-budgeted rAF scheduler, removed synchronous `getBoundingClientRect()` canvas reflows, added 15s periodic Memory Guard sweeps, and fixed Safari static-vs-dynamic double-injection.
+- **CSP & Trusted Types Safe Userscript**: Replaced `innerHTML` modal creation with pure DOM APIs, added `unsafeWindow` CSP fallback, ported the full archetype classifier & contrast safeguards, and added an optional `⚡ SB` corner pill.
+- **Privacy Disclosure Alignment**: Updated `PRIVACY.md` and `privacy.html` to accurately describe `declarativeNetRequest` `fonts.googleapis.com` `display=swap` transforms.
+
 ## [2.4.0] - 2026-11-17
 
 ### Added

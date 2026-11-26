@@ -10,57 +10,54 @@
       name: 'Smart Auto',
       badge: 'AUTO',
       badgeClass: 'badge-auto',
-      description: 'Detects page type before applying heavier rules. Live communication apps keep their calls, canvas content, and interface motion active.',
+      description: 'Archetype-aware acceleration. Applies Scroll Boost v2, Shadow DOM containment, and site rules on heavy feeds while keeping live apps and editors smooth.',
       metrics: {
         passive: 'Safe targets only',
         videos: 'Offscreen previews',
-        blurs: 'Profile controlled',
+        blurs: 'Contrast-safe bypass',
         canvas: 'Offscreen only',
-        fonts: 'Optional',
+        fonts: 'Display swap',
         powerSavings: 'Adaptive'
       },
       rules: [
-        { label: 'Compositor scroll listeners (passive)', active: true },
-        { label: 'Offscreen canvas draw-skipping', active: true, note: 'Bypassed on Figma/Docs' },
-        { label: 'Background ambient video pausing', active: true },
-        { label: 'Backdrop blur opacity bypass', active: true },
-        { label: 'Offscreen CSS animation pausing', active: true },
-        { label: 'Offscreen DOM content-visibility', active: false },
-        { label: 'CSSOM font-display swap', active: true },
-        { label: 'Live chat, calls, and app motion preserved', active: true, note: 'Discord and voice apps' }
+        { label: 'Scroll Boost v2 & passive wheel/touch listeners', active: true },
+        { label: 'Site Rules v3 & Shadow DOM feed optimization', active: true, note: 'YouTube, Reddit, X, Twitch, AI chats' },
+        { label: 'Offscreen canvas & WebGL2 draw-skipping', active: true, note: 'Bypassed on Figma/Docs/Games' },
+        { label: 'Background ambient video & offscreen animation pausing', active: true },
+        { label: 'Backdrop blur opacity bypass with luminance guard', active: true },
+        { label: 'Background tab timer throttling', active: false },
+        { label: 'Live chat, calls, and app motion preserved', active: true, note: 'Discord, Meet, Teams, Zoom' }
       ]
     },
     ultra: {
       name: 'Turbo (Maximum)',
       badge: 'MAX',
       badgeClass: 'badge-ultra',
-      description: 'Maximum profile for ordinary pages. Real-time communication apps keep calls, interface motion, and canvas content intact.',
+      description: 'Maximum acceleration across all non-exempt pages with full CSS containment, Shadow DOM boosts, background-tab throttling, and tighter Memory Guard sweeps.',
       metrics: {
-        passive: 'Safe targets only',
+        passive: 'All safe targets',
         videos: 'Offscreen previews',
-        blurs: 'Profile controlled',
-        canvas: 'Offscreen only',
-        fonts: 'Optional',
+        blurs: 'Bypassed',
+        canvas: '2D & WebGL2 skipped',
+        fonts: 'Display swap',
         powerSavings: 'High'
       },
       rules: [
-        { label: 'Compositor scroll listeners (passive)', active: true },
-        { label: 'Offscreen canvas draw-skipping', active: true },
-        { label: 'Background ambient video pausing', active: true },
-        { label: 'Backdrop blur opacity bypass', active: true },
-        { label: 'Offscreen CSS animation pausing', active: true },
-        { label: 'Offscreen DOM content-visibility', active: false },
-        { label: 'CSSOM font-display swap', active: true },
-        { label: 'Live chat and calls protected', active: true, note: 'real-time app safeguard' }
+        { label: 'Scroll Boost v2 & compositor passive scrolling', active: true },
+        { label: 'Broad content-visibility & layout/paint containment', active: true },
+        { label: 'Open Shadow DOM & Site Rules v3 acceleration', active: true },
+        { label: 'Background tab timer & rAF throttling', active: true, note: 'Active when hidden' },
+        { label: 'Tighter Memory Guard (2,500-node sweep)', active: true },
+        { label: 'Live chat, calls, and editors still protected', active: true, note: 'Real-time app safeguard' }
       ]
     },
     balanced: {
       name: 'Balanced',
       badge: 'BAL',
       badgeClass: 'badge-balanced',
-      description: 'Conservative acceleration. Leaves page styling and media behavior untouched while keeping scrolling light.',
+      description: 'Lightweight zero-visual-change baseline. Keeps page styles, animations, blurs, and videos untouched while upgrading scroll listeners and image decoding.',
       metrics: {
-        passive: 'Native behavior',
+        passive: 'Enabled',
         videos: 'Unchanged',
         blurs: 'Unchanged',
         canvas: 'Standard',
@@ -69,43 +66,39 @@
       },
       rules: [
         { label: 'Compositor scroll listeners (passive)', active: true },
+        { label: 'Async image decoding & lazy loading', active: true },
+        { label: 'SPA route re-classification & Safe Mode watchdog', active: true },
         { label: 'Offscreen canvas draw-skipping', active: false },
         { label: 'Background ambient video pausing', active: false },
-        { label: 'Backdrop blur opacity bypass', active: false },
-        { label: 'Offscreen CSS animation pausing', active: false },
-        { label: 'Offscreen DOM content-visibility', active: false },
-        { label: 'CSSOM font-display swap', active: false }
+        { label: 'Backdrop blur opacity bypass', active: false }
       ]
     },
     battery: {
       name: 'Battery Saver',
       badge: 'BATT',
       badgeClass: 'badge-battery',
-      description: 'Cuts background work on battery. Live communication apps keep their calls, motion, and canvas content active.',
+      description: 'Minimizes laptop & mobile power draw with 30 FPS pacing, background-tab throttling, and full offscreen containment while preserving active calls and media.',
       metrics: {
         passive: 'Safe targets only',
         videos: 'Offscreen previews',
-        blurs: 'Profile controlled',
-        canvas: 'Offscreen only',
-        fonts: 'Optional',
+        blurs: 'Bypassed',
+        canvas: '30 FPS adaptive',
+        fonts: 'Display swap',
         powerSavings: 'Extreme'
       },
       rules: [
-        { label: 'Compositor scroll listeners (passive)', active: true },
-        { label: 'Offscreen canvas draw-skipping', active: true },
-        { label: 'Background ambient video pausing', active: true },
-        { label: 'Backdrop blur opacity bypass', active: true },
-        { label: 'Offscreen CSS animation pausing', active: true },
-        { label: 'Offscreen DOM content-visibility', active: true, note: 'Frees offscreen DOM layout' },
-        { label: 'CSSOM font-display swap', active: true },
-        { label: 'Real-time app motion preserved', active: true, note: 'including Discord' }
+        { label: 'Compositor scroll listeners & Scroll Boost v2', active: true },
+        { label: '30 FPS adaptive frame limiter + background tab throttle', active: true },
+        { label: 'Offscreen DOM content-visibility & Shadow DOM containment', active: true },
+        { label: 'Background ambient video & animation pausing', active: true },
+        { label: 'Real-time app motion & WebRTC calls preserved', active: true, note: 'Including Discord & Meet' }
       ]
     },
     custom: {
       name: 'Custom Profile',
       badge: 'CUSTOM',
       badgeClass: 'badge-custom',
-      description: 'Independent tuning drawer allowing manual control over every single optimization flag and frame cap.',
+      description: 'Categorized tuning drawer allowing manual control over every Scroll, Shadow DOM, Media, Memory, and FPS flag.',
       metrics: {
         passive: 'Choose in settings',
         videos: 'Choose in settings',
@@ -115,13 +108,11 @@
         powerSavings: 'Custom'
       },
       rules: [
-        { label: 'Compositor scroll listeners (passive)', active: true },
-        { label: 'Offscreen canvas draw-skipping', active: true },
-        { label: 'Background ambient video pausing', active: true },
-        { label: 'Backdrop blur opacity bypass', active: true },
-        { label: 'Offscreen CSS animation pausing', active: false },
-        { label: 'Offscreen DOM content-visibility', active: false },
-        { label: 'CSSOM font-display swap', active: true }
+        { label: 'Scroll Boost v2 & passive scroll listeners', active: true },
+        { label: 'Shadow DOM Boost & Site Rules v3', active: true },
+        { label: 'Background Tab Throttle & Memory Guard', active: true },
+        { label: 'Native / 30 / 60 / 90 / 120 FPS target selector', active: true },
+        { label: 'Granular CSS animation & blur controls', active: true }
       ]
     }
   };

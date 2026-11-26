@@ -1,10 +1,12 @@
 {
   "manifest_version": 3,
   "name": "SmoothBoost",
-  "version": "2.4.0",
-  "description": "Hardware-composited scrolling and background work optimization for Safari.",
+  "version": "2.5.0",
+  "description": "Hardware-composited scrolling, Shadow DOM boost, and background work optimization for Safari.",
+  "homepage_url": "https://github.com/BiniFn/SmoothBoost",
   "icons": {
     "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
@@ -12,6 +14,7 @@
     "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },

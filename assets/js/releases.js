@@ -11,49 +11,46 @@
   const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
   const DEFAULT_RELEASE = {
-    version: 'v2.4.0',
-    publishedAt: 'November 17, 2026',
-    releaseUrl: `https://github.com/${GITHUB_REPO}/tree/v2.4.0`,
-    body: `### SmoothBoost v2.4.0 — Universal Performance Update
+    version: 'v2.5.0',
+    publishedAt: 'November 26, 2026',
+    releaseUrl: `https://github.com/${GITHUB_REPO}/tree/v2.5.0`,
+    body: `### SmoothBoost v2.5.0 — Universal Boost & Store Release
 
-- **Tampermonkey & Violentmonkey Support**: Dedicated SmoothBoost.user.js edition with automatic updates, persistent GM storage, and on-page HUD.
-- **Scroll Boost**: Temporarily reduces expensive rendering effects and canvas paints while scrolling, restoring them instantaneously on idle.
-- **Smart Resource Loading**: Defers offscreen iframes, heavy media embeds, and third-party widgets until scrolled into view.
-- **Memory Guard**: Continuously monitors memory pressure and DOM counts (>3,500 nodes) to unload paused background media preloads and prune caches.
-- **Dynamic FPS Profiles**: Configurable 30, 60, 90, and 120 FPS frame limiter targets with high-precision frame pacing.
-- **SPA Navigation Optimization**: Seamlessly intercepts Single-Page Application route changes (History API & hashchange) and re-evaluates page archetypes without reload.
-- **Universal Site Engine**: Expanded 8-archetype site classifier, v2 community site-rules schema, and automatic Safe Mode recovery watchdog.
-- **Safari & AMO Ready**: Full WebKit Manifest V3 support for Safari, plus Firefox AMO data collection compliance.`,
+- **Live on Firefox Add-ons & Edge Add-ons**: Official store releases live alongside direct ZIP packages and 1-click Userscript.
+- **Scroll Boost v2 & Zero-Reflow Engine**: Eliminates wildcard style repaints during scrolling, batches heavy SPA mutations within a 4ms frame budget, and uses zero-reflow canvas checks.
+- **Shadow DOM & Site Rules v3**: Optimizes Web Component subtrees (Reddit shreddit-*, YouTube ytd-*) and runs targeted rules for YouTube, Reddit, X, Twitch, Kick, TikTok, Instagram, Fandom, and AI workspaces.
+- **Differentiated Profiles & Native–120 FPS**: Distinct Smart Auto, Turbo (Maximum), Balanced, Battery, and Custom profiles with explicit Native uncapped through 120 FPS pacing plus background-tab throttling.
+- **Redesigned Control UI & CSP-Safe Userscript**: Elevated popup & Shadow HUD with SVG telemetry chips, archetype badges, mobile/Edge High-Contrast polish, zero innerHTML Trusted Types safety, and 100% free core with optional Donate link.`,
     downloads: {
       chrome: {
-        name: 'SmoothBoost-Chrome-2.4.0.zip',
-        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Chrome-2.4.0.zip`,
-        size: '47.4 KB'
+        name: 'SmoothBoost-Chrome-2.5.0.zip',
+        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Chrome-2.5.0.zip`,
+        size: '54.5 KB'
       },
       titanium: {
-        name: 'SmoothBoost-Titanium-Android-2.4.0.zip',
-        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Titanium-Android-2.4.0.zip`,
-        size: '47.4 KB'
+        name: 'SmoothBoost-Titanium-Android-2.5.0.zip',
+        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Titanium-Android-2.5.0.zip`,
+        size: '54.5 KB'
       },
       firefox: {
-        name: 'SmoothBoost-Firefox-2.4.0.zip',
-        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Firefox-2.4.0.zip`,
-        size: '47.6 KB'
+        name: 'SmoothBoost-Firefox-2.5.0.zip',
+        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Firefox-2.5.0.zip`,
+        size: '54.6 KB'
       },
       safari: {
-        name: 'SmoothBoost-Safari-2.4.0.zip',
-        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Safari-2.4.0.zip`,
-        size: '47.3 KB'
+        name: 'SmoothBoost-Safari-2.5.0.zip',
+        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Safari-2.5.0.zip`,
+        size: '54.4 KB'
       },
       edge: {
-        name: 'SmoothBoost-Edge-2.4.0.zip',
-        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Edge-2.4.0.zip`,
-        size: '47.3 KB'
+        name: 'SmoothBoost-Edge-2.5.0.zip',
+        url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost-Edge-2.5.0.zip`,
+        size: '54.5 KB'
       },
       userscript: {
         name: 'SmoothBoost.user.js',
         url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost.user.js`,
-        size: '32.3 KB'
+        size: '52.0 KB'
       }
     }
   };
@@ -186,32 +183,32 @@
       chrome: {
         name: `SmoothBoost-Chrome-${cleanVer}.zip`,
         url: `https://github.com/${GITHUB_REPO}/releases/download/${version}/SmoothBoost-Chrome-${cleanVer}.zip`,
-        size: '47.4 KB'
+        size: '54.5 KB'
       },
       titanium: {
         name: `SmoothBoost-Titanium-Android-${cleanVer}.zip`,
         url: `https://github.com/${GITHUB_REPO}/releases/download/${version}/SmoothBoost-Titanium-Android-${cleanVer}.zip`,
-        size: '47.4 KB'
+        size: '54.5 KB'
       },
       firefox: {
         name: `SmoothBoost-Firefox-${cleanVer}.zip`,
         url: `https://github.com/${GITHUB_REPO}/releases/download/${version}/SmoothBoost-Firefox-${cleanVer}.zip`,
-        size: '47.6 KB'
+        size: '54.6 KB'
       },
       safari: {
         name: `SmoothBoost-Safari-${cleanVer}.zip`,
         url: `https://github.com/${GITHUB_REPO}/releases/download/${version}/SmoothBoost-Safari-${cleanVer}.zip`,
-        size: '47.3 KB'
+        size: '54.4 KB'
       },
       edge: {
         name: `SmoothBoost-Edge-${cleanVer}.zip`,
         url: `https://github.com/${GITHUB_REPO}/releases/download/${version}/SmoothBoost-Edge-${cleanVer}.zip`,
-        size: '47.3 KB'
+        size: '54.5 KB'
       },
       userscript: {
         name: 'SmoothBoost.user.js',
         url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/dist/SmoothBoost.user.js`,
-        size: '32.3 KB'
+        size: '52.0 KB'
       }
     };
 
@@ -222,17 +219,17 @@
       const downloadUrl = asset.browser_download_url;
 
       if (/edge/i.test(name)) {
-        downloads.edge = { name, url: downloadUrl, size: sizeStr || '47.3 KB' };
+        downloads.edge = { name, url: downloadUrl, size: sizeStr || '54.5 KB' };
       } else if (/safari/i.test(name)) {
-        downloads.safari = { name, url: downloadUrl, size: sizeStr || '47.3 KB' };
+        downloads.safari = { name, url: downloadUrl, size: sizeStr || '54.4 KB' };
       } else if (/user\.js/i.test(name)) {
-        downloads.userscript = { name, url: downloadUrl, size: sizeStr || '32.3 KB' };
+        downloads.userscript = { name, url: downloadUrl, size: sizeStr || '52.0 KB' };
       } else if (/titanium/i.test(name)) {
-        downloads.titanium = { name, url: downloadUrl, size: sizeStr || '47.4 KB' };
+        downloads.titanium = { name, url: downloadUrl, size: sizeStr || '54.5 KB' };
       } else if (/firefox/i.test(name)) {
-        downloads.firefox = { name, url: downloadUrl, size: sizeStr || '47.6 KB' };
+        downloads.firefox = { name, url: downloadUrl, size: sizeStr || '54.6 KB' };
       } else if (/chrome/i.test(name) || name === `SmoothBoost-${cleanVer}.zip`) {
-        downloads.chrome = { name, url: downloadUrl, size: sizeStr || '47.4 KB' };
+        downloads.chrome = { name, url: downloadUrl, size: sizeStr || '54.5 KB' };
       }
     }
 
@@ -316,6 +313,7 @@
     // 2. Specific platform download links & badges
     const map = {
       chrome: release.downloads.chrome,
+      edge: release.downloads.edge,
       titanium: release.downloads.titanium,
       firefox: release.downloads.firefox,
       'firefox-android': release.downloads.firefox, // Unified Firefox package

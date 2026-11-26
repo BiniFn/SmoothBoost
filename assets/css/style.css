@@ -322,6 +322,19 @@ svg.star-icon {
   transition: transform 0.3s ease, fill 0.3s ease;
 }
 
+.btn-donate {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  box-shadow: inset 0 0 0 0.8px rgba(16, 185, 129, 0.45);
+}
+
+.btn-donate:hover {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  box-shadow: inset 0 0 0 0.8px rgba(52, 211, 153, 0.72), 0 0 22px rgba(16, 185, 129, 0.22);
+  transform: translateY(-1px);
+}
+
 /* Hero Section */
 .hero-section {
   padding: 130px 0 60px;
@@ -529,15 +542,38 @@ svg.star-icon {
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 24px 36px;
+  gap: 12px 14px;
   padding: 0;
 }
 
 .integration-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: rgba(255, 255, 255, 0.8);
+  padding: 8px 14px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 0 0 0.8px rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.integration-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 0.8px rgba(56, 189, 248, 0.35);
+  transform: translateY(-1px);
+}
+
+.integration-badge-live {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
 }
 
 .integration-item svg {
@@ -813,6 +849,13 @@ svg.star-icon {
   justify-content: center;
   color: #ffffff;
   margin-bottom: 18px;
+  transition: background-color 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
+}
+
+.spotlight-card:hover .feature-icon-wrap {
+  background: rgba(6, 182, 212, 0.14);
+  box-shadow: inset 0 0 0 0.8px rgba(56, 189, 248, 0.42);
+  color: var(--accent-sky);
 }
 
 .feature-card h3 {
@@ -934,6 +977,102 @@ svg.star-icon {
   background: rgba(255, 255, 255, 0.15);
   box-shadow: inset 0 0 0 0.8px rgba(255, 255, 255, 0.4);
   color: #ffffff;
+}
+
+.platform-tab-stores {
+  box-shadow: inset 0 0 0 0.8px rgba(6, 182, 212, 0.55);
+  color: #67e8f9;
+  background: rgba(6, 182, 212, 0.08);
+}
+
+.platform-tab-stores.is-active {
+  background: rgba(6, 182, 212, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.75);
+  color: #ffffff;
+}
+
+.stores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.store-card {
+  background: rgba(255, 255, 255, 0.025);
+  box-shadow: inset 0 0 0 0.8px rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.store-card:hover {
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 0 0 0.8px rgba(56, 189, 248, 0.35);
+  transform: translateY(-2px);
+}
+
+.store-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.store-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.store-badge {
+  font-size: 10.5px;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.store-badge-live {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.42);
+}
+
+.store-badge-pack {
+  background: rgba(56, 189, 248, 0.14);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.36);
+}
+
+.store-badge-kit {
+  background: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+  border: 1px solid rgba(139, 92, 246, 0.34);
+}
+
+.store-sub {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 6px;
+}
+
+.store-desc {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.5;
+}
+
+.store-btn {
+  min-height: 38px;
+  height: 38px;
+  font-size: 12.5px;
+  width: 100%;
 }
 
 .platform-panel {

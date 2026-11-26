@@ -32,10 +32,20 @@
   const hasCommands = Boolean(!isMobile && ext.commands?.onCommand);
 
   // DeclarativeNetRequest: supported in Chrome MV3 and Firefox 113+.
-  const hasDnr = Boolean(ext.declarativeNetRequest?.updateDynamicRules);
+  const hasDnr = Boolean(!isSafari && ext.declarativeNetRequest?.updateDynamicRules);
 
   // Scripting API: registerContentScripts support.
   const hasScripting = Boolean(ext.scripting?.registerContentScripts);
+
+  // Open Shadow DOM & memory telemetry capability checks.
+  const hasShadowDom = typeof Element !== 'undefined' && Boolean(Element.prototype?.attachShadow);
+  const hasPerformanceMemory = typeof performance !== 'undefined' && Boolean(performance.memory);
+
+  const SUPPORT_URL = 'https://github.com/sponsors/BiniFn';
+  const STORE_URLS = {
+    firefox: 'https://addons.mozilla.org/en-US/firefox/addon/smoothboost/',
+    edge: 'https://microsoftedge.microsoft.com/addons/search/SmoothBoost'
+  };
 
   async function getStorage(keys) {
     if (!ext.storage?.local?.get) return {};
@@ -102,6 +112,10 @@
     hasCommands,
     hasDnr,
     hasScripting,
+    hasShadowDom,
+    hasPerformanceMemory,
+    SUPPORT_URL,
+    STORE_URLS,
     getStorage,
     setStorage,
     getPlatformKey

@@ -23,6 +23,7 @@ COMMON_PACKAGE_FILES = (
     "scripts/compat.js",
     "data/site-rules.json",
     "icons/icon16.png",
+    "icons/icon32.png",
     "icons/icon48.png",
     "icons/icon128.png",
 )
@@ -81,6 +82,16 @@ def verify_archive(archive_path: Path, expected_version: str) -> None:
         for required in COMMON_PACKAGE_FILES:
             if required not in names:
                 raise RuntimeError(f"{archive_path.name} is missing required file: {required}")
+
+        rules_data = json.loads(archive.read("data/site-rules.json").decode("utf-8"))
+        if not isinstance(rules_data.get("siteRules"), list) or rules_data.get("version", 0) < 3:
+            raise RuntimeError(f"{archive_path.name} has invalid or outdated data/site-rules.json")
+
+        for name in names:
+            if name.endswith(".js"):
+                js_text = archive.read(name).decode("utf-8")
+                if ".innerHTML" in js_text:
+                    raise RuntimeError(f"{archive_path.name} contains disallowed .innerHTML in {name}")
 
 
 def build_target(target_name: str, dist_dir: Path, custom_output: Path | None = None) -> list[Path]:

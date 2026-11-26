@@ -6,7 +6,7 @@ const test = require('node:test');
 
 const hookSource = fs.readFileSync(path.join(__dirname, '../scripts/page-hook.js'), 'utf8');
 const contentSource = fs.readFileSync(path.join(__dirname, '../scripts/content.js'), 'utf8');
-const userscriptSource = fs.readFileSync(path.join(__dirname, '../dist/SmoothBoost.user.js'), 'utf8');
+const userscriptSource = fs.readFileSync(path.join(__dirname, '../scripts/SmoothBoost.user.js'), 'utf8');
 
 function createContentHarness(config = {}, hostname = 'example.com') {
   let messageListener = null;
@@ -385,7 +385,8 @@ test('SmoothBoost.user.js provides valid UserScript headers and syntax', () => {
   assert.ok(userscriptSource.includes('// ==UserScript=='));
   assert.ok(userscriptSource.includes('// ==/UserScript=='));
   assert.ok(userscriptSource.includes('@name         SmoothBoost: Web Performance Optimizer'));
-  assert.ok(userscriptSource.includes('@version      2.4.0'));
+  assert.ok(userscriptSource.includes('@version      2.5.0'));
+  assert.ok(!userscriptSource.includes('.innerHTML'), 'userscript avoids innerHTML for Trusted Types CSP safety');
   assert.ok(userscriptSource.includes('@grant        GM_getValue'));
   assert.ok(userscriptSource.includes('@grant        GM_setValue'));
   assert.ok(userscriptSource.includes('@grant        GM_registerMenuCommand'));

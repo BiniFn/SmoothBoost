@@ -1,7 +1,10 @@
-// SmoothBoost - popup controller (v2.4.0)
+// SmoothBoost - popup controller (v2.5.0)
+
+const SUPPORT_URL = (typeof SmoothBoostCompat !== 'undefined' && SmoothBoostCompat.SUPPORT_URL)
+  || 'https://github.com/sponsors/BiniFn';
 
 const DEFAULT_SETTINGS = {
-  settingsVersion: 5,
+  settingsVersion: 6,
   globalEnabled: true,
   mode: 'auto',
   showAutoPromo: false,
@@ -24,7 +27,9 @@ const DEFAULT_SETTINGS = {
     smartResourceLoading: false,
     memoryGuard: false,
     spaOptimization: true,
-    autoRecovery: true
+    autoRecovery: true,
+    shadowDomBoost: true,
+    backgroundTabThrottle: false
   },
   siteOverrides: {}
 };
@@ -35,7 +40,6 @@ const UPDATE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 let currentTab = null;
 let currentHostname = '';
 let config = null;
-let lastDiagnostics = null;
 
 const domainLabel = document.getElementById('domain-label');
 const siteToggle = document.getElementById('site-toggle');
@@ -64,6 +68,7 @@ const controlsPanel = document.getElementById('controls-panel');
 const helpPanel = document.getElementById('help-panel');
 const statusDot = document.getElementById('status-dot');
 const statusPage = document.getElementById('status-page');
+const statusArchetype = document.getElementById('status-archetype');
 const statusDetail = document.getElementById('status-detail');
 const statusProfile = document.getElementById('status-profile');
 const statusSiteRule = document.getElementById('status-site-rule');
@@ -86,9 +91,14 @@ const toggleSmartResources = document.getElementById('toggle-smart-resources');
 const toggleMemoryGuard = document.getElementById('toggle-memory-guard');
 const toggleSpaOptimization = document.getElementById('toggle-spa-optimization');
 const toggleAutoRecovery = document.getElementById('toggle-auto-recovery');
+const toggleShadowDom = document.getElementById('toggle-shadow-dom');
+const toggleBgThrottle = document.getElementById('toggle-bg-throttle');
 const autoRecoveryBanner = document.getElementById('auto-recovery-banner');
 const btnResetRecovery = document.getElementById('btn-reset-recovery');
+const donateLink = document.getElementById('donate-link');
+const footerDonateLink = document.getElementById('footer-donate-link');
 const fpsButtons = {
+  0: document.getElementById('btn-fps-0'),
   30: document.getElementById('btn-fps-30'),
   60: document.getElementById('btn-fps-60'),
   90: document.getElementById('btn-fps-90'),
@@ -120,6 +130,8 @@ const PRESET_CONFIGS = {
     memoryGuard: true,
     spaOptimization: true,
     autoRecovery: true,
+    shadowDomBoost: true,
+    backgroundTabThrottle: false,
     fpsLimit: 60
   },
   ultra: {
@@ -130,7 +142,7 @@ const PRESET_CONFIGS = {
     pauseBackgroundMedia: true,
     throttleCanvasFps: false,
     pauseOffscreenAnimations: true,
-    contentVisibility: false,
+    contentVisibility: true,
     pauseOffscreenCanvas: true,
     passiveScroll: true,
     asyncImageDecoding: true,
@@ -140,7 +152,9 @@ const PRESET_CONFIGS = {
     memoryGuard: true,
     spaOptimization: true,
     autoRecovery: true,
-    fpsLimit: 60
+    shadowDomBoost: true,
+    backgroundTabThrottle: true,
+    fpsLimit: 0
   },
   balanced: {
     killAnimations: false,
@@ -152,15 +166,17 @@ const PRESET_CONFIGS = {
     pauseOffscreenAnimations: false,
     contentVisibility: false,
     pauseOffscreenCanvas: false,
-    passiveScroll: false,
-    asyncImageDecoding: false,
+    passiveScroll: true,
+    asyncImageDecoding: true,
     fontDisplaySwap: false,
     scrollBoost: false,
     smartResourceLoading: false,
     memoryGuard: false,
     spaOptimization: true,
     autoRecovery: true,
-    fpsLimit: 60
+    shadowDomBoost: false,
+    backgroundTabThrottle: false,
+    fpsLimit: 0
   },
   battery: {
     killAnimations: false,
@@ -180,11 +196,27 @@ const PRESET_CONFIGS = {
     memoryGuard: true,
     spaOptimization: true,
     autoRecovery: true,
+    shadowDomBoost: true,
+    backgroundTabThrottle: true,
     fpsLimit: 30
   }
 };
 
+const ARCHETYPE_LABELS = {
+  'realtime-app': 'Live App Protected',
+  'interactive-canvas': 'Editor Protected',
+  'game-canvas': 'Game Protected',
+  'media-stream': 'Media Stream',
+  'infinite-feed': 'Infinite Feed',
+  'e-commerce': 'Shopping Grid',
+  'reading-article': 'Article / Docs',
+  'standard': 'Standard Page'
+};
+
 async function init() {
+  if (donateLink) donateLink.href = SUPPORT_URL;
+  if (footerDonateLink) footerDonateLink.href = SUPPORT_URL;
+
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   currentTab = tab || null;
   if (tab?.url && /^https?:\/\//i.test(tab.url)) {
@@ -358,16 +390,6 @@ function getCustomSettings() {
   };
 }
 
-function getEffectiveSettings() {
-  const { enabled, mode } = getSiteState();
-  if (!enabled) return { enabled: false, mode: 'off' };
-  if (mode === 'auto') return { enabled: true, mode, ...PRESET_CONFIGS.auto };
-  if (mode === 'ultra') return { enabled: true, mode, ...PRESET_CONFIGS.ultra };
-  if (mode === 'balanced') return { enabled: true, mode, ...PRESET_CONFIGS.balanced };
-  if (mode === 'battery') return { enabled: true, mode, ...PRESET_CONFIGS.battery };
-  return { enabled: true, mode: 'custom', ...getCustomSettings() };
-}
-
 function renderUI() {
   const { enabled, mode } = getSiteState();
   siteToggle.checked = enabled;
@@ -406,8 +428,11 @@ function renderUI() {
   if (toggleMemoryGuard) toggleMemoryGuard.checked = !!custom.memoryGuard;
   if (toggleSpaOptimization) toggleSpaOptimization.checked = custom.spaOptimization !== false;
   if (toggleAutoRecovery) toggleAutoRecovery.checked = custom.autoRecovery !== false;
+  if (toggleShadowDom) toggleShadowDom.checked = custom.shadowDomBoost !== false;
+  if (toggleBgThrottle) toggleBgThrottle.checked = !!custom.backgroundTabThrottle;
 
-  const currentFps = custom.fpsLimit || (mode === 'battery' ? 30 : 60);
+  const fallbackFps = mode === 'battery' ? 30 : (mode === 'ultra' || mode === 'balanced' ? 0 : 60);
+  const currentFps = custom.fpsLimit !== undefined ? custom.fpsLimit : fallbackFps;
   Object.entries(fpsButtons).forEach(([fps, btn]) => {
     if (btn) btn.classList.toggle('is-active', Number(fps) === Number(currentFps));
   });
@@ -483,11 +508,18 @@ function clearMetricsContainer() {
   }
 }
 
+function hideArchetypePill() {
+  if (!statusArchetype) return;
+  statusArchetype.hidden = true;
+  if (statusArchetype.style) statusArchetype.style.display = 'none';
+}
+
 function renderReloadStatus() {
   statusDot.className = 'status-dot is-warning';
   statusPage.textContent = 'Reload tab to activate';
   statusDetail.textContent = 'Reload this tab after installing or updating SmoothBoost.';
   statusProfile.textContent = '—';
+  hideArchetypePill();
   if (siteRuleRow) {
     siteRuleRow.hidden = true;
     if (siteRuleRow.style) siteRuleRow.style.display = 'none';
@@ -500,6 +532,7 @@ function renderUnsupportedStatus() {
   statusPage.textContent = 'Unsupported page';
   statusDetail.textContent = 'The browser does not allow extensions to run on this page.';
   statusProfile.textContent = '—';
+  hideArchetypePill();
   if (siteRuleRow) {
     siteRuleRow.hidden = true;
     if (siteRuleRow.style) siteRuleRow.style.display = 'none';
@@ -512,6 +545,7 @@ function renderSiteOffStatus() {
   statusPage.textContent = 'Off for this site';
   statusDetail.textContent = 'SmoothBoost is not injected here. Turn it on and reload this tab to apply it.';
   statusProfile.textContent = 'Off';
+  hideArchetypePill();
   if (siteRuleRow) {
     siteRuleRow.hidden = true;
     if (siteRuleRow.style) siteRuleRow.style.display = 'none';
@@ -519,15 +553,28 @@ function renderSiteOffStatus() {
   clearMetricsContainer();
 }
 
-function createMetricPillElement(label, iconText) {
+function createSvgIcon(pathD) {
+  if (typeof document.createElementNS !== 'function') return null;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '12');
+  svg.setAttribute('height', '12');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2.2');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', pathD);
+  svg.appendChild(path);
+  return svg;
+}
+
+function createMetricPillElement(label, svgPath) {
   const pill = document.createElement('span');
   pill.className = 'metric-pill';
-  if (iconText) {
-    const icon = document.createElement('span');
-    icon.style.marginRight = '4px';
-    icon.textContent = iconText;
-    pill.appendChild(icon);
-  }
+  const icon = svgPath ? createSvgIcon(svgPath) : null;
+  if (icon) pill.appendChild(icon);
   pill.appendChild(document.createTextNode(label));
   return pill;
 }
@@ -542,33 +589,37 @@ function renderMetricsPills(metrics) {
   const canvases = Math.max(0, Math.floor(Number(metrics.offscreenCanvases) || 0));
   const draws = Math.max(0, Math.floor(Number(metrics.canvasDrawsSkipped) || 0));
   const fonts = Math.max(0, Math.floor(Number(metrics.patchedFonts) || 0));
+  const shadows = Math.max(0, Math.floor(Number(metrics.shadowRootsPatched) || 0));
 
   if (passive > 0) {
-    metricsContainer.appendChild(createMetricPillElement(`${passive} scroll listeners passive`, '↕️'));
+    metricsContainer.appendChild(createMetricPillElement(`${passive} passive listeners`, 'M12 5v14M5 12l7-7 7 7'));
   }
   if (videos > 0) {
-    metricsContainer.appendChild(createMetricPillElement(`${videos} background videos paused`, '⏸️'));
+    metricsContainer.appendChild(createMetricPillElement(`${videos} previews paused`, 'M10 4H6v16h4V4zm8 0h-4v16h4V4z'));
   }
   if (blurs > 0) {
-    metricsContainer.appendChild(createMetricPillElement(`${blurs} blur panels bypassed`, '🛡️'));
+    metricsContainer.appendChild(createMetricPillElement(`${blurs} blurs bypassed`, 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'));
+  }
+  if (shadows > 0) {
+    metricsContainer.appendChild(createMetricPillElement(`${shadows} shadow roots`, 'M12 2 2 7l10 5 10-5-10-5z'));
   }
   if (canvases > 0 || draws > 0) {
-    metricsContainer.appendChild(createMetricPillElement('Canvas draw-skipping active', '🎨'));
+    metricsContainer.appendChild(createMetricPillElement('Offscreen canvas saved', 'M2 3h20v14H2zM8 21h8M12 17v4'));
   }
   if (fonts > 0) {
-    metricsContainer.appendChild(createMetricPillElement(`${fonts} fonts swapped`, '🔤'));
+    metricsContainer.appendChild(createMetricPillElement(`${fonts} fonts swapped`, 'M4 7V4h16v3M9 20h6M12 4v16'));
   }
   if (metrics.scrollBoostActive) {
-    metricsContainer.appendChild(createMetricPillElement('Scroll Boost active', '⚡'));
+    metricsContainer.appendChild(createMetricPillElement('Scroll Boost active', 'M13 2 3 14h9l-1 8 10-12h-9l1-8z'));
   }
   if (metrics.smartResourcesDeferred > 0) {
-    metricsContainer.appendChild(createMetricPillElement(`${metrics.smartResourcesDeferred} embeds deferred`, '📦'));
+    metricsContainer.appendChild(createMetricPillElement(`${metrics.smartResourcesDeferred} embeds deferred`, 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'));
   }
   if (metrics.memoryGuard?.active) {
-    metricsContainer.appendChild(createMetricPillElement(`Memory Guard (${metrics.memoryGuard.pressure})`, '🛡️'));
+    metricsContainer.appendChild(createMetricPillElement(`Memory Guard (${metrics.memoryGuard.pressure})`, 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'));
   }
   if (metrics.spaNavigations > 0) {
-    metricsContainer.appendChild(createMetricPillElement('SPA route active', '🔄'));
+    metricsContainer.appendChild(createMetricPillElement('SPA route synced', 'M23 4v6h-6M1 20v-6h6'));
   }
 }
 
@@ -594,6 +645,15 @@ function requestPageStatus(attempt = 0) {
 
     statusDot.className = response.enabled ? 'status-dot is-active' : 'status-dot is-muted';
     statusPage.textContent = response.enabled ? 'Active' : 'Off for this site';
+
+    if (statusArchetype && response.enabled && response.archetype && response.archetype !== 'detecting') {
+      statusArchetype.textContent = ARCHETYPE_LABELS[response.archetype] || response.archetype;
+      statusArchetype.hidden = false;
+      if (statusArchetype.style) statusArchetype.style.display = 'inline-block';
+    } else {
+      hideArchetypePill();
+    }
+
     if (!response.enabled) {
       statusDetail.textContent = 'SmoothBoost is loaded, but paused for this site.';
     } else if (response.motionPreserved) {
@@ -608,6 +668,8 @@ function requestPageStatus(attempt = 0) {
       statusDetail.textContent = 'Smart Auto: Interactive canvas app detected. Bypassing canvas throttling to ensure full input responsiveness.';
     } else if (response.mode === 'auto') {
       statusDetail.textContent = 'Smart Auto: Running verified heuristics for responsive browsing.';
+    } else if (response.mode === 'ultra') {
+      statusDetail.textContent = 'Turbo: Maximum containment, Shadow DOM, and background-tab throttling active.';
     } else {
       statusDetail.textContent = 'SmoothBoost is running in this tab.';
     }
@@ -776,7 +838,9 @@ function bindEvents() {
     [toggleSmartResources, 'smartResourceLoading'],
     [toggleMemoryGuard, 'memoryGuard'],
     [toggleSpaOptimization, 'spaOptimization'],
-    [toggleAutoRecovery, 'autoRecovery']
+    [toggleAutoRecovery, 'autoRecovery'],
+    [toggleShadowDom, 'shadowDomBoost'],
+    [toggleBgThrottle, 'backgroundTabThrottle']
   ].forEach(([input, key]) => {
     if (input) input.addEventListener('change', () => setCustomSetting(key, input.checked));
   });
@@ -787,14 +851,12 @@ function bindEvents() {
       updateSiteOverride({ enabled: false });
       renderUI();
 
-      // Purge cached archetype so a bad guess doesn't stick
       try {
         await chrome.runtime.sendMessage({ type: 'PURGE_ARCHETYPE', hostname: currentHostname });
       } catch (_e) {}
 
       await saveAndBroadcast();
 
-      // Reload tab to instantly restore original site appearance
       try {
         await chrome.tabs.reload(currentTab.id);
       } catch (_e) {}
@@ -836,7 +898,7 @@ function selectTab(tabName) {
 function exportSettings() {
   const exportPayload = {
     app: 'SmoothBoost',
-    version: chrome?.runtime?.getManifest ? (chrome.runtime.getManifest()?.version || '2.1.0') : '2.1.0',
+    version: chrome?.runtime?.getManifest ? (chrome.runtime.getManifest()?.version || '2.5.0') : '2.5.0',
     exportedAt: new Date().toISOString(),
     config: {
       settingsVersion: config?.settingsVersion || 4,
@@ -877,12 +939,14 @@ function validateImportedSettings(parsed) {
     siteOverrides: {}
   };
 
+  const clampFps = (val) => (val === 0 ? 0 : Math.max(10, Math.min(120, val)));
+
   if (rawConfig.customSettings && typeof rawConfig.customSettings === 'object') {
     for (const [key, defVal] of Object.entries(DEFAULT_SETTINGS.customSettings)) {
       if (typeof defVal === 'boolean' && typeof rawConfig.customSettings[key] === 'boolean') {
         validated.customSettings[key] = rawConfig.customSettings[key];
       } else if (typeof defVal === 'number' && typeof rawConfig.customSettings[key] === 'number') {
-        validated.customSettings[key] = Math.max(10, Math.min(120, rawConfig.customSettings[key]));
+        validated.customSettings[key] = clampFps(rawConfig.customSettings[key]);
       }
     }
   }
@@ -903,7 +967,7 @@ function validateImportedSettings(parsed) {
             if (typeof defVal === 'boolean' && typeof site.customSettings[key] === 'boolean') {
               cleanSite.customSettings[key] = site.customSettings[key];
             } else if (typeof defVal === 'number' && typeof site.customSettings[key] === 'number') {
-              cleanSite.customSettings[key] = Math.max(10, Math.min(120, site.customSettings[key]));
+              cleanSite.customSettings[key] = clampFps(site.customSettings[key]);
             }
           }
         }

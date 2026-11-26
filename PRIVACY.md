@@ -1,7 +1,7 @@
 # Privacy Policy for SmoothBoost
 
-**Effective Date:** November 17, 2026  
-**Last Updated:** November 17, 2026  
+**Effective Date:** November 26, 2026  
+**Last Updated:** November 26, 2026  
 
 SmoothBoost is committed to protecting your privacy. This Privacy Policy explains our practices regarding user information and data handling across all distributions of SmoothBoost, including the Firefox Add-on, Chrome/Edge extension, Safari extension, and Userscript editions.
 
@@ -35,7 +35,7 @@ SmoothBoost requests only the minimal browser permissions necessary to execute i
 - **`storage`**: Used exclusively to persist your configuration settings and per-site rules locally.
 - **`activeTab` / `scripting`**: Used to apply client-side performance scripts (e.g., passive scroll listeners, offscreen embed deferrals) to the active page you view.
 - **`alarms`**: Used to pace periodic idle tab management and performance checks.
-- **`declarativeNetRequest`**: Used strictly to defer non-essential offscreen third-party resources locally without reading or intercepting your network traffic.
+- **`declarativeNetRequest`**: Used strictly to apply a local, non-blocking stylesheet query parameter (`display=swap`) for `fonts.googleapis.com` web fonts without reading or intercepting your browsing traffic.
 
 ---
 

@@ -12,7 +12,7 @@ const isMobilePlatform = typeof SmoothBoostCompat !== "undefined"
   : (typeof navigator !== "undefined" && /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || ""));
 
 const DEFAULT_SETTINGS = {
-  settingsVersion: 5,
+  settingsVersion: 6,
   globalEnabled: true,
   mode: "auto",
   showAutoPromo: false,
@@ -35,7 +35,9 @@ const DEFAULT_SETTINGS = {
     smartResourceLoading: false,
     memoryGuard: false,
     spaOptimization: true,
-    autoRecovery: true
+    autoRecovery: true,
+    shadowDomBoost: true,
+    backgroundTabThrottle: false
   },
   siteOverrides: {}
 };
@@ -76,6 +78,19 @@ function getEffectiveSiteSettings(config, hostname) {
   return { enabled, mode, custom };
 }
 
+function isRestrictedScriptHost(urlString) {
+  try {
+    const parsed = new URL(urlString);
+    const host = parsed.hostname.toLowerCase();
+    if (host === "chromewebstore.google.com" || host === "addons.mozilla.org") return true;
+    if (host === "chrome.google.com" && parsed.pathname.startsWith("/webstore")) return true;
+    if (host === "microsoftedge.microsoft.com" && parsed.pathname.startsWith("/addons")) return true;
+    return false;
+  } catch (_e) {
+    return true;
+  }
+}
+
 function toMatchPattern(hostname) {
   try {
     const normalized = new URL(`https://${hostname}`).hostname;
@@ -87,7 +102,10 @@ function toMatchPattern(hostname) {
 }
 
 async function syncDnrRules(config) {
-  if (!chrome.declarativeNetRequest?.updateDynamicRules) return;
+  const canUseDnr = typeof SmoothBoostCompat !== "undefined"
+    ? SmoothBoostCompat.hasDnr
+    : Boolean(chrome.declarativeNetRequest?.updateDynamicRules);
+  if (!canUseDnr || !chrome.declarativeNetRequest?.updateDynamicRules) return;
   const isEnabled = config.globalEnabled !== false &&
     (config.mode === "auto" || config.mode === "ultra" || config.customSettings?.fontDisplaySwap);
   const ruleId = 101;
@@ -148,6 +166,10 @@ async function syncRegisteredScripts() {
     : ["<all_urls>"];
   if (!matches.length) return;
 
+  const hasStaticContentScripts = typeof SmoothBoostCompat !== "undefined"
+    && SmoothBoostCompat.isSafari
+    && Boolean(chrome.runtime?.getManifest?.()?.content_scripts?.length);
+
   const common = {
     matches,
     ...(excludedHosts.length ? { excludeMatches: excludedHosts } : {}),
@@ -155,20 +177,20 @@ async function syncRegisteredScripts() {
     runAt: "document_start"
   };
 
-  const scripts = [
-    {
-      id: "smoothboost-content",
-      ...common,
-      js: ["scripts/content.js"],
-      world: "ISOLATED"
-    },
-    {
-      id: "smoothboost-page-hook",
-      ...common,
-      js: ["scripts/page-hook.js"],
-      world: "MAIN"
-    }
-  ];
+  const contentScriptDef = {
+    id: "smoothboost-content",
+    ...common,
+    js: ["scripts/compat.js", "scripts/content.js"],
+    world: "ISOLATED"
+  };
+  const pageHookDef = {
+    id: "smoothboost-page-hook",
+    ...common,
+    js: ["scripts/page-hook.js"],
+    world: "MAIN"
+  };
+
+  const scripts = hasStaticContentScripts ? [pageHookDef] : [contentScriptDef, pageHookDef];
 
   try {
     await chrome.scripting.registerContentScripts(scripts);
@@ -177,11 +199,13 @@ async function syncRegisteredScripts() {
       await chrome.scripting.unregisterContentScripts({ ids: REGISTERED_SCRIPT_IDS });
       await chrome.scripting.registerContentScripts(scripts);
     } catch (_retryError) {
-      // In environments where world: "MAIN" is unsupported (e.g. Firefox < 128),
-      // register the isolated script alone. The content script handles fallback injection.
-      try {
-        await chrome.scripting.registerContentScripts([scripts[0]]);
-      } catch (_fallbackError) {}
+      // In environments where world: "MAIN" is unsupported (e.g. Firefox < 128 or older Safari),
+      // register the isolated script alone when not statically declared.
+      if (!hasStaticContentScripts) {
+        try {
+          await chrome.scripting.registerContentScripts([contentScriptDef]);
+        } catch (_fallbackError) {}
+      }
     }
   }
 
@@ -286,6 +310,7 @@ async function checkAndDiscardIdleTabs() {
         !tab.pinned &&
         !tab.audible &&
         !tab.discarded &&
+        !tab.frozen &&
         tab.url &&
         /^https?:\/\//i.test(tab.url) &&
         tab.lastAccessed &&
@@ -362,12 +387,21 @@ chrome.runtime.onInstalled.addListener(async ({ reason } = {}) => {
 
     if (chrome.scripting?.executeScript && chrome.tabs?.query) {
       try {
+        const latest = await chrome.storage.local.get("smoothBoostConfig");
+        const activeConfig = { ...DEFAULT_SETTINGS, ...(latest?.smoothBoostConfig || {}) };
         const tabs = await chrome.tabs.query({ url: ["http://*/*", "https://*/*"] });
         for (const tab of tabs) {
-          if (!tab.id) continue;
+          if (!tab.id || tab.discarded || tab.frozen || !tab.url || isRestrictedScriptHost(tab.url)) continue;
+          let hostname = "";
+          try {
+            hostname = new URL(tab.url).hostname;
+          } catch (_e) {
+            continue;
+          }
+          if (!getEffectiveSiteSettings(activeConfig, hostname).enabled) continue;
           chrome.scripting.executeScript({
             target: { tabId: tab.id },
-            files: ["scripts/content.js"]
+            files: ["scripts/compat.js", "scripts/content.js"]
           }).catch(() => {});
         }
       } catch (_e) {}
@@ -475,6 +509,11 @@ chrome.runtime.onMessage?.addListener((message, _sender, sendResponse) => {
   }
   if (message?.type === "INJECT_PAGE_HOOK" && _sender?.tab?.id) {
     const tabId = _sender.tab.id;
+    const senderUrl = _sender?.tab?.url;
+    if (senderUrl && isRestrictedScriptHost(senderUrl)) {
+      sendResponse({ injected: false });
+      return false;
+    }
     if (chrome.scripting?.executeScript) {
       chrome.scripting.executeScript({
         target: { tabId },
@@ -491,13 +530,15 @@ chrome.runtime.onMessage?.addListener((message, _sender, sendResponse) => {
     return false;
   }
   if (message?.type === "PURGE_ARCHETYPE" && message.hostname) {
-    chrome.storage.local.get("smoothBoostArchetypes").then(({ smoothBoostArchetypes }) => {
+    chrome.storage.local.get("smoothBoostArchetypes").then(async ({ smoothBoostArchetypes }) => {
       if (smoothBoostArchetypes && smoothBoostArchetypes[message.hostname]) {
         delete smoothBoostArchetypes[message.hostname];
-        chrome.storage.local.set({ smoothBoostArchetypes });
+        await chrome.storage.local.set({ smoothBoostArchetypes });
       }
-    }).catch(() => {});
-    sendResponse({ success: true });
+      sendResponse({ success: true });
+    }).catch(() => {
+      sendResponse({ success: false });
+    });
     return true;
   }
   return false;

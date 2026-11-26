@@ -1,7 +1,7 @@
 {
-  "version": 2,
+  "version": 3,
   "packName": "SmoothBoost Universal Community Rules",
-  "updatedAt": "2026-11-17",
+  "updatedAt": "2026-11-26",
   "genericCarouselSelectors": [
     ".swiper",
     "[data-swiper]",
@@ -25,23 +25,85 @@
     {
       "id": "youtube-feed-optimizer",
       "hosts": ["youtube.com", "m.youtube.com"],
-      "paths": ["/", "/feed/subscriptions", "/feed/trending"],
+      "paths": ["/*"],
       "behavior": "defer-offscreen-comments-and-ambient",
-      "deferSelectors": ["#comments", "ytd-comments", "#related", "ytd-watch-next-secondary-results-renderer"]
+      "deferSelectors": [
+        "#comments",
+        "ytd-comments",
+        "#related",
+        "ytd-watch-next-secondary-results-renderer",
+        "ytd-rich-item-renderer",
+        "ytd-compact-video-renderer"
+      ]
     },
     {
       "id": "reddit-feed-optimizer",
-      "hosts": ["reddit.com"],
-      "paths": ["/", "/r/*"],
+      "hosts": ["reddit.com", "www.reddit.com", "old.reddit.com"],
+      "paths": ["/*"],
       "behavior": "pause-offscreen-media-and-embeds",
-      "deferSelectors": ["shreddit-async-loader", "[data-testid=\"post-container\"] iframe"]
+      "deferSelectors": [
+        "shreddit-async-loader",
+        "shreddit-post",
+        "shreddit-comment",
+        "[data-testid=\"post-container\"]",
+        "[data-testid=\"post-container\"] iframe"
+      ]
     },
     {
       "id": "twitter-x-optimizer",
       "hosts": ["x.com", "twitter.com"],
-      "paths": ["/home", "/explore", "/notifications"],
+      "paths": ["/*"],
       "behavior": "spa-feed-content-visibility",
-      "feedSelectors": ["[data-testid=\"primaryColumn\"] section", "div[aria-label=\"Timeline: Your Home Timeline\"] > div"]
+      "feedSelectors": [
+        "[data-testid=\"primaryColumn\"] section",
+        "[data-testid=\"cellInnerDiv\"]",
+        "div[aria-label=\"Timeline: Your Home Timeline\"] > div"
+      ]
+    },
+    {
+      "id": "twitch-kick-optimizer",
+      "hosts": ["twitch.tv", "kick.com"],
+      "paths": ["/*"],
+      "behavior": "defer-offscreen-comments-and-ambient",
+      "deferSelectors": [
+        ".chat-scrollable-area__message-container > div",
+        "[data-a-target=\"side-nav-card\"]",
+        ".vod-message"
+      ]
+    },
+    {
+      "id": "social-feed-optimizer",
+      "hosts": ["tiktok.com", "instagram.com", "facebook.com", "bsky.app", "threads.net", "linkedin.com"],
+      "paths": ["/*"],
+      "behavior": "spa-feed-content-visibility",
+      "feedSelectors": [
+        "article",
+        "[role=\"feed\"] > div",
+        "[data-e2e=\"recommend-list-item-container\"]"
+      ]
+    },
+    {
+      "id": "fandom-wiki-optimizer",
+      "hosts": ["fandom.com"],
+      "paths": ["/*"],
+      "behavior": "contain-heavy-containers",
+      "deferSelectors": [
+        ".top-ads-container",
+        ".bottom-ads-container",
+        ".right-rail-wrapper",
+        "#WikiaBar",
+        "aside.page__right-rail"
+      ]
+    },
+    {
+      "id": "ai-workspace-optimizer",
+      "hosts": ["chatgpt.com", "claude.ai"],
+      "paths": ["/*"],
+      "behavior": "spa-feed-content-visibility",
+      "feedSelectors": [
+        "[data-testid^=\"conversation-turn-\"]",
+        "article[data-turn-id]"
+      ]
     }
   ]
 }

@@ -18,10 +18,14 @@
   let optimizationsEnabled = true;
   let passiveScrollEnabled = true;
   let adaptiveLimitEnabled = false;
+  let strictLimitEnabled = false;
+  let bgThrottleEnabled = false;
   let throttling = false;
   let targetFps = 30;
   let scrollBoostActive = false;
   let spaNavigationsCount = 0;
+  let shadowRootsPatched = 0;
+  let bgThrottledTicks = 0;
   let carouselObserver = null;
   let carouselMutationObserver = null;
   let pausedCarouselInstances = new Map();
@@ -247,7 +251,10 @@
   }
 
   function syncFrameHooks() {
-    if (!throttling) {
+    const wantsStrict = strictLimitEnabled && targetFps > 0 && !isAdaptiveThrottleProtected();
+    const wantsBg = bgThrottleEnabled && document.hidden && !isAdaptiveThrottleExcludedHost() && !isProductivityHost && !hasActiveMediaPlayback();
+    const shouldWrap = throttling || wantsStrict || wantsBg;
+    if (!shouldWrap) {
       restoreFrameHooks();
       return;
     }
@@ -257,18 +264,24 @@
     frameHooks.cancelOriginal = window.cancelAnimationFrame;
 
     frameHooks.requestWrapper = function (callback) {
-      if (!adaptiveLimitEnabled || !throttling) return frameHooks.requestOriginal.call(window, callback);
+      const wantsWrapNow = throttling || (strictLimitEnabled && targetFps > 0 && !isAdaptiveThrottleProtected())
+        || (bgThrottleEnabled && document.hidden && !isAdaptiveThrottleExcludedHost() && !isProductivityHost && !hasActiveMediaPlayback());
+      if (!wantsWrapNow) return frameHooks.requestOriginal.call(window, callback);
       const state = { cancelled: false, externalId: null, nativeId: null };
       const schedule = () => {
         state.nativeId = frameHooks.requestOriginal.call(window, (now) => {
           if (state.cancelled) return;
-          if (!adaptiveLimitEnabled || !throttling) {
+          const isBgHidden = bgThrottleEnabled && document.hidden && !isAdaptiveThrottleExcludedHost() && !isProductivityHost && !hasActiveMediaPlayback();
+          const activeStrict = strictLimitEnabled && targetFps > 0 && !isAdaptiveThrottleProtected();
+          const activeAdaptive = adaptiveLimitEnabled && throttling;
+          if (!isBgHidden && !activeStrict && !activeAdaptive) {
             pendingFrames.delete(state.externalId);
             callback.call(window, now);
             restoreFrameHooks();
             return;
           }
-          const interval = 1000 / (targetFps || 30);
+          const effectiveFps = isBgHidden ? 2 : (targetFps || 30);
+          const interval = 1000 / effectiveFps;
           const elapsed = now - lastFrameTime;
           if (elapsed >= interval) {
             lastFrameTime = now - (elapsed % interval);
@@ -411,6 +424,7 @@
       adaptiveLastPressureAt = 0;
       releaseAdaptiveThrottle();
     }
+    syncFrameHooks();
   }
 
   function installAdaptiveGuards() {
@@ -522,7 +536,7 @@
     if (target.isContentEditable) return true;
     if (typeof target.closest === 'function') {
       return !!target.closest(
-        '.leaflet-container, .mapboxgl-map, [aria-roledescription="map"], canvas, [data-smoothboost-allow-prevent-default], [role="slider"], input[type="range"], .monaco-editor, .ace_editor, .cm-editor, #canvas, #unity-canvas, .game-canvas, [contenteditable="true"], [draggable="true"], [data-draggable], .draggable, .drag-handle, .swiper-slide, .scroller, [data-list-id], [data-testid*="scroller"], [role="tree"], [role="listbox"], [role="menu"], [role="dialog"], [aria-modal="true"]'
+        '.leaflet-container, .mapboxgl-map, [aria-roledescription="map"], canvas, [data-smoothboost-allow-prevent-default], [role="slider"], input[type="range"], .monaco-editor, .ace_editor, .cm-editor, .ProseMirror, [data-lexical-editor], .ql-editor, #canvas, #unity-canvas, .game-canvas, [contenteditable="true"], [draggable="true"], [data-draggable], .draggable, .drag-handle, .swiper-slide, .scroller, [data-list-id], [data-testid*="scroller"], [role="scrollbar"], [role="tree"], [role="listbox"], [role="menu"], [role="dialog"], [aria-modal="true"]'
       );
     }
     return false;
@@ -589,30 +603,78 @@
 
     const hookWebGL = (Context) => {
       if (typeof Context !== 'undefined' && Context?.prototype) {
-        const origDrawArrays = Context.prototype.drawArrays;
-        const origDrawElements = Context.prototype.drawElements;
-        if (typeof origDrawArrays === 'function') {
-          Context.prototype.drawArrays = function (...args) {
-            if (shouldSkipCanvasDraw(this)) {
-              canvasDrawCallsSkipped += 1;
-              return;
-            }
-            return origDrawArrays.apply(this, args);
-          };
-        }
-        if (typeof origDrawElements === 'function') {
-          Context.prototype.drawElements = function (...args) {
-            if (shouldSkipCanvasDraw(this)) {
-              canvasDrawCallsSkipped += 1;
-              return;
-            }
-            return origDrawElements.apply(this, args);
-          };
+        for (const method of ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced']) {
+          const orig = Context.prototype[method];
+          if (typeof orig === 'function') {
+            Context.prototype[method] = function (...args) {
+              if (shouldSkipCanvasDraw(this)) {
+                canvasDrawCallsSkipped += 1;
+                return;
+              }
+              return orig.apply(this, args);
+            };
+          }
         }
       }
     };
     hookWebGL(typeof WebGLRenderingContext !== 'undefined' ? WebGLRenderingContext : undefined);
     hookWebGL(typeof WebGL2RenderingContext !== 'undefined' ? WebGL2RenderingContext : undefined);
+  }
+
+  function installBackgroundTimerThrottle() {
+    if (isReanime || typeof nativeSetInterval !== 'function') return;
+    if (isAdaptiveThrottleExcludedHost() || isProductivityHost || isMapHost) return;
+    const baseSetInterval = window.setInterval;
+    window.setInterval = function (callback, delay, ...args) {
+      const ms = Number(delay);
+      if (typeof callback !== 'function' || !Number.isFinite(ms) || ms >= 1000) {
+        return baseSetInterval.call(window, callback, delay, ...args);
+      }
+      let lastRunAt = 0;
+      const wrapped = function (...cbArgs) {
+        if (bgThrottleEnabled && document.hidden && !hasActiveMediaPlayback()) {
+          const now = adaptiveNow();
+          if (now - lastRunAt < 950) {
+            bgThrottledTicks += 1;
+            return;
+          }
+          lastRunAt = now;
+        }
+        return callback.apply(this, cbArgs);
+      };
+      return baseSetInterval.call(window, wrapped, delay, ...args);
+    };
+  }
+
+  function installShadowDomHook() {
+    if (typeof Element === 'undefined' || !Element.prototype || typeof Element.prototype.attachShadow !== 'function') return;
+    const nativeAttachShadow = Element.prototype.attachShadow;
+    const pendingHosts = new Set();
+    let notifyTimer = 0;
+    Element.prototype.attachShadow = function (init) {
+      const shadowRoot = nativeAttachShadow.call(this, init);
+      if (optimizationsEnabled && init?.mode === 'open') {
+        shadowRootsPatched += 1;
+        if (pendingHosts.size < 256) {
+          pendingHosts.add(this);
+        }
+        if (!notifyTimer && typeof nativeSetTimeout === 'function') {
+          notifyTimer = nativeSetTimeout.call(window, () => {
+            notifyTimer = 0;
+            pendingHosts.forEach((host) => {
+              try {
+                host.setAttribute?.('data-smoothboost-shadow', 'pending');
+              } catch (_e) {}
+            });
+            pendingHosts.clear();
+            try {
+              window.dispatchEvent(new CustomEvent(channelName, { detail: { action: 'shadow-root-attached' } }));
+            } catch (_e) {}
+          }, 32);
+        }
+      }
+      return shadowRoot;
+    };
   }
 
   function installSpaNavigationHook() {
@@ -644,6 +706,8 @@
   installPassiveScrollGuard();
   installCanvasGuard();
   installSpaNavigationHook();
+  installBackgroundTimerThrottle();
+  installShadowDomHook();
   if (isReanime) publishCarouselStatus('waiting');
   startOffscreenCarousels();
 
@@ -653,15 +717,22 @@
     else if (action === 'optimizations-off') setOptimizations(false);
     else if (action === 'passive-scroll-on') passiveScrollEnabled = true;
     else if (action === 'passive-scroll-off') passiveScrollEnabled = false;
-    else if (action === 'adaptive-limit-on') startAdaptiveThrottle();
-    else if (action === 'adaptive-limit-off') stopAdaptiveThrottle();
+    else if (action === 'adaptive-limit-on') { strictLimitEnabled = false; startAdaptiveThrottle(); }
+    else if (action === 'adaptive-limit-off') { strictLimitEnabled = false; stopAdaptiveThrottle(); }
+    else if (action === 'strict-limit-on') { strictLimitEnabled = true; installAdaptiveGuards(); syncFrameHooks(); }
+    else if (action === 'strict-limit-off') { strictLimitEnabled = false; syncFrameHooks(); }
+    else if (action === 'bg-throttle-on') { bgThrottleEnabled = true; installAdaptiveGuards(); syncFrameHooks(); }
+    else if (action === 'bg-throttle-off') { bgThrottleEnabled = false; syncFrameHooks(); }
     else if (action === 'enable-canvas-guard') canvasGuardArmed = true;
     else if (action === 'disable-canvas-guard') canvasGuardArmed = false;
     else if (action === 'set-fps-limit') {
       const fps = Number(event.detail?.fps);
-      if (Number.isFinite(fps) && [30, 60, 90, 120].includes(fps)) {
+      if (Number.isFinite(fps) && [0, 30, 60, 90, 120].includes(fps)) {
         targetFps = fps;
-        if (throttling) syncFrameHooks();
+        if (fps === 0) {
+          strictLimitEnabled = false;
+        }
+        syncFrameHooks();
       }
     }
     else if (action === 'scroll-boost-active') scrollBoostActive = true;
@@ -679,7 +750,9 @@
           canvasDrawCallsSkipped,
           targetFps,
           scrollBoostActive,
-          spaNavigationsCount
+          spaNavigationsCount,
+          shadowRootsPatched,
+          bgThrottledTicks
         }
       }));
     }

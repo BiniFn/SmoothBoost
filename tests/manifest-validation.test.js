@@ -13,9 +13,10 @@ test('Chrome & Titanium Android manifest.json is fully valid MV3 and all assets 
   const manifest = JSON.parse(content);
 
   assert.equal(manifest.manifest_version, 3, 'is MV3');
-  assert.equal(manifest.version, '2.4.0', 'version is 2.4.0');
+  assert.equal(manifest.version, '2.5.0', 'version is 2.5.0');
   assert.ok(manifest.name, 'has name');
   assert.ok(manifest.description, 'has description');
+  assert.ok(manifest.icons['32'], 'has 32px icon');
 
   // Verify icons exist on disk
   for (const [size, iconPath] of Object.entries(manifest.icons || {})) {
@@ -53,7 +54,7 @@ test('Firefox manifest.firefox.json is fully valid Gecko MV3 and all assets exis
   const manifest = JSON.parse(content);
 
   assert.equal(manifest.manifest_version, 3, 'is MV3');
-  assert.equal(manifest.version, '2.4.0', 'version is 2.4.0');
+  assert.equal(manifest.version, '2.5.0', 'version is 2.5.0');
 
   // Verify Gecko BSS
   const bss = manifest.browser_specific_settings;
@@ -88,9 +89,10 @@ test('Safari manifest.safari.json is fully valid WebKit MV3 and all assets exist
   const manifest = JSON.parse(content);
 
   assert.equal(manifest.manifest_version, 3, 'is MV3');
-  assert.equal(manifest.version, '2.4.0', 'version is 2.4.0');
+  assert.equal(manifest.version, '2.5.0', 'version is 2.5.0');
   assert.ok(manifest.name, 'has name');
   assert.ok(manifest.description, 'has description');
+  assert.ok(manifest.icons['32'], 'has 32px icon');
 
   for (const [size, iconPath] of Object.entries(manifest.icons || {})) {
     assert.ok(fs.existsSync(path.join(ROOT, iconPath)), `icon${size} exists: ${iconPath}`);

@@ -55,7 +55,9 @@
       smartResourceLoading: false,
       memoryGuard: false,
       spaOptimization: true,
-      autoRecovery: true
+      autoRecovery: true,
+      shadowDomBoost: true,
+      backgroundTabThrottle: false
     },
     siteOverrides: {}
   };
@@ -104,6 +106,13 @@
   let autoRecoveryTriggered = false;
   let autoRecoverySafeMode = false;
   let recentErrorTimestamps = [];
+  let shadowRootsPatchedCount = 0;
+  let memoryGuardIntervalId = 0;
+  let visibilityListenerInstalled = false;
+  const SHADOW_STYLE_ID = 'smoothboost-shadow-styles';
+  const patchedShadowRoots = new WeakSet();
+  const pendingMutationNodes = new Set();
+  let mutationFlushHandle = 0;
 
   function hostMatches(hostname, domain) {
     return hostname === domain || hostname.endsWith(`.${domain}`);
@@ -119,6 +128,24 @@
 
   function isRyuoHomePage(hostname = window.location.hostname.toLowerCase(), pathname = window.location.pathname) {
     return hostMatches(hostname, RYUO_HOST) && (pathname === '/' || pathname === '/home');
+  }
+
+  function pathMatches(pathname, pattern) {
+    if (!pattern || pattern === '/*' || pattern === '*') return true;
+    if (pattern.endsWith('/*')) {
+      const prefix = pattern.slice(0, -1);
+      return pathname === pattern.slice(0, -2) || pathname.startsWith(prefix);
+    }
+    return pathname === pattern;
+  }
+
+  function getMatchingSiteRules(hostname = window.location.hostname.toLowerCase(), pathname = window.location.pathname || '/') {
+    const rules = siteRules.siteRules || [];
+    return rules.filter((rule) =>
+      Array.isArray(rule.hosts) &&
+      rule.hosts.some((host) => hostMatches(hostname, host.toLowerCase())) &&
+      (!Array.isArray(rule.paths) || rule.paths.some((pattern) => pathMatches(pathname, pattern)))
+    );
   }
 
   function getReanimeRule() {
@@ -141,6 +168,7 @@
     const realtimeApp = isRealtimeAppHost(hostname) || currentArchetype === 'realtime-app';
     const keepMotion = preservesPageMotion(hostname);
     const ryuoHome = isRyuoHomePage(hostname);
+    const matchedFeedRule = getMatchingSiteRules(hostname).some((rule) => rule.id !== 'reanime-home-hero');
     const custom = {
       ...DEFAULT_CONFIG.customSettings,
       ...(source.customSettings || {}),
@@ -162,18 +190,22 @@
         asyncImageDecoding: true,
         fontDisplaySwap: false,
         contentVisibility: false,
+        aggressiveContainment: false,
         throttleCanvasFps: false,
         scrollBoost: false,
         smartResourceLoading: true,
         memoryGuard: true,
         spaOptimization: true,
         autoRecovery: true,
+        shadowDomBoost: false,
+        backgroundTabThrottle: false,
         fpsLimit: 60
       };
     }
 
     if (mode === 'auto') {
       const isInteractiveCanvas = currentArchetype === 'interactive-canvas' || currentArchetype === 'game-canvas';
+      const isFeedOrContent = ryuoHome || matchedFeedRule || ['infinite-feed', 'e-commerce', 'reading-article'].includes(currentArchetype);
       return {
         enabled: true,
         mode: 'auto',
@@ -187,14 +219,17 @@
         passiveScroll: true,
         asyncImageDecoding: !realtimeApp,
         fontDisplaySwap: !realtimeApp,
-        contentVisibility: ryuoHome,
+        contentVisibility: !realtimeApp && !isInteractiveCanvas && isFeedOrContent,
+        aggressiveContainment: false,
         throttleCanvasFps: false,
-        fpsLimit: custom.fpsLimit || 60,
+        fpsLimit: custom.fpsLimit !== undefined ? custom.fpsLimit : 60,
         scrollBoost: !realtimeApp,
         smartResourceLoading: true,
         memoryGuard: true,
         spaOptimization: true,
-        autoRecovery: true
+        autoRecovery: true,
+        shadowDomBoost: !realtimeApp && !isInteractiveCanvas,
+        backgroundTabThrottle: false
       };
     }
 
@@ -213,14 +248,17 @@
         passiveScroll: true,
         asyncImageDecoding: !realtimeApp,
         fontDisplaySwap: !realtimeApp,
-        contentVisibility: ryuoHome,
+        contentVisibility: !realtimeApp && !isInteractiveCanvas,
+        aggressiveContainment: !realtimeApp && !isInteractiveCanvas,
         throttleCanvasFps: false,
-        fpsLimit: custom.fpsLimit || 60,
+        fpsLimit: custom.fpsLimit !== undefined ? custom.fpsLimit : 0,
         scrollBoost: !realtimeApp,
         smartResourceLoading: true,
         memoryGuard: true,
         spaOptimization: true,
-        autoRecovery: true
+        autoRecovery: true,
+        shadowDomBoost: !realtimeApp && !isInteractiveCanvas,
+        backgroundTabThrottle: !realtimeApp && !isInteractiveCanvas
       };
     }
 
@@ -235,17 +273,20 @@
         pauseBackgroundMedia: false,
         pauseOffscreenAnimations: false,
         pauseOffscreenCanvas: false,
-        passiveScroll: false,
-        asyncImageDecoding: false,
+        passiveScroll: true,
+        asyncImageDecoding: true,
         fontDisplaySwap: false,
         contentVisibility: false,
+        aggressiveContainment: false,
         throttleCanvasFps: false,
-        fpsLimit: custom.fpsLimit || 60,
+        fpsLimit: custom.fpsLimit !== undefined ? custom.fpsLimit : 0,
         scrollBoost: false,
         smartResourceLoading: false,
         memoryGuard: false,
         spaOptimization: true,
-        autoRecovery: true
+        autoRecovery: true,
+        shadowDomBoost: false,
+        backgroundTabThrottle: false
       };
     }
 
@@ -265,13 +306,16 @@
         asyncImageDecoding: !realtimeApp,
         fontDisplaySwap: !realtimeApp,
         contentVisibility: !realtimeApp && (!keepMotion || ryuoHome),
+        aggressiveContainment: !realtimeApp && !isInteractiveCanvas,
         throttleCanvasFps: !isInteractiveCanvas && !realtimeApp && !keepMotion,
         fpsLimit: 30,
         scrollBoost: true,
         smartResourceLoading: true,
         memoryGuard: true,
         spaOptimization: true,
-        autoRecovery: true
+        autoRecovery: true,
+        shadowDomBoost: !realtimeApp && !isInteractiveCanvas,
+        backgroundTabThrottle: !realtimeApp && !isInteractiveCanvas
       };
     }
 
@@ -284,7 +328,10 @@
       memoryGuard: !!custom.memoryGuard,
       spaOptimization: custom.spaOptimization !== false,
       autoRecovery: custom.autoRecovery !== false,
-      fpsLimit: custom.fpsLimit || 30
+      shadowDomBoost: custom.shadowDomBoost !== false,
+      backgroundTabThrottle: !!custom.backgroundTabThrottle,
+      aggressiveContainment: !!custom.contentVisibility,
+      fpsLimit: custom.fpsLimit !== undefined ? custom.fpsLimit : 30
     };
   }
 
@@ -312,10 +359,11 @@
     if (settings.contentVisibility) {
       css += '[data-smoothboost-content-visibility="true"] { content-visibility: auto !important; contain-intrinsic-size: auto 480px !important; }\n';
     }
+    if (settings.aggressiveContainment) {
+      css += '[data-smoothboost-contained="true"] { contain: layout style paint !important; }\n';
+    }
     if (settings.scrollBoost) {
-      css += '[data-smoothboost-scrolling="true"] * { pointer-events: none !important; }\n';
-      css += '[data-smoothboost-scrolling="true"] html, [data-smoothboost-scrolling="true"] body, [data-smoothboost-scrolling="true"] [data-smoothboost-scroll-container] { pointer-events: auto !important; }\n';
-      css += '[data-smoothboost-scrolling="true"] * { animation-play-state: paused !important; box-shadow: none !important; text-shadow: none !important; }\n';
+      css += 'html[data-smoothboost-scrolling="true"] [data-smoothboost-offscreen-animation="true"], html[data-smoothboost-scrolling="true"] [data-smoothboost-animated="true"] { animation-play-state: paused !important; transition: none !important; }\n';
     }
     return css;
   }
@@ -359,14 +407,15 @@
 
   function syncPageHook(settings) {
     const optimizeOffscreen = settings.enabled && (
-      settings.pauseBackgroundMedia || settings.pauseOffscreenAnimations || settings.pauseOffscreenCanvas || isReanimeHomePage()
+      settings.pauseBackgroundMedia || settings.pauseOffscreenAnimations || settings.pauseOffscreenCanvas || settings.shadowDomBoost || isReanimeHomePage()
     );
     dispatchHookCommand(optimizeOffscreen ? 'optimizations-on' : 'optimizations-off');
     dispatchHookCommand(settings.enabled && settings.passiveScroll ? 'passive-scroll-on' : 'passive-scroll-off');
     dispatchHookCommand(settings.enabled && settings.mode === 'custom' && settings.throttleCanvasFps
       ? 'adaptive-limit-on'
       : 'adaptive-limit-off');
-    dispatchHookCommand('set-fps-limit', { fps: settings.fpsLimit || 30 });
+    dispatchHookCommand(settings.enabled && settings.backgroundTabThrottle ? 'bg-throttle-on' : 'bg-throttle-off');
+    dispatchHookCommand('set-fps-limit', { fps: settings.fpsLimit !== undefined ? settings.fpsLimit : 30 });
 
     // Armed canvas guard safety check: never arm on interactive canvas or game apps
     if (settings.enabled && settings.pauseOffscreenCanvas) {
@@ -469,10 +518,12 @@
     for (const el of commonGlass) {
       if (!candidates.includes(el)) candidates.push(el);
     }
-    // Also check elements with mock .blurred property (used in tests)
-    const all = document.querySelectorAll('*');
-    for (let i = 0; i < Math.min(all.length, 120); i++) {
-      if (all[i].blurred && !candidates.includes(all[i])) candidates.push(all[i]);
+    // Check elements with mock .blurred property when targeted selectors find nothing (e.g. test mocks)
+    if (candidates.length === 0) {
+      const all = document.querySelectorAll('*');
+      for (let i = 0; i < Math.min(all.length, 120); i++) {
+        if (all[i].blurred && !candidates.includes(all[i])) candidates.push(all[i]);
+      }
     }
     candidates = candidates.slice(0, 150);
 
@@ -490,13 +541,17 @@
     }
   }
 
-  function isBackgroundOrFixedCanvas(canvas) {
+  function isBackgroundOrFixedCanvas(canvas, knownRect = null) {
     if (!canvas) return false;
     try {
       const style = window.getComputedStyle?.(canvas);
       if (style && (style.position === 'fixed' || style.position === 'sticky')) return true;
-      const rect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : null;
-      if (rect && rect.width >= (window.innerWidth || 800) * 0.75 && rect.height >= (window.innerHeight || 600) * 0.75) {
+      const vw = window.innerWidth || 800;
+      const vh = window.innerHeight || 600;
+      if (knownRect && knownRect.width >= vw * 0.75 && knownRect.height >= vh * 0.75) {
+        return true;
+      }
+      if (Number(canvas.width) >= vw * 0.75 && Number(canvas.height) >= vh * 0.75) {
         return true;
       }
     } catch (_e) {}
@@ -527,11 +582,11 @@
       for (const entry of entries) {
         const canvas = entry.target;
         if (!canvas.isConnected) continue;
-        if (isBackgroundOrFixedCanvas(canvas)) {
+        const rect = entry.boundingClientRect;
+        if (isBackgroundOrFixedCanvas(canvas, rect)) {
           canvas.removeAttribute('data-smoothboost-offscreen-canvas');
           continue;
         }
-        const rect = entry.boundingClientRect;
         if (rect && (rect.width <= 0 || rect.height <= 0)) continue;
         if (entry.isIntersecting) {
           canvas.removeAttribute('data-smoothboost-offscreen-canvas');
@@ -559,13 +614,17 @@
   const HEAVY_EMBED_PATTERNS = [
     /youtube(-nocookie)?\.com\/embed/i,
     /player\.vimeo\.com/i,
+    /player\.twitch\.tv/i,
     /platform\.twitter\.com/i,
     /instagram\.com\/embed/i,
     /open\.spotify\.com\/embed/i,
     /w\.soundcloud\.com\/player/i,
     /disqus\.com\/embed/i,
     /facebook\.com\/plugins/i,
-    /tiktok\.com\/embed/i
+    /tiktok\.com\/embed/i,
+    /codepen\.io\/.*\/embed/i,
+    /widget\.intercom\.io/i,
+    /static\.zdassets\.com/i
   ];
 
   function isHeavyEmbedSrc(src) {
@@ -649,15 +708,63 @@
     }
   }
 
+  function scheduleMutationFlush() {
+    if (mutationFlushHandle) return;
+    const run = () => {
+      mutationFlushHandle = 0;
+      flushMutationQueue();
+    };
+    if (typeof window.requestAnimationFrame === 'function') {
+      mutationFlushHandle = window.requestAnimationFrame(run);
+    } else {
+      mutationFlushHandle = window.setTimeout(run, 16);
+    }
+  }
+
+  function enqueueMutationNode(node) {
+    if (!node || node.nodeType !== 1) return;
+    pendingMutationNodes.add(node);
+    scheduleMutationFlush();
+  }
+
+  function flushMutationQueue() {
+    if (!currentSettings.enabled || pendingMutationNodes.size === 0) {
+      pendingMutationNodes.clear();
+      return;
+    }
+    const start = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+    const iterator = pendingMutationNodes.values();
+    while (true) {
+      const next = iterator.next();
+      if (next.done) break;
+      const node = next.value;
+      pendingMutationNodes.delete(node);
+      if (node.isConnected === false) continue;
+      if (currentSettings.asyncImageDecoding || currentSettings.smartResourceLoading) {
+        optimizeAddedResources(node);
+      }
+      if (currentSettings.contentVisibility || currentSettings.aggressiveContainment) {
+        markContentVisibilityIn(node);
+        applyMatchingSiteRulesIn(node);
+      }
+      if (currentSettings.shadowDomBoost) {
+        syncShadowRootsIn(node);
+      }
+      const elapsed = (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()) - start;
+      if (elapsed >= 4 && pendingMutationNodes.size > 0) {
+        scheduleMutationFlush();
+        break;
+      }
+    }
+  }
+
   function updateResourceObserver() {
     resourceMutationObserver?.disconnect();
     resourceMutationObserver = null;
     if (!currentSettings.enabled || (!currentSettings.asyncImageDecoding && !currentSettings.smartResourceLoading) || typeof MutationObserver !== 'function' || !document.documentElement) return;
     resourceMutationObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
-        mutation.addedNodes?.forEach((node) => {
-          if (node.nodeType === 1) optimizeAddedResources(node);
-        });
+        mutation.addedNodes?.forEach(enqueueMutationNode);
       }
     });
     resourceMutationObserver.observe(document.documentElement, { childList: true, subtree: true });
@@ -675,11 +782,106 @@
     if (isContentVisibilityCandidate(element)) element.setAttribute('data-smoothboost-content-visibility', 'true');
   }
 
+  function markContainedTarget(element) {
+    if (!element || element.nodeType !== 1) return;
+    if (element.closest?.('[role="dialog"], [aria-modal="true"]')) return;
+    element.setAttribute('data-smoothboost-contained', 'true');
+  }
+
+  function applyMatchingSiteRulesIn(root) {
+    if (!root || !currentSettings.enabled) return;
+    const rules = getMatchingSiteRules().filter((rule) => rule.id !== 'reanime-home-hero');
+    if (!rules.length) return;
+    for (const rule of rules) {
+      const selectors = [
+        ...(Array.isArray(rule.deferSelectors) ? rule.deferSelectors : []),
+        ...(Array.isArray(rule.feedSelectors) ? rule.feedSelectors : [])
+      ];
+      for (const selector of selectors) {
+        try {
+          if (root.nodeType === 1 && root.matches?.(selector)) {
+            if (rule.behavior === 'contain-heavy-containers' || currentSettings.aggressiveContainment) {
+              markContainedTarget(root);
+            } else {
+              markContentVisibilityTarget(root);
+            }
+          }
+          root.querySelectorAll?.(selector)?.forEach((el) => {
+            if (rule.behavior === 'contain-heavy-containers' || currentSettings.aggressiveContainment) {
+              markContainedTarget(el);
+            } else {
+              markContentVisibilityTarget(el);
+            }
+            if (rule.behavior === 'defer-offscreen-comments-and-ambient' || rule.behavior === 'pause-offscreen-media-and-embeds') {
+              if (currentSettings.smartResourceLoading) {
+                el.querySelectorAll?.('iframe:not([data-smoothboost-deferred-src])')?.forEach(deferHeavyEmbed);
+              }
+            }
+          });
+        } catch (_e) {}
+      }
+    }
+  }
+
   function markContentVisibilityIn(root) {
     if (!root) return;
     const selectors = 'main section, [role="main"] section, [role="feed"] > *, main article, [role="main"] article, article.post, .feed-item';
     if (root.nodeType === 1 && root.matches?.(selectors)) markContentVisibilityTarget(root);
     root.querySelectorAll?.(selectors).forEach(markContentVisibilityTarget);
+  }
+
+  function buildShadowStylesheet(settings) {
+    if (!settings.enabled || !settings.shadowDomBoost) return '';
+    let css = '';
+    if (settings.pauseOffscreenAnimations) {
+      css += ':host([data-smoothboost-offscreen-animation="true"]), [data-smoothboost-offscreen-animation="true"] { animation-play-state: paused !important; }\n';
+    }
+    if (settings.killBlurFilters) {
+      css += '[class*="backdrop-blur"] { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }\n';
+    }
+    if (settings.contentVisibility) {
+      css += 'article, [role="article"], shreddit-comment, .feed-item { content-visibility: auto !important; contain-intrinsic-size: auto 320px !important; }\n';
+    }
+    return css;
+  }
+
+  function applyShadowRootStyles(shadowRoot, settings) {
+    if (!shadowRoot || typeof shadowRoot.getElementById !== 'function') return;
+    const css = buildShadowStylesheet(settings);
+    let style = shadowRoot.getElementById(SHADOW_STYLE_ID);
+    if (!css) {
+      style?.remove?.();
+      return;
+    }
+    if (!style) {
+      style = document.createElement('style');
+      style.id = SHADOW_STYLE_ID;
+      shadowRoot.appendChild(style);
+      if (!patchedShadowRoots.has(shadowRoot)) {
+        patchedShadowRoots.add(shadowRoot);
+        shadowRootsPatchedCount += 1;
+      }
+    }
+    style.textContent = css;
+  }
+
+  function syncShadowRootsIn(root) {
+    if (!root || !currentSettings.enabled || !currentSettings.shadowDomBoost) return;
+    if (isRealtimeAppHost() || currentArchetype === 'realtime-app' || currentArchetype === 'interactive-canvas') return;
+    const candidates = [];
+    if (root.nodeType === 1 && root.shadowRoot) candidates.push(root);
+    try {
+      root.querySelectorAll?.('[data-smoothboost-shadow="pending"], shreddit-app, shreddit-feed, shreddit-post, shreddit-comment, ytd-app, ytd-watch-flexy, ytd-comments')
+        ?.forEach((el) => {
+          if (el.shadowRoot) candidates.push(el);
+        });
+    } catch (_e) {}
+    for (const host of candidates) {
+      if (host.getAttribute?.('data-smoothboost-shadow') === 'pending') {
+        host.setAttribute('data-smoothboost-shadow', 'patched');
+      }
+      applyShadowRootStyles(host.shadowRoot, currentSettings);
+    }
   }
 
   function updateContentVisibilityTargets() {
@@ -688,14 +890,17 @@
     document.querySelectorAll('[data-smoothboost-content-visibility="true"]').forEach((element) => {
       element.removeAttribute('data-smoothboost-content-visibility');
     });
-    if (!currentSettings.enabled || !currentSettings.contentVisibility) return;
-    markContentVisibilityIn(document);
+    document.querySelectorAll('[data-smoothboost-contained="true"]').forEach((element) => {
+      element.removeAttribute('data-smoothboost-contained');
+    });
+    const activeRules = getMatchingSiteRules().filter((rule) => rule.id !== 'reanime-home-hero');
+    if (!currentSettings.enabled || (!currentSettings.contentVisibility && !currentSettings.aggressiveContainment && !activeRules.length)) return;
+    if (currentSettings.contentVisibility) markContentVisibilityIn(document);
+    applyMatchingSiteRulesIn(document);
     if (typeof MutationObserver !== 'function' || !document.documentElement) return;
     contentVisibilityMutationObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
-        mutation.addedNodes?.forEach((node) => {
-          if (node.nodeType === 1) markContentVisibilityIn(node);
-        });
+        mutation.addedNodes?.forEach(enqueueMutationNode);
       }
     });
     contentVisibilityMutationObserver.observe(document.documentElement, { childList: true, subtree: true });
@@ -851,6 +1056,7 @@
         if (iterations === Infinity) {
           observedAnimationTargets.add(target);
           animationTargets.add(target);
+          target.setAttribute?.('data-smoothboost-animated', 'true');
           animationObserver.observe(target);
         }
       }
@@ -911,7 +1117,9 @@
     }
     optimizeImagesAndIframes();
     updateResourceObserver();
+    syncShadowRootsIn(document);
     patchFontFaceDescriptors();
+    startMemoryGuardSchedule();
   }
 
   function startLongFrameObserver() {
@@ -1006,10 +1214,12 @@
       const ratio = mem.usedJSHeapSize / mem.jsHeapSizeLimit;
       if (ratio > 0.72 || mem.usedJSHeapSize > 350 * 1024 * 1024) isHigh = true;
     }
+    const domThreshold = currentSettings.mode === 'ultra' ? 2500 : 3500;
     try {
-      const nodeCount = document.querySelectorAll?.('*')?.length || 0;
-      if (nodeCount > 3500) isHigh = true;
+      const nodeCount = document.getElementsByTagName?.('*')?.length ?? document.querySelectorAll?.('*')?.length ?? 0;
+      if (nodeCount > domThreshold) isHigh = true;
     } catch (_e) {}
+    if (document.hidden) isHigh = true;
 
     if (isHigh) {
       memoryGuardActive = true;
@@ -1027,6 +1237,27 @@
       }
     } else {
       memoryPressureLevel = 'normal';
+    }
+  }
+
+  function startMemoryGuardSchedule() {
+    if (memoryGuardIntervalId) {
+      window.clearInterval?.(memoryGuardIntervalId);
+      memoryGuardIntervalId = 0;
+    }
+    if (!currentSettings.enabled || !currentSettings.memoryGuard) return;
+    if (typeof window.setInterval === 'function') {
+      memoryGuardIntervalId = window.setInterval(() => {
+        if (!document.hidden) checkMemoryPressure();
+      }, 15000);
+    }
+    if (!visibilityListenerInstalled && typeof document.addEventListener === 'function') {
+      visibilityListenerInstalled = true;
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden && currentSettings.enabled && currentSettings.memoryGuard) {
+          checkMemoryPressure();
+        }
+      }, { passive: true });
     }
   }
 
@@ -1102,8 +1333,9 @@
     // These pages have frequent UI updates and must keep their motion and calls intact.
     if (isRealtimeAppHost(hostname)) return 'realtime-app';
 
-    // 1. Interactive Editors & Design Tools (Docs, Figma, Canva, Photopea, Monaco, Ace)
-    if (/(figma|docs\.google|canva|sketch|photopea|webflow|desmos)\.com/i.test(hostname)) {
+    // 1. Interactive Editors & Design Tools (Docs, Figma, Canva, Photopea, Monaco, Ace, Notion, Linear)
+    if (/(figma|docs\.google|canva|sketch|photopea|webflow|desmos)\.com/i.test(hostname) ||
+        /(notion\.so|linear\.app)/i.test(hostname)) {
       return 'interactive-canvas';
     }
 
@@ -1134,23 +1366,23 @@
 
     // 3. Media Stream / Streaming platforms
     const videos = document.querySelectorAll?.('video') || [];
-    if (videos.length >= 2 || /(youtube|twitch|vimeo|netflix|hulu|disneyplus|spotify)\.com/i.test(hostname)) {
+    if (videos.length >= 2 || /(youtube|twitch|kick|vimeo|netflix|hulu|disneyplus|spotify|crunchyroll|bilibili)\.(com|tv)/i.test(hostname)) {
       return 'media-stream';
     }
 
-    // 4. Infinite Feeds & Heavy SPAs
-    if (/(twitter\.com|x\.com|reddit\.com|instagram\.com|bsky\.app|pinterest\.com|tiktok\.com|facebook\.com|threads\.net)/i.test(hostname) ||
-        document.querySelector?.('[role="feed"], [data-testid="primaryColumn"], .feed-item, article.post, [data-infinite-scroll]')) {
+    // 4. Infinite Feeds, AI Workspaces & Heavy SPAs
+    if (/(twitter\.com|x\.com|reddit\.com|instagram\.com|bsky\.app|pinterest\.com|tiktok\.com|facebook\.com|threads\.net|linkedin\.com|chatgpt\.com|claude\.ai|gemini\.google\.com|perplexity\.ai)/i.test(hostname) ||
+        document.querySelector?.('[role="feed"], [data-testid="primaryColumn"], .feed-item, article.post, [data-infinite-scroll], shreddit-feed')) {
       return 'infinite-feed';
     }
 
     // 5. E-Commerce
-    if (/(amazon\.|ebay\.|aliexpress\.com|shopify\.com|etsy\.com|walmart\.com|target\.com)/i.test(hostname)) {
+    if (/(amazon\.|ebay\.|aliexpress\.com|shopify\.com|etsy\.com|walmart\.com|target\.com|temu\.com|shopee\.)/i.test(hostname)) {
       return 'e-commerce';
     }
 
-    // 6. Reading & Article
-    if (/(wikipedia\.org|medium\.com|substack\.com|dev\.to|github\.com)/i.test(hostname) ||
+    // 6. Reading, Wikis & Article
+    if (/(wikipedia\.org|medium\.com|substack\.com|dev\.to|github\.com|fandom\.com)/i.test(hostname) ||
         document.querySelector?.('article, [itemprop="articleBody"], .wiki-content, .markdown-body')) {
       return 'reading-article';
     }
@@ -1215,6 +1447,8 @@
       updateReanimeRuleState(event.detail.status);
     } else if (event.detail.action === 'spa-nav') {
       handleSpaNavigation(event.detail.url, event.detail.navType);
+    } else if (event.detail.action === 'shadow-root-attached') {
+      syncShadowRootsIn(document);
     } else if (event.detail.action === 'hook-metrics') {
       const passive = Number(event.detail.passiveListenersIntercepted);
       const skipped = Number(event.detail.canvasDrawCallsSkipped);
@@ -1223,19 +1457,8 @@
     }
   }
 
-  function tryInjectPageHook() {
+  function injectPageHookViaDomFallback() {
     if (pageHookChannel || document.documentElement?.getAttribute?.(CHANNEL_ATTRIBUTE)) return;
-
-    // 1. Ask background service worker to inject via chrome.scripting.executeScript (bypasses page CSP)
-    try {
-      if (typeof chrome.runtime?.sendMessage === 'function') {
-        chrome.runtime.sendMessage({ type: 'INJECT_PAGE_HOOK' }, (res) => {
-          if (res?.injected) connectPageHook();
-        });
-      }
-    } catch (_e) {}
-
-    // 2. Direct DOM script injection fallback
     try {
       if (typeof chrome.runtime?.getURL !== 'function' || document.getElementById('smoothboost-page-hook-script')) return;
       const script = document.createElement('script');
@@ -1249,6 +1472,28 @@
         script.onerror = () => script.remove();
       }
     } catch (_e) {}
+  }
+
+  function tryInjectPageHook() {
+    if (pageHookChannel || document.documentElement?.getAttribute?.(CHANNEL_ATTRIBUTE)) return;
+
+    // 1. Ask background service worker to inject via chrome.scripting.executeScript (bypasses page CSP)
+    try {
+      if (typeof chrome.runtime?.sendMessage === 'function') {
+        chrome.runtime.sendMessage({ type: 'INJECT_PAGE_HOOK' }, (res) => {
+          const runtimeError = chrome.runtime?.lastError;
+          if (!runtimeError && res?.injected) {
+            connectPageHook();
+            return;
+          }
+          injectPageHookViaDomFallback();
+        });
+        return;
+      }
+    } catch (_e) {}
+
+    // 2. Direct DOM script injection fallback when background messaging is unavailable
+    injectPageHookViaDomFallback();
   }
 
   function observePageHookChannel() {
@@ -1382,11 +1627,13 @@
         motionPreserved: preservesPageMotion() && !currentSettings.killAnimations && !currentSettings.killTransitions,
         offscreenAnimationsPaused: !!currentSettings.pauseOffscreenAnimations,
         siteRule: isReanimeHomePage() ? reanimeRuleState : 'not-applicable',
-        fpsLimit: currentSettings.fpsLimit || 30,
+        fpsLimit: currentSettings.fpsLimit !== undefined ? currentSettings.fpsLimit : 30,
         scrollBoost: !!currentSettings.scrollBoost,
         smartResourceLoading: !!currentSettings.smartResourceLoading,
         memoryGuard: !!currentSettings.memoryGuard,
         spaOptimization: !!currentSettings.spaOptimization,
+        shadowDomBoost: !!currentSettings.shadowDomBoost,
+        backgroundTabThrottle: !!currentSettings.backgroundTabThrottle,
         autoRecovery: { active: autoRecoverySafeMode, triggered: autoRecoveryTriggered }
       } : { status: 'initializing' });
       return false;
@@ -1409,11 +1656,12 @@
           offscreenCanvases: document.querySelectorAll?.('canvas[data-smoothboost-offscreen-canvas="true"]')?.length || 0,
           canvasDrawsSkipped: hookCanvasDrawSkipCount,
           patchedFonts: patchedFontsCount,
-          targetFps: currentSettings.fpsLimit || 30,
+          targetFps: currentSettings.fpsLimit !== undefined ? currentSettings.fpsLimit : 30,
           scrollBoostActive: isScrollingActive,
           smartResourcesDeferred: smartResourcesDeferredCount,
           memoryGuard: { active: memoryGuardActive, pressure: memoryPressureLevel, trims: memoryGuardTrimsCount },
           spaNavigations: spaNavigationsCount,
+          shadowRootsPatched: shadowRootsPatchedCount,
           autoRecovery: { active: autoRecoverySafeMode, triggered: autoRecoveryTriggered }
         }
       });

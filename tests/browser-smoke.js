@@ -5,7 +5,15 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 const test = require('node:test');
 
-const CHROME_PATH = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const CHROME_CANDIDATES = [
+  process.env.CHROMIUM_PATH,
+  '/Applications/Chromium.app/Contents/MacOS/Chromium',
+  '/Applications/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
+  '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
+  '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+].filter(Boolean);
+const CHROME_PATH = CHROME_CANDIDATES.find((candidate) => fs.existsSync(candidate)) || '';
 const EXTENSION_DIR = path.resolve(__dirname, '..');
 const FIXTURES_DIR = path.resolve(__dirname, '../test-fixtures');
 
@@ -97,6 +105,17 @@ test('Real Chromium Smoke Tests with SmoothBoost Extension Loaded', { timeout: 3
 
     // Give service worker time to register content scripts
     await new Promise((r) => setTimeout(r, 1500));
+
+    // Verify our extension service worker actually loaded (Chrome 137+ branded builds ignore --load-extension)
+    const targetsRes = await fetch(`http://127.0.0.1:${cdpPort}/json/list`);
+    const targets = await targetsRes.json();
+    const hasExtensionSw = Array.isArray(targets) && targets.some(
+      (target) => target.type === 'service_worker' && String(target.url || '').endsWith('/scripts/background.js')
+    );
+    if (!hasExtensionSw) {
+      t.skip('Browser binary ignores --load-extension (use Chromium / Chrome for Testing via CHROMIUM_PATH to execute live extension smoke tests)');
+      return;
+    }
 
     // Helper to test a fixture page
     async function testFixture(fixtureName, evaluateExpression) {
